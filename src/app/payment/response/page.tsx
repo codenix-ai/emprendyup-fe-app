@@ -18,34 +18,165 @@ function PaymentResponsePage() {
   useEffect(() => {
     const processPaymentResponse = async () => {
       try {
-        // Obtener parámetros de la URL
-        const responseData = {
-          ref_payco: searchParams.get('ref_payco'),
-          x_id_invoice: searchParams.get('x_id_invoice'),
-          x_transaction_id: searchParams.get('x_transaction_id'),
-          x_ref_payco: searchParams.get('x_ref_payco'),
-          x_cod_response: searchParams.get('x_cod_response'),
-          x_response: searchParams.get('x_response'),
-          x_approval_code: searchParams.get('x_approval_code'),
-          x_amount: searchParams.get('x_amount'),
-          x_franchise: searchParams.get('x_franchise'),
-          x_customer_email: searchParams.get('x_customer_email'),
+        // Obtener ref_payco de los parámetros de la URL
+        const refPayco = searchParams.get('ref_payco');
+
+        if (!refPayco) {
+          console.error('No ref_payco found in URL');
+          setPaymentStatus('error');
+          return;
+        }
+
+        console.log('Validando pago con ref_payco:', refPayco);
+
+        // Validar el pago con ePayco
+        const epaycoResponse = await fetch(
+          `https://secure.epayco.co/validation/v1/reference/${refPayco}`
+        );
+
+        if (!epaycoResponse.ok) {
+          throw new Error('Error al validar el pago con ePayco');
+        }
+
+        const epaycoData = await epaycoResponse.json();
+        console.log('Respuesta de ePayco:', epaycoData);
+
+        if (!epaycoData.success) {
+          setPaymentStatus('error');
+          return;
+        }
+
+        const info = epaycoData.data;
+
+        // Preparar datos para mostrar
+        const paymentInfo = {
+          transactionId: info.x_transaction_id || info.x_ref_payco || refPayco,
+          referenceCode: info.x_id_invoice || refPayco,
+          amount: info.x_amount || '0',
+          currency: info.x_currency_code || 'COP',
+          franchise: info.x_franchise || 'N/A',
+          email: info.x_customer_email || '',
+          transactionDate: info.x_transaction_date || new Date().toISOString(),
+          transactionState: info.x_transaction_state || info.x_response || 'Pendiente',
+          order: {
+            total: Number(info.x_amount || 0),
+          },
         };
 
-        // Procesar la respuesta
-        const result = await processResponse(responseData);
-        setPaymentData(result);
+        setPaymentData(paymentInfo);
 
-        // Determinar el estado basado en el código de respuesta
-        const responseCode = responseData.x_cod_response;
-        if (responseCode === '1') {
+        // Determinar el estado basado en la respuesta de ePayco
+        const state = info.x_transaction_state || info.x_response || '';
+        const responseCode = info.x_cod_response || info.x_cod_transaction_state;
+
+        if (state === 'Aceptada' || responseCode === '1') {
           setPaymentStatus('success');
-        } else if (responseCode === '2') {
+
+          // Actualizar el estado del pago en el backend
+          try {
+            const backendUrl = process.env.NEXT_PUBLIC_API_URL;
+            console.log('Actualizando estado en backend:', backendUrl);
+
+            const backendResponse = await fetch(`${backendUrl}/payments/epayco/confirm`, {
+              method: 'POST',
+              headers: {
+                'Content-Type': 'application/json',
+              },
+              body: JSON.stringify({
+                ref_payco: refPayco,
+                transaction_id: info.x_transaction_id,
+                reference: info.x_id_invoice,
+                amount: info.x_amount,
+                currency: info.x_currency_code || 'COP',
+                franchise: info.x_franchise,
+                email: info.x_customer_email,
+                transaction_state: state,
+                response_code: responseCode,
+                approval_code: info.x_approval_code,
+                transaction_date: info.x_transaction_date,
+                status: 'COMPLETED',
+              }),
+            });
+
+            if (!backendResponse.ok) {
+              console.error('Error actualizando backend:', await backendResponse.text());
+            } else {
+              const backendData = await backendResponse.json();
+              console.log('Backend actualizado exitosamente:', backendData);
+            }
+          } catch (backendError) {
+            console.error('Error al comunicarse con el backend:', backendError);
+            // No cambiar el estado, el pago ya fue validado con ePayco
+          }
+
+          // Procesar con el hook si existe
+          try {
+            await processResponse({
+              ref_payco: refPayco,
+              x_id_invoice: info.x_id_invoice,
+              x_transaction_id: info.x_transaction_id,
+              x_ref_payco: info.x_ref_payco,
+              x_cod_response: responseCode,
+              x_response: state,
+              x_approval_code: info.x_approval_code,
+              x_amount: info.x_amount,
+              x_franchise: info.x_franchise,
+              x_customer_email: info.x_customer_email,
+            });
+          } catch (hookError) {
+            console.error('Error processing with hook:', hookError);
+            // No cambiar el estado, ya se validó con ePayco
+          }
+        } else if (state === 'Rechazada' || state === 'Fallida' || responseCode === '2') {
           setPaymentStatus('error');
-        } else if (responseCode === '3') {
+
+          // Actualizar el estado como fallido en el backend
+          try {
+            const backendUrl = process.env.NEXT_PUBLIC_API_URL;
+            await fetch(`${backendUrl}/payments/epayco/confirm`, {
+              method: 'POST',
+              headers: {
+                'Content-Type': 'application/json',
+              },
+              body: JSON.stringify({
+                ref_payco: refPayco,
+                transaction_id: info.x_transaction_id,
+                reference: info.x_id_invoice,
+                amount: info.x_amount,
+                transaction_state: state,
+                response_code: responseCode,
+                status: 'FAILED',
+              }),
+            });
+          } catch (backendError) {
+            console.error('Error actualizando backend con estado fallido:', backendError);
+          }
+        } else if (state === 'Pendiente' || responseCode === '3') {
           setPaymentStatus('pending');
+
+          // Actualizar el estado como pendiente en el backend
+          try {
+            const backendUrl = process.env.NEXT_PUBLIC_API_URL;
+            await fetch(`${backendUrl}/payments/epayco/confirm`, {
+              method: 'POST',
+              headers: {
+                'Content-Type': 'application/json',
+              },
+              body: JSON.stringify({
+                ref_payco: refPayco,
+                transaction_id: info.x_transaction_id,
+                reference: info.x_id_invoice,
+                amount: info.x_amount,
+                transaction_state: state,
+                response_code: responseCode,
+                status: 'PENDING',
+              }),
+            });
+          } catch (backendError) {
+            console.error('Error actualizando backend con estado pendiente:', backendError);
+          }
         } else {
-          setPaymentStatus('error');
+          setPaymentStatus('pending');
         }
       } catch (error) {
         console.error('Error procesando respuesta de pago:', error);
@@ -53,7 +184,7 @@ function PaymentResponsePage() {
       }
     };
 
-    if (searchParams.get('x_id_invoice')) {
+    if (searchParams.get('ref_payco')) {
       processPaymentResponse();
     }
   }, [searchParams, processResponse]);
@@ -116,22 +247,47 @@ function PaymentResponsePage() {
         {paymentData && (
           <div className="bg-gray-700/50 rounded-lg p-4 mb-6 text-left">
             <h3 className="text-sm font-semibold text-gray-300 mb-2">Detalles del pago:</h3>
-            <div className="space-y-1 text-sm text-gray-400">
+            <div className="space-y-2 text-sm text-gray-400">
               {paymentData.transactionId && (
-                <div>
-                  ID Transacción: <span className="text-white">{paymentData.transactionId}</span>
+                <div className="flex justify-between">
+                  <span>ID Transacción:</span>
+                  <span className="text-white font-medium">{paymentData.transactionId}</span>
                 </div>
               )}
               {paymentData.referenceCode && (
-                <div>
-                  Referencia: <span className="text-white">{paymentData.referenceCode}</span>
+                <div className="flex justify-between">
+                  <span>Referencia:</span>
+                  <span className="text-white font-medium">{paymentData.referenceCode}</span>
                 </div>
               )}
-              {paymentData.order?.total && (
-                <div>
-                  Monto:{' '}
-                  <span className="text-white">
-                    ${paymentData.order.total.toLocaleString()} COP
+              {paymentData.transactionState && (
+                <div className="flex justify-between">
+                  <span>Estado:</span>
+                  <span className="text-white font-medium">{paymentData.transactionState}</span>
+                </div>
+              )}
+              {paymentData.franchise && paymentData.franchise !== 'N/A' && (
+                <div className="flex justify-between">
+                  <span>Método de pago:</span>
+                  <span className="text-white font-medium">{paymentData.franchise}</span>
+                </div>
+              )}
+              {paymentData.amount && (
+                <div className="flex justify-between">
+                  <span>Monto:</span>
+                  <span className="text-white font-medium">
+                    {new Intl.NumberFormat('es-CO', {
+                      style: 'currency',
+                      currency: paymentData.currency || 'COP',
+                    }).format(Number(paymentData.amount))}
+                  </span>
+                </div>
+              )}
+              {paymentData.transactionDate && (
+                <div className="flex justify-between">
+                  <span>Fecha:</span>
+                  <span className="text-white font-medium">
+                    {new Date(paymentData.transactionDate).toLocaleString('es-CO')}
                   </span>
                 </div>
               )}

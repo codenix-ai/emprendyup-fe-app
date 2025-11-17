@@ -356,3 +356,87 @@ export const GET_ALL_STORES_FOR_ADMIN = gql`
     }
   }
 `;
+
+// Order Mutations
+export const CREATE_ORDER = gql`
+  mutation CreateOrder($input: CreateOrderInput!) {
+    createOrder(input: $input) {
+      id
+      status
+      subtotal
+      shipping
+      tax
+      total
+      createdAt
+      items {
+        productId
+        productName
+        quantity
+        price
+      }
+      store {
+        id
+        name
+      }
+    }
+  }
+`;
+
+// Product Queries
+export const GET_PRODUCTS_BY_STORE = gql`
+  query GetProductsByStore($storeId: String!, $page: Int, $pageSize: Int) {
+    productsByStore(storeId: $storeId, page: $page, pageSize: $pageSize) {
+      items {
+        id
+        name
+        title
+        description
+        price
+        currency
+        available
+        inStock
+        stock
+        metadata
+        images {
+          id
+          url
+          order
+        }
+        categories {
+          category {
+            id
+            name
+            slug
+          }
+        }
+      }
+      total
+      page
+      pageSize
+    }
+  }
+`;
+
+export const GET_SUBSCRIPTION_PRODUCTS = gql`
+  query GetSubscriptionProducts($storeId: String!) {
+    productsByStore(storeId: $storeId, page: 1, pageSize: 100) {
+      items {
+        id
+        name
+        title
+        description
+        price
+        currency
+        available
+        images {
+          id
+          url
+          order
+        }
+      }
+      total
+      page
+      pageSize
+    }
+  }
+`;

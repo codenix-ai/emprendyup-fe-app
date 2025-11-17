@@ -99,21 +99,25 @@ export default function PricingPlans({
   isAuthenticated = false,
   customPlans,
   className = '',
+  selectedCycle,
+  onCycleChange,
 }: PricingPlansProps) {
-  const [billingCycle, setBillingCycle] = useState<'monthly' | 'annual'>('annual');
   const [loadingPlan, setLoadingPlan] = useState<string | null>(null);
+
+  // Use selectedCycle from props or fallback to local state
+  const billingCycle = selectedCycle || 'annual';
+  const setBillingCycle = (cycle: 'monthly' | 'annual') => {
+    if (onCycleChange) {
+      onCycleChange(cycle);
+    }
+  };
 
   const plans = customPlans || defaultPlans;
 
-  const getBase = (price: string) => parseFloat(price.replace(/\./g, ''));
-
   const getDisplayPrice = (price: string) => {
-    const base = getBase(price);
-    if (billingCycle === 'annual') {
-      const discounted = Math.round(base * 12 * 0.7);
-      return discounted.toLocaleString('es-CO');
-    }
-    return Math.round(base).toLocaleString('es-CO');
+    // Price comes from database, use it directly without any calculation
+    const priceValue = parseFloat(price);
+    return Math.round(priceValue).toLocaleString('es-CO');
   };
 
   const handlePlanAction = async (plan: Plan) => {
@@ -197,7 +201,7 @@ export default function PricingPlans({
 
       <section id="pricing-cards" className="pb-20 px-6">
         <div className="max-w-7xl mx-auto grid md:grid-cols-3 gap-6">
-          {plans.map((plan) => (
+          {plans.map((plan, index) => (
             <div
               key={plan.id}
               className={`relative bg-slate-800/50 backdrop-blur-sm rounded-2xl p-8 border transition-all hover:-translate-y-2 ${
@@ -239,7 +243,7 @@ export default function PricingPlans({
                   className={`w-full py-3.5 rounded-xl font-semibold transition-all ${
                     isCurrent(plan.id)
                       ? 'bg-slate-700 text-slate-400 cursor-not-allowed'
-                      : plan.popular
+                      : index === 1
                         ? 'bg-gradient-to-r from-fourth-base to-fourth-300 text-white hover:shadow-lg hover:shadow-fourth-500/30'
                         : 'bg-slate-700 text-white hover:bg-slate-600'
                   }`}
