@@ -19,7 +19,6 @@ function PaymentResponsePage() {
   useEffect(() => {
     // Prevent multiple executions
     if (hasProcessed) return;
-
     const processPaymentResponse = async () => {
       try {
         // Obtener ref_payco de los parámetros de la URL
