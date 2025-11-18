@@ -306,11 +306,11 @@ export default function PlansPage() {
       // Datos del checkout - usando el formato correcto de ePayco
       const checkoutData = {
         // API Key
-        key: process.env.NEXT_PUBLIC_EPAYCO_PUBLIC_KEY,
+        key: process.env.NEXT_PUBLIC_EPAYCO_PUBLIC_KEY || '',
         test: true,
         // Información del comercio
         name: 'EmprendyUp',
-        description: planConfig.description,
+        description: planConfig.description || 'Suscripción EmprendyUp',
         invoice: reference,
         currency: 'cop',
         amount: planConfig.amount.toString(),
@@ -323,11 +323,11 @@ export default function PlansPage() {
         external: 'false',
 
         // Datos de facturación
-        name_billing: customerData.name,
+        name_billing: customerData.name || 'Cliente',
         address_billing: 'Calle 1 # 1-1',
-        type_doc_billing: customerData.documentType,
-        mobilephone_billing: customerData.phone,
-        number_doc_billing: customerData.document,
+        type_doc_billing: customerData.documentType || 'CC',
+        mobilephone_billing: customerData.phone || '3000000000',
+        number_doc_billing: customerData.document || '12345678',
 
         // URLs de respuesta - pasar el orderId como parámetro
         response: `${window.location.origin}/payment/response?orderId=${orderId}`,
@@ -338,6 +338,30 @@ export default function PlansPage() {
       };
 
       console.log('Opening ePayco checkout with data:', checkoutData);
+      console.log('Customer data:', customerData);
+
+      // Validar que todos los campos requeridos estén presentes
+      const requiredFields = [
+        'key',
+        'name',
+        'description',
+        'invoice',
+        'currency',
+        'amount',
+        'country',
+        'name_billing',
+        'type_doc_billing',
+        'mobilephone_billing',
+        'number_doc_billing',
+      ];
+      const missingFields = requiredFields.filter(
+        (field) => !checkoutData[field as keyof typeof checkoutData]
+      );
+
+      if (missingFields.length > 0) {
+        console.error('Missing required fields:', missingFields);
+        throw new Error(`Faltan campos requeridos: ${missingFields.join(', ')}`);
+      }
 
       // Abrir el checkout de ePayco directamente
       const handler = window.ePayco.checkout.configure(checkoutData);
