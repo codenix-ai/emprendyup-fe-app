@@ -24,7 +24,6 @@ function PaymentResponsePage() {
       try {
         // Obtener ref_payco de los parámetros de la URL
         const refPayco = searchParams.get('ref_payco');
-
         if (!refPayco) {
           console.error('No ref_payco found in URL');
           setPaymentStatus('error');
