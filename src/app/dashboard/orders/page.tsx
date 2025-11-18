@@ -322,7 +322,7 @@ export default function OrderPage() {
     return (
       <div className="space-y-6">
         <div className="bg-yellow-900/20 border border-yellow-700 rounded-lg p-4">
-          <h2 className="text-lg font-semibold text-yellow-300">Store no seleccionado</h2>
+          <h2 className="text-lg font-semibold text-yellow-300">Tienda no seleccionada</h2>
           <p className="text-yellow-400">No se ha seleccionado una tienda.</p>
         </div>
       </div>
