@@ -14,8 +14,12 @@ function PaymentResponsePage() {
     'processing' | 'success' | 'error' | 'pending'
   >('processing');
   const [paymentData, setPaymentData] = useState<any>(null);
+  const [hasProcessed, setHasProcessed] = useState(false);
 
   useEffect(() => {
+    // Prevent multiple executions
+    if (hasProcessed) return;
+
     const processPaymentResponse = async () => {
       try {
         // Obtener ref_payco de los parámetros de la URL
@@ -24,9 +28,11 @@ function PaymentResponsePage() {
         if (!refPayco) {
           console.error('No ref_payco found in URL');
           setPaymentStatus('error');
+          setHasProcessed(true);
           return;
         }
 
+        setHasProcessed(true);
         console.log('Validando pago con ref_payco:', refPayco);
 
         // Validar el pago con ePayco
@@ -184,10 +190,11 @@ function PaymentResponsePage() {
       }
     };
 
-    if (searchParams.get('ref_payco')) {
+    if (searchParams.get('ref_payco') && !hasProcessed) {
       processPaymentResponse();
     }
-  }, [searchParams, processResponse]);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [searchParams]);
 
   const getStatusIcon = () => {
     switch (paymentStatus) {
