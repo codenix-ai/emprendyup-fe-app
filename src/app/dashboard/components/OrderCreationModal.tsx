@@ -89,7 +89,7 @@ export default function OrderCreationModal({
             description: `Pago de suscripción ${planName} - ${billingCycle === 'monthly' ? 'Mensual' : 'Anual'}`,
             paymentType: 'PAYMENT',
             provider: 'EPAYCO',
-            paymentMethod: 'ONLINE',
+            paymentMethod: 'PSE',
             externalReference: createdOrderId,
             customerEmail: user?.email || 'cliente@example.com',
             customerPhone: user?.phone || '3000000000',
