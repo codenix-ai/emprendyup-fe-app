@@ -303,31 +303,34 @@ export default function PlansPage() {
         documentType: (user as any)?.documentType || 'CC',
       };
 
+      // Crear un handler para ePayco sin test mode en la configuración
+      const handler = window.ePayco.checkout.configure({
+        key: process.env.NEXT_PUBLIC_EPAYCO_PUBLIC_KEY,
+        test: true, // Hardcoded para pruebas
+      });
+
       // Datos del checkout - usando el formato correcto de ePayco
       const checkoutData = {
-        // API Key
-        key: process.env.NEXT_PUBLIC_EPAYCO_PUBLIC_KEY || '',
-        test: true,
         // Información del comercio
         name: 'EmprendyUp',
-        description: planConfig.description || 'Suscripción EmprendyUp',
+        description: planConfig.description,
         invoice: reference,
         currency: 'cop',
-        amount: planConfig.amount.toString(),
-        tax_base: '0',
-        tax: '0',
+        amount: planConfig.amount,
+        tax_base: 0,
+        tax: 0,
         country: 'co',
         lang: 'es',
 
         // Información del cliente - usando formato correcto
-        external: 'false',
+        external: false,
 
         // Datos de facturación
-        name_billing: customerData.name || 'Cliente',
+        name_billing: customerData.name,
         address_billing: 'Calle 1 # 1-1',
-        type_doc_billing: customerData.documentType || 'CC',
-        mobilephone_billing: customerData.phone || '3000000000',
-        number_doc_billing: customerData.document || '12345678',
+        type_doc_billing: customerData.documentType,
+        mobilephone_billing: customerData.phone,
+        number_doc_billing: customerData.document,
 
         // URLs de respuesta - pasar el orderId como parámetro
         response: `${window.location.origin}/payment/response?orderId=${orderId}`,
@@ -338,34 +341,9 @@ export default function PlansPage() {
       };
 
       console.log('Opening ePayco checkout with data:', checkoutData);
-      console.log('Customer data:', customerData);
 
-      // Validar que todos los campos requeridos estén presentes
-      const requiredFields = [
-        'key',
-        'name',
-        'description',
-        'invoice',
-        'currency',
-        'amount',
-        'country',
-        'name_billing',
-        'type_doc_billing',
-        'mobilephone_billing',
-        'number_doc_billing',
-      ];
-      const missingFields = requiredFields.filter(
-        (field) => !checkoutData[field as keyof typeof checkoutData]
-      );
-
-      if (missingFields.length > 0) {
-        console.error('Missing required fields:', missingFields);
-        throw new Error(`Faltan campos requeridos: ${missingFields.join(', ')}`);
-      }
-
-      // Abrir el checkout de ePayco directamente
-      const handler = window.ePayco.checkout.configure(checkoutData);
-      handler.open();
+      // Abrir el checkout de ePayco usando el handler
+      handler.open(checkoutData);
     } catch (error) {
       console.error('Error al procesar el pago:', error);
       alert('Error al procesar el pago. Por favor intenta nuevamente.');
