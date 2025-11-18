@@ -154,11 +154,20 @@ export default function StoresPage() {
       maintenance: 'bg-yellow-100 text-yellow-800 dark:bg-yellow-900 dark:text-yellow-300',
     };
 
+    const statusTranslations: { [key: string]: string } = {
+      active: 'Activo',
+      inactive: 'Inactivo',
+      maintenance: 'Mantenimiento',
+    };
+
+    const translatedStatus =
+      statusTranslations[status.toLowerCase()] || status.charAt(0).toUpperCase() + status.slice(1);
+
     return (
       <span
         className={`inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium ${styles[status as keyof typeof styles]}`}
       >
-        {status.charAt(0).toUpperCase() + status.slice(1)}
+        {translatedStatus}
       </span>
     );
   };
@@ -215,8 +224,8 @@ export default function StoresPage() {
       {/* Header */}
       <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4">
         <div>
-          <h1 className="text-2xl font-bold text-gray-900 dark:text-white">Stores</h1>
-          <p className="text-gray-600 dark:text-gray-400">Manage and monitor your stores</p>
+          <h1 className="text-2xl font-bold text-gray-900 dark:text-white">Tiendas</h1>
+          <p className="text-gray-600 dark:text-gray-400">Gestiona y monitorea tus tiendas</p>
         </div>
 
         <button
@@ -224,7 +233,7 @@ export default function StoresPage() {
           className="inline-flex items-center px-4 py-2 bg-fourth-base text-black rounded-lg hover:bg-fourth-base/90 transition-colors"
         >
           <Download className="h-4 w-4 mr-2" />
-          Export CSV
+          Exportar CSV
         </button>
       </div>
 
@@ -236,7 +245,7 @@ export default function StoresPage() {
             <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 h-4 w-4 text-gray-400" />
             <input
               type="text"
-              placeholder="Search stores by name, email, city, or store ID..."
+              placeholder="Buscar tiendas por nombre, correo, ciudad o ID de tienda..."
               value={searchQuery}
               onChange={(e) => setSearchQuery(e.target.value)}
               className="w-full pl-10 pr-4 py-2 border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-700 text-gray-900 dark:text-white focus:ring-2 focus:ring-fourth-base focus:border-transparent"
@@ -251,10 +260,10 @@ export default function StoresPage() {
               onChange={(e) => setStatusFilter(e.target.value)}
               className="px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-700 text-gray-900 dark:text-white focus:ring-2 focus:ring-fourth-base focus:border-transparent"
             >
-              <option value="all">All Status</option>
-              <option value="active">Active</option>
-              <option value="inactive">Inactive</option>
-              <option value="maintenance">Maintenance</option>
+              <option value="all">Todos los estados</option>
+              <option value="active">Activo</option>
+              <option value="inactive">Inactivo</option>
+              <option value="maintenance">Mantenimiento</option>
             </select>
           </div>
 
@@ -266,7 +275,7 @@ export default function StoresPage() {
               onChange={(e) => setPlatformFilter(e.target.value)}
               className="px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-700 text-gray-900 dark:text-white focus:ring-2 focus:ring-fourth-base focus:border-transparent"
             >
-              <option value="all">All Platforms</option>
+              <option value="all">Todas las plataformas</option>
               <option value="web">Web</option>
               <option value="shopify">Shopify</option>
               <option value="woocommerce">WooCommerce</option>
@@ -300,22 +309,22 @@ export default function StoresPage() {
                 <thead className="bg-gray-50 dark:bg-gray-900">
                   <tr>
                     <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wider">
-                      Store
+                      Tienda
                     </th>
                     <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wider">
-                      Contact
+                      Contacto
                     </th>
                     <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wider">
-                      Location
+                      Ubicación
                     </th>
                     <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wider">
-                      Platform
+                      Plataforma
                     </th>
                     <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wider">
-                      Status
+                      Estado
                     </th>
                     <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wider">
-                      Actions
+                      Acciones
                     </th>
                   </tr>
                 </thead>

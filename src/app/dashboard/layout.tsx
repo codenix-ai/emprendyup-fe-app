@@ -24,6 +24,7 @@ import {
   BookOpen,
   Layers,
   List,
+  BookUser,
 } from 'lucide-react';
 import Image from 'next/image';
 import { useSessionStore } from '@/lib/store/dashboard';
@@ -49,6 +50,7 @@ const adminNavigationGroups = [
     items: [
       { name: 'Usuarios', href: '/dashboard/users', icon: Users },
       { name: 'Emprendedores', href: '/dashboard/entrepeneurs', icon: Star },
+      { name: 'Asistentes', href: '/dashboard/events', icon: BookUser },
     ],
   },
   {
@@ -65,7 +67,7 @@ const adminNavigationGroups = [
     items: [
       { name: 'Bonos', href: '/dashboard/bonuses', icon: Gift },
       { name: 'Blog', href: '/dashboard/blog', icon: FileText },
-      { name: 'Mi suscripción', href: '/dashboard/plans', icon: Layers },
+
       { name: 'Estadísticas', href: '/dashboard/insights', icon: BarChart3 },
     ],
   },
@@ -73,6 +75,12 @@ const adminNavigationGroups = [
     name: 'Pagos',
     icon: CreditCard,
     href: '/dashboard/payments',
+    isSingle: true,
+  },
+  {
+    name: 'Mi suscripción',
+    icon: Layers,
+    href: '/dashboard/plans',
     isSingle: true,
   },
 ];
@@ -447,7 +455,7 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
                       }`}
                     >
                       <group.icon
-                        className={`mr-3 h-8 w-8 flex-shrink-0 ${
+                        className={`mr-3 h-5 w-5 flex-shrink-0 ${
                           isActive
                             ? 'text-black dark:text-white'
                             : 'text-gray-400 group-hover:text-gray-500'
