@@ -15,7 +15,6 @@ function PaymentResponsePage() {
   >('processing');
   const [paymentData, setPaymentData] = useState<any>(null);
   const [hasProcessed, setHasProcessed] = useState(false);
-
   useEffect(() => {
     // Prevent multiple executions
     if (hasProcessed) return;
