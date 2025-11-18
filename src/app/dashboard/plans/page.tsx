@@ -303,27 +303,24 @@ export default function PlansPage() {
         documentType: (user as any)?.documentType || 'CC',
       };
 
-      // Crear un handler para ePayco sin test mode en la configuración
-      const handler = window.ePayco.checkout.configure({
-        key: process.env.NEXT_PUBLIC_EPAYCO_PUBLIC_KEY,
-        test: true, // Hardcoded para pruebas
-      });
-
       // Datos del checkout - usando el formato correcto de ePayco
       const checkoutData = {
+        // API Key
+        key: process.env.NEXT_PUBLIC_EPAYCO_PUBLIC_KEY,
+        test: true,
         // Información del comercio
         name: 'EmprendyUp',
         description: planConfig.description,
         invoice: reference,
         currency: 'cop',
-        amount: planConfig.amount,
-        tax_base: 0,
-        tax: 0,
+        amount: planConfig.amount.toString(),
+        tax_base: '0',
+        tax: '0',
         country: 'co',
         lang: 'es',
 
         // Información del cliente - usando formato correcto
-        external: false,
+        external: 'false',
 
         // Datos de facturación
         name_billing: customerData.name,
@@ -342,8 +339,9 @@ export default function PlansPage() {
 
       console.log('Opening ePayco checkout with data:', checkoutData);
 
-      // Abrir el checkout de ePayco usando el handler
-      handler.open(checkoutData);
+      // Abrir el checkout de ePayco directamente
+      const handler = window.ePayco.checkout.configure(checkoutData);
+      handler.open();
     } catch (error) {
       console.error('Error al procesar el pago:', error);
       alert('Error al procesar el pago. Por favor intenta nuevamente.');
