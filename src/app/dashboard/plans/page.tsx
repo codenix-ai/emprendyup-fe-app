@@ -280,8 +280,9 @@ export default function PlansPage() {
     }
   };
 
-  const handleOrderCreated = async (orderId: string) => {
+  const handleOrderCreated = async (orderId: string, paymentId: string) => {
     console.log('Order created with ID:', orderId);
+    console.log('Payment created with ID:', paymentId);
 
     if (!selectedPlanData) {
       console.error('No plan data available');

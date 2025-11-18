@@ -27,8 +27,8 @@ export const CREATE_PAYMENT_REQUEST = gql`
 `;
 
 export const PROCESS_PAYMENT_RESPONSE = gql`
-  mutation ProcessPaymentResponse($input: ProcessPaymentResponseInput!) {
-    processPaymentResponse(input: $input) {
+  mutation processPayment($id: ID!) {
+    processPayment(id: $id) {
       id
       status
       transactionId

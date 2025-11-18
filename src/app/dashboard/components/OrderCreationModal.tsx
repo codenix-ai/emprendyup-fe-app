@@ -3,12 +3,12 @@
 import { useState } from 'react';
 import { X, ShoppingCart, CheckCircle, Loader2 } from 'lucide-react';
 import { useMutation } from '@apollo/client';
-import { CREATE_ORDER } from '@/lib/graphql/queries';
+import { CREATE_ORDER, CREATE_PAYMENT } from '@/lib/graphql/queries';
 
 interface OrderCreationModalProps {
   isOpen: boolean;
   onClose: () => void;
-  onOrderCreated: (orderId: string) => void;
+  onOrderCreated: (orderId: string, paymentId: string) => void;
   planName: string;
   planAmount: number;
   planId: string;
@@ -26,9 +26,11 @@ export default function OrderCreationModal({
 }: OrderCreationModalProps) {
   const [step, setStep] = useState<'confirm' | 'creating' | 'success'>('confirm');
   const [orderId, setOrderId] = useState<string>('');
+  const [paymentId, setPaymentId] = useState<string>('');
   const [error, setError] = useState<string>('');
 
   const [createOrderMutation] = useMutation(CREATE_ORDER);
+  const [createPaymentMutation] = useMutation(CREATE_PAYMENT);
 
   const handleCreateOrder = async () => {
     setStep('creating');
@@ -76,18 +78,50 @@ export default function OrderCreationModal({
 
       console.log('Orden creada exitosamente:', data.createOrder);
       setOrderId(createdOrderId);
+
+      // Crear el pago de referencia
+
+      const { data: paymentData } = await createPaymentMutation({
+        variables: {
+          input: {
+            amount: planAmount,
+            currency: 'COP',
+            description: `Pago de suscripción ${planName} - ${billingCycle === 'monthly' ? 'Mensual' : 'Anual'}`,
+            paymentType: 'PAYMENT',
+            provider: 'EPAYCO',
+            paymentMethod: 'ONLINE',
+            externalReference: createdOrderId,
+            customerEmail: user?.email || 'cliente@example.com',
+            customerPhone: user?.phone || '3000000000',
+            customerDocumentType: user?.documentType || 'CC',
+            customerDocument: user?.document || '12345678',
+            orderId: createdOrderId,
+            userId: user?.id,
+            storeId: storeId,
+          },
+        },
+      });
+
+      const createdPaymentId = paymentData?.createPayment?.id;
+
+      if (!createdPaymentId) {
+        throw new Error('No se recibió el ID del pago');
+      }
+
+      console.log('Pago creado exitosamente:', paymentData.createPayment);
+      setPaymentId(createdPaymentId);
       setStep('success');
 
       // Esperar un momento para mostrar el éxito antes de continuar
       setTimeout(() => {
-        onOrderCreated(createdOrderId);
+        onOrderCreated(createdOrderId, createdPaymentId);
         onClose();
         resetModal();
       }, 1500);
     } catch (err: any) {
       console.error('Error creating order:', err);
       const errorMessage =
-        err?.graphQLErrors?.[0]?.message || err?.message || 'Error al crear la orden';
+        err?.graphQLErrors?.[0]?.message || err?.message || 'Error al crear la orden o el pago';
       setError(errorMessage);
       setStep('confirm');
     }
@@ -96,6 +130,7 @@ export default function OrderCreationModal({
   const resetModal = () => {
     setStep('confirm');
     setOrderId('');
+    setPaymentId('');
     setError('');
   };
 
