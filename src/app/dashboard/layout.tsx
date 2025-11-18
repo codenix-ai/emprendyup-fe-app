@@ -24,6 +24,7 @@ import {
   BookOpen,
   Layers,
   List,
+  BookUser,
 } from 'lucide-react';
 import Image from 'next/image';
 import { useSessionStore } from '@/lib/store/dashboard';
@@ -49,6 +50,7 @@ const adminNavigationGroups = [
     items: [
       { name: 'Usuarios', href: '/dashboard/users', icon: Users },
       { name: 'Emprendedores', href: '/dashboard/entrepeneurs', icon: Star },
+      { name: 'Asistentes', href: '/dashboard/events', icon: BookUser },
     ],
   },
   {
@@ -65,7 +67,7 @@ const adminNavigationGroups = [
     items: [
       { name: 'Bonos', href: '/dashboard/bonuses', icon: Gift },
       { name: 'Blog', href: '/dashboard/blog', icon: FileText },
-      { name: 'Mi suscripción', href: '/dashboard/plans', icon: Layers },
+
       { name: 'Estadísticas', href: '/dashboard/insights', icon: BarChart3 },
     ],
   },
@@ -73,6 +75,12 @@ const adminNavigationGroups = [
     name: 'Pagos',
     icon: CreditCard,
     href: '/dashboard/payments',
+    isSingle: true,
+  },
+  {
+    name: 'Mi suscripción',
+    icon: Layers,
+    href: '/dashboard/plans',
     isSingle: true,
   },
 ];
@@ -342,19 +350,23 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
               );
             })}
           </div>
-
           {/* Pie de barra lateral: usuario y acciones */}
           <div className="px-4 py-4 border-t border-gray-200 dark:border-gray-700">
             {!collapsed ? (
               <div className="flex items-center justify-between">
                 <div className="flex items-center gap-3 min-w-0">
-                  <Image
-                    src={user?.avatar || '/images/client/16.jpg'}
-                    width={40}
-                    height={40}
-                    className="rounded-full object-cover"
-                    alt="Avatar"
-                  />
+                  {/* Avatar con iniciales */}
+                  <div className="w-10 h-10 rounded-full bg-blue-600 dark:bg-blue-500 flex items-center justify-center text-white font-semibold text-sm">
+                    {(() => {
+                      const name = user?.name || user?.email || 'U';
+                      const words = name.trim().split(' ');
+                      if (words.length >= 2) {
+                        return (words[0][0] + words[1][0]).toUpperCase();
+                      }
+                      return name.substring(0, 2).toUpperCase();
+                    })()}
+                  </div>
+
                   <div className="min-w-0">
                     <div className="text-sm font-medium text-gray-800 dark:text-gray-200 truncate">
                       {user?.name || user?.email || 'Usuario'}
@@ -373,13 +385,18 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
               </div>
             ) : (
               <div className="flex flex-col items-center gap-2">
-                <Image
-                  src={user?.avatar || '/images/client/16.jpg'}
-                  width={36}
-                  height={36}
-                  className="rounded-full object-cover"
-                  alt="Avatar"
-                />
+                {/* Avatar con iniciales (versión colapsada) */}
+                <div className="w-9 h-9 rounded-full bg-blue-600 dark:bg-blue-500 flex items-center justify-center text-white font-semibold text-xs">
+                  {(() => {
+                    const name = user?.name || user?.email || 'U';
+                    const words = name.trim().split(' ');
+                    if (words.length >= 2) {
+                      return (words[0][0] + words[1][0]).toUpperCase();
+                    }
+                    return name.substring(0, 2).toUpperCase();
+                  })()}
+                </div>
+
                 <button
                   onClick={handleLogout}
                   className="p-1 rounded-md text-red-600 hover:bg-red-50 dark:hover:bg-red-900/20 transition-colors"
@@ -447,7 +464,7 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
                       }`}
                     >
                       <group.icon
-                        className={`mr-3 h-8 w-8 flex-shrink-0 ${
+                        className={`mr-3 h-5 w-5 flex-shrink-0 ${
                           isActive
                             ? 'text-black dark:text-white'
                             : 'text-gray-400 group-hover:text-gray-500'
