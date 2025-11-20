@@ -68,11 +68,22 @@ interface StoreData {
   tiktokUrl: string;
   whatsappNumber: string;
   status: string;
+  businessCategory?: 'products' | 'restaurant' | 'services';
+  coverImage?: string;
+  googleLocation?: string;
 }
 
-const questions = [
+const businessTypeQuestion = {
+  text: '¡Hola! 👋 Soy tu asistente para crear tu negocio online. ¿Qué tipo de emprendimiento tienes?',
+  field: 'businessCategory',
+  type: 'select' as const,
+  options: ['Productos', 'Restaurante', 'Servicios'],
+  validation: { type: 'text' as const, required: true, message: 'Debes seleccionar un tipo' },
+};
+
+const productsQuestions = [
   {
-    text: '¡Hola! 👋 Soy tu asistente para crear tu tienda online. ¿Cuál es el nombre de tu emprendimiento?',
+    text: '¡Perfecto! Vamos a crear tu tienda de productos. ¿Cuál es el nombre de tu emprendimiento?',
     field: 'name',
     type: 'text' as const,
     validation: { type: 'text' as const, required: true, message: 'El nombre es requerido' },
@@ -224,6 +235,141 @@ const questions = [
   },
 ];
 
+const restaurantQuestions = [
+  {
+    text: '🍽️ ¡Excelente! Vamos a crear tu restaurante. ¿Cuál es el nombre?',
+    field: 'name',
+    type: 'text' as const,
+    validation: { type: 'text' as const, required: true, message: 'El nombre es requerido' },
+  },
+  {
+    text: '📝 Cuéntame sobre tu restaurante. ¿Qué tipo de comida ofreces?',
+    field: 'description',
+    type: 'text' as const,
+    validation: { type: 'text' as const, required: true, message: 'La descripción es requerida' },
+  },
+  {
+    text: '🌆 Sube una imagen de portada de tu restaurante:',
+    field: 'coverImage',
+    type: 'image' as const,
+    validation: { type: 'url' as const, required: false },
+    optional: true,
+  },
+  {
+    text: '📍 ¿En qué ciudad se encuentra tu restaurante?',
+    field: 'city',
+    type: 'select' as const,
+    options: [
+      'Bogotá',
+      'Medellín',
+      'Cali',
+      'Barranquilla',
+      'Cartagena',
+      'Bucaramanga',
+      'Manizales',
+      'Pereira',
+      'Cúcuta',
+      'Santa Marta',
+      'Otra',
+    ],
+    validation: { type: 'text' as const, required: true, message: 'La ciudad es requerida' },
+  },
+  {
+    text: '🏠 ¿Cuál es la dirección completa de tu restaurante?',
+    field: 'address',
+    type: 'text' as const,
+    validation: { type: 'text' as const, required: true, message: 'La dirección es requerida' },
+  },
+  {
+    text: '📱 ¿Cuál es el teléfono de contacto?',
+    field: 'phone',
+    type: 'text' as const,
+    validation: { type: 'phone' as const, required: true, message: 'Formato: +57 300 123 4567' },
+  },
+  {
+    text: '🗺️ ¿Tienes un enlace de Google Maps de tu ubicación?',
+    field: 'googleLocation',
+    type: 'text' as const,
+    validation: {
+      type: 'url' as const,
+      required: false,
+      message: 'Ejemplo: https://maps.google.com/?q=4.6097,-74.0817',
+    },
+    optional: true,
+  },
+];
+
+const servicesQuestions = [
+  {
+    text: '✨ ¡Genial! Vamos a crear tu empresa de servicios. ¿Cuál es el nombre?',
+    field: 'name',
+    type: 'text' as const,
+    validation: { type: 'text' as const, required: true, message: 'El nombre es requerido' },
+  },
+  {
+    text: '📝 Describe los servicios que ofreces:',
+    field: 'description',
+    type: 'text' as const,
+    validation: { type: 'text' as const, required: true, message: 'La descripción es requerida' },
+  },
+  {
+    text: '🎨 Sube el logo de tu empresa:',
+    field: 'logoUrl',
+    type: 'image' as const,
+    validation: { type: 'url' as const, required: false },
+    optional: true,
+  },
+  {
+    text: '🌆 Sube una imagen de portada:',
+    field: 'coverImage',
+    type: 'image' as const,
+    validation: { type: 'url' as const, required: false },
+    optional: true,
+  },
+  {
+    text: '📍 ¿En qué ciudad ofreces tus servicios?',
+    field: 'city',
+    type: 'select' as const,
+    options: [
+      'Bogotá',
+      'Medellín',
+      'Cali',
+      'Barranquilla',
+      'Cartagena',
+      'Bucaramanga',
+      'Manizales',
+      'Pereira',
+      'Cúcuta',
+      'Santa Marta',
+      'Otra',
+    ],
+    validation: { type: 'text' as const, required: true, message: 'La ciudad es requerida' },
+  },
+  {
+    text: '🏠 ¿Cuál es tu dirección?',
+    field: 'address',
+    type: 'text' as const,
+    validation: { type: 'text' as const, required: true, message: 'La dirección es requerida' },
+  },
+  {
+    text: '📱 ¿Cuál es tu teléfono de contacto?',
+    field: 'phone',
+    type: 'text' as const,
+    validation: { type: 'phone' as const, required: true, message: 'Formato: +57 300 123 4567' },
+  },
+  {
+    text: '🗺️ ¿Tienes un enlace de Google Maps?',
+    field: 'googleLocation',
+    type: 'text' as const,
+    validation: {
+      type: 'url' as const,
+      required: false,
+      message: 'Ejemplo: https://maps.google.com/?q=10.4236,-75.5364',
+    },
+    optional: true,
+  },
+];
+
 const defaultStoreData: StoreData = {
   name: '',
   userId: '',
@@ -253,6 +399,9 @@ const defaultStoreData: StoreData = {
   tiktokUrl: '',
   whatsappNumber: '',
   status: 'active',
+  businessCategory: undefined,
+  coverImage: '',
+  googleLocation: '',
 };
 
 // eslint-disable-next-line @typescript-eslint/no-unused-vars
@@ -342,6 +491,74 @@ const CREATE_STORE = gql`
   }
 `;
 
+const CREATE_RESTAURANT = gql`
+  mutation CreateRestaurant($input: CreateRestaurantInput!) {
+    createRestaurant(input: $input) {
+      id
+      name
+      description
+      city
+      address
+      phone
+      coverImage
+      googleLocation
+      createdAt
+      updatedAt
+    }
+  }
+`;
+
+const UPDATE_RESTAURANT = gql`
+  mutation UpdateRestaurant($id: ID!, $input: UpdateRestaurantInput!) {
+    updateRestaurant(id: $id, input: $input) {
+      id
+      name
+      description
+      city
+      address
+      phone
+      coverImage
+      googleLocation
+      updatedAt
+    }
+  }
+`;
+
+const CREATE_TOURISM_COMPANY = gql`
+  mutation CreateTourismCompany($input: CreateTourismCompanyInput!) {
+    createTourismCompany(input: $input) {
+      id
+      name
+      description
+      city
+      address
+      phone
+      logoUrl
+      coverImage
+      googleLocation
+      createdAt
+      updatedAt
+    }
+  }
+`;
+
+const UPDATE_TOURISM_COMPANY = gql`
+  mutation UpdateTourismCompany($id: ID!, $input: UpdateTourismCompanyInput!) {
+    updateTourismCompany(id: $id, input: $input) {
+      id
+      name
+      description
+      city
+      address
+      phone
+      logoUrl
+      coverImage
+      googleLocation
+      updatedAt
+    }
+  }
+`;
+
 // @ts-ignore - suppress unused parameter-name warning in the function type annotation
 function SelectInput({
   options,
@@ -377,6 +594,8 @@ export default function InteractiveChatStore() {
   const [createError, setCreateError] = useState<string | null>(null);
   const [createdStoreId, setCreatedStoreId] = useState<string | null>(null);
   const [createdStore, setCreatedStore] = useState<any>(null);
+  const [questions, setQuestions] = useState<any[]>([]);
+  const [selectedBusinessType, setSelectedBusinessType] = useState<string | null>(null);
   const chatRef = useRef<HTMLDivElement | null>(null);
   const bottomRef = useRef<HTMLDivElement | null>(null);
   const [showSummary, setShowSummary] = useState(false);
@@ -384,6 +603,10 @@ export default function InteractiveChatStore() {
   const [customCityValue, setCustomCityValue] = useState('');
 
   const [createStoreMutation] = useMutation(CREATE_STORE);
+  const [createRestaurantMutation] = useMutation(CREATE_RESTAURANT);
+  const [updateRestaurantMutation] = useMutation(UPDATE_RESTAURANT);
+  const [createTourismCompanyMutation] = useMutation(CREATE_TOURISM_COMPANY);
+  const [updateTourismCompanyMutation] = useMutation(UPDATE_TOURISM_COMPANY);
   const session = useSessionStore();
   // hydrate session from server cookie if not present
   useEffect(() => {
@@ -483,25 +706,27 @@ export default function InteractiveChatStore() {
   };
 
   useEffect(() => {
-    // Initial bot message with typing animation
+    // Initial bot message with typing animation - start with business type selection
     setIsTyping(true);
     setTimeout(() => {
       setIsTyping(false);
       setMessages([
         {
           from: 'bot',
-          text: questions[0].text,
-          type: questions[0].type,
-          options: questions[0].options,
-          field: questions[0].field,
+          text: businessTypeQuestion.text,
+          type: businessTypeQuestion.type,
+          options: businessTypeQuestion.options,
+          field: businessTypeQuestion.field,
         },
       ]);
     }, 1000);
   }, []);
 
   useEffect(() => {
-    setProgress((currentStep / questions.length) * 100);
-  }, [currentStep]);
+    if (questions.length > 0) {
+      setProgress((currentStep / questions.length) * 100);
+    }
+  }, [currentStep, questions.length]);
 
   // Auto-scroll to bottom on any message or typing change
   useEffect(() => {
@@ -552,6 +777,51 @@ export default function InteractiveChatStore() {
   };
 
   const handleResponse = (value: string) => {
+    // Si aún no se ha seleccionado el tipo de negocio
+    if (!selectedBusinessType && questions.length === 0) {
+      // Guardar el tipo de negocio seleccionado
+      let businessCategory: 'products' | 'restaurant' | 'services';
+      let questionsToUse: any[];
+
+      if (value === 'Productos') {
+        businessCategory = 'products';
+        questionsToUse = productsQuestions;
+      } else if (value === 'Restaurante') {
+        businessCategory = 'restaurant';
+        questionsToUse = restaurantQuestions;
+      } else {
+        businessCategory = 'services';
+        questionsToUse = servicesQuestions;
+      }
+
+      setSelectedBusinessType(value);
+      setStoreData((prev) => ({ ...prev, businessCategory }));
+      setQuestions(questionsToUse);
+
+      // Mostrar mensaje del usuario
+      setMessages((prev) => [...prev, { from: 'user', text: value, type: 'text' }]);
+
+      // Empezar con la primera pregunta del flujo seleccionado
+      setIsTyping(true);
+      setTimeout(() => {
+        setIsTyping(false);
+        setMessages((prev) => [
+          ...prev,
+          {
+            from: 'bot',
+            text: questionsToUse[0].text,
+            type: questionsToUse[0].type,
+            options: questionsToUse[0].options,
+            field: questionsToUse[0].field,
+          },
+        ]);
+        setCurrentStep(0);
+      }, 800);
+
+      setInput('');
+      return;
+    }
+
     const currentQuestion = questions[currentStep];
     const field = currentQuestion.field as keyof StoreData;
 
@@ -717,43 +987,49 @@ export default function InteractiveChatStore() {
         return (
           <div>
             <span>{msg.text}</span>
-            {currentStep === questions.findIndex((q) => q.field === msg.field) && (
-              <div>
-                <FileUpload onFile={handleResponse} accept="image/*" storeId={storeData?.storeId} />
-                {msg.optional && (
-                  <button
-                    onClick={handleSkip}
-                    className="mt-3 px-4 py-2 bg-gray-100 text-gray-600 rounded-lg hover:bg-gray-200 transition-colors text-sm flex items-center gap-2"
-                  >
-                    <span>⏭️</span>
-                    Saltar imagen
-                  </button>
-                )}
-              </div>
-            )}
+            {questions.length > 0 &&
+              currentStep === questions.findIndex((q) => q.field === msg.field) && (
+                <div>
+                  <FileUpload
+                    onFile={handleResponse}
+                    accept="image/*"
+                    storeId={storeData?.storeId}
+                  />
+                  {msg.optional && (
+                    <button
+                      onClick={handleSkip}
+                      className="mt-3 px-4 py-2 bg-gray-100 text-gray-600 rounded-lg hover:bg-gray-200 transition-colors text-sm flex items-center gap-2"
+                    >
+                      <span>⏭️</span>
+                      Saltar imagen
+                    </button>
+                  )}
+                </div>
+              )}
           </div>
         );
       case 'color':
         return (
           <div>
             <span>{msg.text}</span>
-            {currentStep === questions.findIndex((q) => q.field === msg.field) && (
-              <div>
-                <ColorPicker
-                  value={storeData[msg.field as keyof StoreData] as string}
-                  onChange={handleResponse}
-                />
-                {msg.optional && (
-                  <button
-                    onClick={handleSkip}
-                    className="mt-3 px-4 py-2 bg-gray-100 text-gray-600 rounded-lg hover:bg-gray-200 transition-colors text-sm flex items-center gap-2"
-                  >
-                    <span>⏭️</span>
-                    Usar color por defecto
-                  </button>
-                )}
-              </div>
-            )}
+            {questions.length > 0 &&
+              currentStep === questions.findIndex((q) => q.field === msg.field) && (
+                <div>
+                  <ColorPicker
+                    value={storeData[msg.field as keyof StoreData] as string}
+                    onChange={handleResponse}
+                  />
+                  {msg.optional && (
+                    <button
+                      onClick={handleSkip}
+                      className="mt-3 px-4 py-2 bg-gray-100 text-gray-600 rounded-lg hover:bg-gray-200 transition-colors text-sm flex items-center gap-2"
+                    >
+                      <span>⏭️</span>
+                      Usar color por defecto
+                    </button>
+                  )}
+                </div>
+              )}
           </div>
         );
 
@@ -761,61 +1037,65 @@ export default function InteractiveChatStore() {
         return (
           <div>
             <span>{msg.text}</span>
-            {currentStep === questions.findIndex((q) => q.field === msg.field) && msg.options && (
-              <div>
-                {/* If this is the city field, handle 'Otra' to open a custom input */}
-                {msg.field === 'city' ? (
-                  <div>
-                    {!customCityOpen ? (
-                      <SelectInput
-                        options={msg.options}
-                        onSelect={(val: string) => {
-                          if (val === 'Otra') {
-                            setCustomCityOpen(true);
-                          } else {
-                            handleResponse(val);
-                          }
-                        }}
-                      />
-                    ) : (
-                      <div className="mt-3 flex gap-2">
-                        <input
-                          type="text"
-                          value={customCityValue}
-                          onChange={(e) => setCustomCityValue(e.target.value)}
-                          placeholder="Escribe tu ciudad"
-                          className="flex-1 px-3 py-2 rounded border bg-slate-700 text-white"
-                        />
-                        <button
-                          onClick={() => {
-                            if (customCityValue.trim()) {
-                              handleResponse(customCityValue.trim());
+            {/* Mostrar opciones si es la pregunta de tipo de negocio (businessCategory) O si es la pregunta actual */}
+            {((msg.field === 'businessCategory' && !selectedBusinessType) ||
+              (questions.length > 0 &&
+                currentStep === questions.findIndex((q) => q.field === msg.field))) &&
+              msg.options && (
+                <div>
+                  {/* If this is the city field, handle 'Otra' to open a custom input */}
+                  {msg.field === 'city' ? (
+                    <div>
+                      {!customCityOpen ? (
+                        <SelectInput
+                          options={msg.options}
+                          onSelect={(val: string) => {
+                            if (val === 'Otra') {
+                              setCustomCityOpen(true);
+                            } else {
+                              handleResponse(val);
                             }
                           }}
-                          className="px-4 py-2 bg-blue-600 rounded text-white"
-                        >
-                          Aceptar
-                        </button>
-                      </div>
-                    )}
-                  </div>
-                ) : (
-                  <div>
-                    <SelectInput options={msg.options} onSelect={handleResponse} />
-                  </div>
-                )}
+                        />
+                      ) : (
+                        <div className="mt-3 flex gap-2">
+                          <input
+                            type="text"
+                            value={customCityValue}
+                            onChange={(e) => setCustomCityValue(e.target.value)}
+                            placeholder="Escribe tu ciudad"
+                            className="flex-1 px-3 py-2 rounded border bg-slate-700 text-white"
+                          />
+                          <button
+                            onClick={() => {
+                              if (customCityValue.trim()) {
+                                handleResponse(customCityValue.trim());
+                              }
+                            }}
+                            className="px-4 py-2 bg-blue-600 rounded text-white"
+                          >
+                            Aceptar
+                          </button>
+                        </div>
+                      )}
+                    </div>
+                  ) : (
+                    <div>
+                      <SelectInput options={msg.options} onSelect={handleResponse} />
+                    </div>
+                  )}
 
-                {msg.optional && (
-                  <button
-                    onClick={handleSkip}
-                    className="mt-3 px-4 py-2 bg-gray-100 text-gray-600 rounded-lg hover:bg-gray-200 transition-colors text-sm flex items-center gap-2"
-                  >
-                    <span>⏭️</span>
-                    Saltar selección
-                  </button>
-                )}
-              </div>
-            )}
+                  {msg.optional && (
+                    <button
+                      onClick={handleSkip}
+                      className="mt-3 px-4 py-2 bg-gray-100 text-gray-600 rounded-lg hover:bg-gray-200 transition-colors text-sm flex items-center gap-2"
+                    >
+                      <span>⏭️</span>
+                      Saltar selección
+                    </button>
+                  )}
+                </div>
+              )}
           </div>
         );
 
@@ -856,7 +1136,9 @@ export default function InteractiveChatStore() {
             />
           </div>
           <p className="text-sm text-slate-300">
-            Paso {currentStep + 1} de {questions.length} • {Math.round(progress)}% completado
+            {questions.length > 0
+              ? `Paso ${currentStep + 1} de ${questions.length} • ${Math.round(progress)}% completado`
+              : 'Selecciona el tipo de emprendimiento para comenzar'}
           </p>
         </div>
         {/* Chat Area */}
@@ -929,8 +1211,16 @@ export default function InteractiveChatStore() {
           <div ref={bottomRef} />
         </div>
         {/* Input Area */}
-        {currentStep < questions.length &&
-          !['image', 'color', 'select'].includes(questions[currentStep]?.type) && (
+        {/* Mostrar input cuando estamos en preguntas normales O cuando aún no se ha seleccionado tipo de negocio */}
+        {((questions.length > 0 && currentStep < questions.length) ||
+          (questions.length === 0 && !selectedBusinessType)) &&
+          messages.length > 0 &&
+          messages[messages.length - 1]?.from === 'bot' &&
+          !['image', 'color', 'select'].includes(
+            questions.length > 0
+              ? questions[currentStep]?.type
+              : messages[messages.length - 1]?.type
+          ) && (
             <div className="p-6 bg-slate-800 border-t border-slate-700">
               {validationError && (
                 <div className="mb-4 p-3 bg-red-900/40 border-l-4 border-red-500 text-red-300 rounded animate-pulse">
@@ -938,7 +1228,7 @@ export default function InteractiveChatStore() {
                     <span className="text-red-400">⚠️</span>
                     {validationError}
                   </div>
-                  {questions[currentStep]?.validation?.message && (
+                  {questions.length > 0 && questions[currentStep]?.validation?.message && (
                     <p className="text-sm mt-1 text-red-300">
                       💡 {questions[currentStep]?.validation?.message}
                     </p>
@@ -955,7 +1245,11 @@ export default function InteractiveChatStore() {
                     setValidationError(null);
                   }}
                   onKeyPress={handleKeyPress}
-                  placeholder={`Responde: ${questions[currentStep]?.text.split('?')[0]}...`}
+                  placeholder={
+                    questions.length > 0
+                      ? `Responde: ${questions[currentStep]?.text.split('?')[0]}...`
+                      : 'Escribe tu respuesta...'
+                  }
                   className={`flex-1 px-4 py-3 border-2 rounded-xl focus:outline-none transition-colors text-slate-200 placeholder-slate-400 ${
                     validationError
                       ? 'border-red-500 focus:border-red-400'
@@ -964,7 +1258,7 @@ export default function InteractiveChatStore() {
                 />
 
                 <div className="flex gap-2">
-                  {questions[currentStep]?.optional && (
+                  {questions.length > 0 && questions[currentStep]?.optional && (
                     <button
                       onClick={handleSkip}
                       className="px-4 py-3 bg-slate-700 text-slate-200 rounded-xl hover:bg-slate-600 transition-all duration-200 transform hover:scale-105 flex items-center gap-2"
@@ -977,7 +1271,9 @@ export default function InteractiveChatStore() {
 
                   <button
                     onClick={handleSend}
-                    disabled={!input.trim() && !questions[currentStep]?.optional}
+                    disabled={
+                      !input.trim() && questions.length > 0 && !questions[currentStep]?.optional
+                    }
                     className="px-6 py-3 bg-gradient-to-r from-blue-600 to-indigo-600 text-white rounded-xl hover:from-blue-700 hover:to-indigo-700 disabled:opacity-50 disabled:cursor-not-allowed transition-all duration-200 transform hover:scale-105 flex items-center gap-2"
                   >
                     <Send className="w-4 h-4" />
@@ -986,7 +1282,7 @@ export default function InteractiveChatStore() {
                 </div>
               </div>
 
-              {questions[currentStep]?.optional && (
+              {questions.length > 0 && questions[currentStep]?.optional && (
                 <p className="text-xs text-slate-400 mt-2 flex items-center gap-1">
                   <span>💡</span>
                   Esta pregunta es opcional - puedes saltarla si no aplica
@@ -995,15 +1291,21 @@ export default function InteractiveChatStore() {
             </div>
           )}
 
-        {currentStep >= questions.length && (
+        {questions.length > 0 && currentStep >= questions.length && (
           <div className="mt-6">
             {createdStoreId ? (
-              // Mensaje de éxito cuando la tienda ya fue creada
+              // Mensaje de éxito cuando el negocio ya fue creado
               <div className="text-center space-y-4 py-6">
                 <div className="w-16 h-16 bg-green-500 rounded-full flex items-center justify-center mx-auto">
                   <span className="text-white text-2xl">✓</span>
                 </div>
-                <h2 className="text-xl font-bold text-white">¡Tu tienda ha sido creada!</h2>
+                <h2 className="text-xl font-bold text-white">
+                  {storeData.businessCategory === 'restaurant'
+                    ? '¡Tu restaurante ha sido creado!'
+                    : storeData.businessCategory === 'services'
+                      ? '¡Tu empresa de servicios ha sido creada!'
+                      : '¡Tu tienda ha sido creada!'}
+                </h2>
                 <p className="text-slate-300">
                   Proximamente recibirás un email con los detalles de acceso.
                 </p>
@@ -1012,7 +1314,7 @@ export default function InteractiveChatStore() {
                     href={`http://emprendyup.com`}
                     className="px-6 py-3 bg-green-500 text-white rounded-lg font-semibold hover:bg-green-600 transition-colors"
                   >
-                    Ir a la pagina principal
+                    Ir a la página principal
                   </a>
                 </div>
               </div>
@@ -1025,7 +1327,13 @@ export default function InteractiveChatStore() {
                     className="px-6 pl-6 py-3 bg-blue-500 text-white rounded-lg font-semibold hover:bg-blue-600 transition-colors"
                     disabled={creating}
                   >
-                    {creating ? 'Creando tienda...' : 'Revisar información'}
+                    {creating
+                      ? storeData.businessCategory === 'restaurant'
+                        ? 'Creando restaurante...'
+                        : storeData.businessCategory === 'services'
+                          ? 'Creando empresa...'
+                          : 'Creando tienda...'
+                      : 'Revisar información'}
                   </button>
                 </div>
 
@@ -1038,22 +1346,70 @@ export default function InteractiveChatStore() {
                     setCreateError(null);
                     setCreating(true);
                     try {
-                      const input = {
-                        ...updatedData,
-                        status: 'active',
-                        userId: session?.user?.id || 'anonymous',
-                      };
-                      const { data } = await createStoreMutation({ variables: { input } });
-                      const created = data?.createStore;
-                      if (created) {
-                        setCreatedStoreId(created.storeId);
-                        setCreatedStore(created);
-                        session.setCurrentStore?.(created as any);
-                        session.addStore?.(created as any);
+                      let created: any = null;
+
+                      // Determinar qué mutación usar según el tipo de negocio
+                      if (updatedData.businessCategory === 'restaurant') {
+                        // Crear restaurante
+                        const input = {
+                          name: updatedData.name,
+                          description: updatedData.description,
+                          city: updatedData.city,
+                          address: updatedData.address,
+                          phone: updatedData.phone,
+                          coverImage: updatedData.coverImage || updatedData.bannerUrl,
+                          googleLocation: updatedData.googleLocation,
+                        };
+                        const { data } = await createRestaurantMutation({ variables: { input } });
+                        created = data?.createRestaurant;
+                        if (created) {
+                          setCreatedStoreId(created.id);
+                          setCreatedStore(created);
+                        }
+                      } else if (updatedData.businessCategory === 'services') {
+                        // Crear empresa de turismo/servicios
+                        const input = {
+                          name: updatedData.name,
+                          description: updatedData.description,
+                          city: updatedData.city,
+                          address: updatedData.address,
+                          phone: updatedData.phone,
+                          logoUrl: updatedData.logoUrl,
+                          coverImage: updatedData.coverImage || updatedData.bannerUrl,
+                          googleLocation: updatedData.googleLocation,
+                        };
+                        const { data } = await createTourismCompanyMutation({
+                          variables: { input },
+                        });
+                        created = data?.createTourismCompany;
+                        if (created) {
+                          setCreatedStoreId(created.id);
+                          setCreatedStore(created);
+                        }
+                      } else {
+                        // Crear tienda de productos (flujo original)
+                        // Filtrar solo los campos válidos para CreateStoreInput
+                        const { businessCategory, coverImage, googleLocation, ...validStoreData } =
+                          updatedData;
+
+                        const input = {
+                          ...validStoreData,
+                          status: 'active',
+                          userId: session?.user?.id || 'anonymous',
+                        };
+                        const { data } = await createStoreMutation({ variables: { input } });
+                        created = data?.createStore;
+                        if (created) {
+                          setCreatedStoreId(created.storeId);
+                          setCreatedStore(created);
+                          session.setCurrentStore?.(created as any);
+                          session.addStore?.(created as any);
+                        }
                       }
+
                       setShowSummary(false);
                     } catch (err: any) {
-                      setCreateError(err?.message || 'Error al crear la tienda');
+                      setCreateError(err?.message || 'Error al crear el negocio');
                     } finally {
                       setCreating(false);
                     }
@@ -1073,7 +1429,11 @@ export default function InteractiveChatStore() {
             {creating && (
               <div className="mt-4 p-3 bg-blue-900 border border-blue-700 text-blue-300 rounded flex items-center gap-2">
                 <div className="w-4 h-4 border-2 border-blue-300 border-t-transparent rounded-full animate-spin"></div>
-                Creando tienda...
+                {storeData.businessCategory === 'restaurant'
+                  ? 'Creando restaurante...'
+                  : storeData.businessCategory === 'services'
+                    ? 'Creando empresa de servicios...'
+                    : 'Creando tienda...'}
               </div>
             )}
           </div>
