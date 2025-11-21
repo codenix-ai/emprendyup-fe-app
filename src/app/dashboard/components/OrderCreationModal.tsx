@@ -80,7 +80,6 @@ export default function OrderCreationModal({
       setOrderId(createdOrderId);
 
       // Crear el pago de referencia
-
       const { data: paymentData } = await createPaymentMutation({
         variables: {
           input: {
