@@ -20,6 +20,8 @@ import FileUpload from './FileUpload';
 import { gql, useMutation } from '@apollo/client';
 import { useSessionStore } from '@/lib/store/dashboard';
 import StoreSummary from './StoreSummary';
+import RestaurantSummary from './RestaurantSummary';
+import ServicesSummary from './ServicesSummary';
 import Image from 'next/image';
 // router not used in this component
 
@@ -68,11 +70,23 @@ interface StoreData {
   tiktokUrl: string;
   whatsappNumber: string;
   status: string;
+  businessCategory?: 'products' | 'restaurant' | 'services' | 'tourism_services';
+  coverImage?: string;
+  googleLocation?: string;
+  cuisineType?: string;
 }
 
-const questions = [
+const businessTypeQuestion = {
+  text: '¡Hola! 👋 Soy tu asistente para crear tu negocio online. ¿Qué tipo de emprendimiento tienes?',
+  field: 'businessCategory',
+  type: 'select' as const,
+  options: ['Productos', 'Restaurante', 'Servicios', 'Servicios Turísticos'],
+  validation: { type: 'text' as const, required: true, message: 'Debes seleccionar un tipo' },
+};
+
+const productsQuestions = [
   {
-    text: '¡Hola! 👋 Soy tu asistente para crear tu tienda online. ¿Cuál es el nombre de tu emprendimiento?',
+    text: '¡Perfecto! Vamos a crear tu tienda de productos. ¿Cuál es el nombre de tu emprendimiento?',
     field: 'name',
     type: 'text' as const,
     validation: { type: 'text' as const, required: true, message: 'El nombre es requerido' },
@@ -224,6 +238,306 @@ const questions = [
   },
 ];
 
+const restaurantQuestions = [
+  {
+    text: '🍽️ ¡Excelente! Vamos a crear tu restaurante. ¿Cuál es el nombre?',
+    field: 'name',
+    type: 'text' as const,
+    validation: { type: 'text' as const, required: true, message: 'El nombre es requerido' },
+  },
+  {
+    text: '🍕 ¿Qué tipo de cocina ofreces?',
+    field: 'cuisineType',
+    type: 'select' as const,
+    options: [
+      'Comida Rápida',
+      'Italiana',
+      'Mexicana',
+      'China',
+      'Japonesa',
+      'Colombiana',
+      'Internacional',
+      'Vegetariana/Vegana',
+      'Mariscos',
+      'Carnes',
+      'Parrilla',
+      'Postres',
+      'Cafetería',
+      'Otra',
+    ],
+    validation: {
+      type: 'text' as const,
+      required: true,
+      message: 'El tipo de cocina es requerido',
+    },
+  },
+  {
+    text: '📍 ¿En qué ciudad se encuentra tu restaurante?',
+    field: 'city',
+    type: 'select' as const,
+    options: [
+      'Bogotá',
+      'Medellín',
+      'Cali',
+      'Barranquilla',
+      'Cartagena',
+      'Bucaramanga',
+      'Manizales',
+      'Pereira',
+      'Cúcuta',
+      'Santa Marta',
+      'Otra',
+    ],
+    validation: { type: 'text' as const, required: true, message: 'La ciudad es requerida' },
+  },
+  {
+    text: '🎨 Sube el logo de tu restaurante:',
+    field: 'logoUrl',
+    type: 'image' as const,
+    validation: { type: 'url' as const, required: false },
+    optional: true,
+  },
+  {
+    text: '🖼️ Sube el favicon (ícono de pestaña):',
+    field: 'faviconUrl',
+    type: 'image' as const,
+    validation: { type: 'url' as const, required: false },
+    optional: true,
+  },
+  {
+    text: '🌆 Sube una imagen de banner:',
+    field: 'bannerUrl',
+    type: 'image' as const,
+    validation: { type: 'url' as const, required: false },
+    optional: true,
+  },
+  {
+    text: '🎨 Elige tu color principal (color primario):',
+    field: 'primaryColor',
+    type: 'color' as const,
+    validation: { type: 'text' as const, required: false },
+    optional: true,
+  },
+  {
+    text: '🎨 Elige tu color secundario:',
+    field: 'secondaryColor',
+    type: 'color' as const,
+    validation: { type: 'text' as const, required: false },
+    optional: true,
+  },
+  {
+    text: '🎨 Elige tu color de acento:',
+    field: 'accentColor',
+    type: 'color' as const,
+    validation: { type: 'text' as const, required: false },
+    optional: true,
+  },
+  {
+    text: '📱 ¿Cuál es el teléfono de contacto?',
+    field: 'phone',
+    type: 'text' as const,
+    validation: { type: 'phone' as const, required: true, message: 'Formato: +57 300 123 4567' },
+  },
+  {
+    text: '🏠 ¿Cuál es la dirección completa?',
+    field: 'address',
+    type: 'text' as const,
+    validation: { type: 'text' as const, required: true, message: 'La dirección es requerida' },
+  },
+  {
+    text: '📱 Redes sociales (opcional): ¿Tienes Facebook?',
+    field: 'facebookUrl',
+    type: 'text' as const,
+    validation: { type: 'url' as const, required: false },
+    optional: true,
+  },
+  {
+    text: '📸 ¿Tienes Instagram?',
+    field: 'instagramUrl',
+    type: 'text' as const,
+    validation: { type: 'url' as const, required: false },
+    optional: true,
+  },
+  {
+    text: '🐦 ¿Tienes Twitter/X?',
+    field: 'twitterUrl',
+    type: 'text' as const,
+    validation: { type: 'url' as const, required: false },
+    optional: true,
+  },
+  {
+    text: '🗺️ ¿Tienes un enlace de Google Maps?',
+    field: 'googleLocation',
+    type: 'text' as const,
+    validation: { type: 'url' as const, required: false },
+    optional: true,
+  },
+  {
+    text: '🏢 ¿Cuál es el NIT/RUT de tu negocio?',
+    field: 'taxId',
+    type: 'text' as const,
+    validation: { type: 'taxId' as const, required: false },
+    optional: true,
+  },
+  {
+    text: '🏢 ¿Cuál es la razón social?',
+    field: 'businessName',
+    type: 'text' as const,
+    validation: { type: 'text' as const, required: false },
+    optional: true,
+  },
+  {
+    text: '🏢 Tipo de negocio:',
+    field: 'businessType',
+    type: 'select' as const,
+    options: ['Persona Natural', 'SAS', 'LTDA', 'SA', 'Fundación', 'Cooperativa'],
+    validation: { type: 'text' as const, required: false },
+    optional: true,
+  },
+];
+
+const servicesQuestions = [
+  {
+    text: '✨ ¡Genial! Vamos a crear tu empresa de servicios. ¿Cuál es el nombre del negocio?',
+    field: 'name',
+    type: 'text' as const,
+    validation: { type: 'text' as const, required: true, message: 'El nombre es requerido' },
+  },
+  {
+    text: '🏷️ ¿Qué tipo de servicio ofreces?',
+    field: 'businessType',
+    type: 'select' as const,
+    options: [
+      'Terapia',
+      'Salón de Belleza',
+      'Consultor',
+      'Entrenador',
+      'Servicio de Limpieza',
+      'Servicio de Reparación',
+      'Fotografía',
+      'Planificación de Eventos',
+      'Servicio Legal',
+      'Contabilidad',
+      'Marketing',
+      'Otro',
+    ],
+    validation: {
+      type: 'text' as const,
+      required: true,
+      message: 'El tipo de servicio es requerido',
+    },
+  },
+  {
+    text: '📍 ¿En qué ciudad ofreces tus servicios?',
+    field: 'city',
+    type: 'select' as const,
+    options: [
+      'Bogotá',
+      'Medellín',
+      'Cali',
+      'Barranquilla',
+      'Cartagena',
+      'Bucaramanga',
+      'Manizales',
+      'Pereira',
+      'Cúcuta',
+      'Santa Marta',
+      'Otra',
+    ],
+    validation: { type: 'text' as const, required: true, message: 'La ciudad es requerida' },
+  },
+  {
+    text: '🎨 Sube el logo de tu empresa:',
+    field: 'logoUrl',
+    type: 'image' as const,
+    validation: { type: 'url' as const, required: false },
+    optional: true,
+  },
+  {
+    text: '🖼️ Sube el favicon (ícono de pestaña):',
+    field: 'faviconUrl',
+    type: 'image' as const,
+    validation: { type: 'url' as const, required: false },
+    optional: true,
+  },
+  {
+    text: '🌆 Sube una imagen de banner:',
+    field: 'bannerUrl',
+    type: 'image' as const,
+    validation: { type: 'url' as const, required: false },
+    optional: true,
+  },
+
+  {
+    text: '🎨 Elige tu color principal:',
+    field: 'primaryColor',
+    type: 'color' as const,
+    validation: { type: 'text' as const, required: false },
+    optional: true,
+  },
+  {
+    text: '🎨 Elige tu color secundario:',
+    field: 'secondaryColor',
+    type: 'color' as const,
+    validation: { type: 'text' as const, required: false },
+    optional: true,
+  },
+  {
+    text: '🎨 Elige tu color de acento:',
+    field: 'accentColor',
+    type: 'color' as const,
+    validation: { type: 'text' as const, required: false },
+    optional: true,
+  },
+  {
+    text: '📱 ¿Cuál es el teléfono de contacto?',
+    field: 'phone',
+    type: 'text' as const,
+    validation: { type: 'phone' as const, required: true, message: 'Formato: +57 300 123 4567' },
+  },
+  {
+    text: '🏠 ¿Cuál es tu dirección?',
+    field: 'address',
+    type: 'text' as const,
+    validation: { type: 'text' as const, required: true, message: 'La dirección es requerida' },
+  },
+  {
+    text: '📱 Redes sociales (opcional): ¿Tienes Facebook?',
+    field: 'facebookUrl',
+    type: 'text' as const,
+    validation: { type: 'url' as const, required: false },
+    optional: true,
+  },
+  {
+    text: '📸 ¿Tienes Instagram?',
+    field: 'instagramUrl',
+    type: 'text' as const,
+    validation: { type: 'url' as const, required: false },
+    optional: true,
+  },
+  {
+    text: '🐦 ¿Tienes Twitter/X?',
+    field: 'twitterUrl',
+    type: 'text' as const,
+    validation: { type: 'url' as const, required: false },
+    optional: true,
+  },
+  {
+    text: '🏢 ¿Cuál es el NIT/RUT de tu negocio?',
+    field: 'taxId',
+    type: 'text' as const,
+    validation: { type: 'taxId' as const, required: false },
+    optional: true,
+  },
+  {
+    text: '🏢 ¿Cuál es la razón social?',
+    field: 'businessName',
+    type: 'text' as const,
+    validation: { type: 'text' as const, required: false },
+    optional: true,
+  },
+];
+
 const defaultStoreData: StoreData = {
   name: '',
   userId: '',
@@ -253,6 +567,9 @@ const defaultStoreData: StoreData = {
   tiktokUrl: '',
   whatsappNumber: '',
   status: 'active',
+  businessCategory: undefined,
+  coverImage: '',
+  googleLocation: '',
 };
 
 // eslint-disable-next-line @typescript-eslint/no-unused-vars
@@ -342,6 +659,64 @@ const CREATE_STORE = gql`
   }
 `;
 
+const CREATE_RESTAURANT = gql`
+  mutation CreateRestaurantWithBranding($input: CreateRestaurantWithBrandingInput!) {
+    createRestaurantWithBranding(input: $input) {
+      id
+      name
+      description
+      cuisineType
+      city
+      address
+      phone
+      brandingId
+      businessConfigId
+      createdAt
+      updatedAt
+    }
+  }
+`;
+
+const CREATE_TOURISM_COMPANY = gql`
+  mutation CreateTourismCompany($input: CreateTourismCompanyInput!) {
+    createTourismCompany(input: $input) {
+      id
+      name
+      description
+      city
+      address
+      phone
+      logoUrl
+      coverImage
+      googleLocation
+      createdAt
+      updatedAt
+    }
+  }
+`;
+
+const CREATE_SERVICE_PROVIDER = gql`
+  mutation CreateServiceProviderWithBranding($input: CreateServiceProviderWithBrandingInput!) {
+    createServiceProviderWithBranding(input: $input) {
+      id
+      businessName
+      type
+      phone
+      email
+      description
+      location
+      address
+      whatsappNumber
+      slug
+      brandingId
+      businessConfigId
+      isActive
+      createdAt
+      updatedAt
+    }
+  }
+`;
+
 // @ts-ignore - suppress unused parameter-name warning in the function type annotation
 function SelectInput({
   options,
@@ -377,13 +752,22 @@ export default function InteractiveChatStore() {
   const [createError, setCreateError] = useState<string | null>(null);
   const [createdStoreId, setCreatedStoreId] = useState<string | null>(null);
   const [createdStore, setCreatedStore] = useState<any>(null);
+  const [questions, setQuestions] = useState<any[]>([]);
+  const [selectedBusinessType, setSelectedBusinessType] = useState<string | null>(null);
   const chatRef = useRef<HTMLDivElement | null>(null);
   const bottomRef = useRef<HTMLDivElement | null>(null);
   const [showSummary, setShowSummary] = useState(false);
   const [customCityOpen, setCustomCityOpen] = useState(false);
   const [customCityValue, setCustomCityValue] = useState('');
+  const [customBusinessTypeOpen, setCustomBusinessTypeOpen] = useState(false);
+  const [customBusinessTypeValue, setCustomBusinessTypeValue] = useState('');
+  const [showDescriptionEdit, setShowDescriptionEdit] = useState(false);
+  const [tempDescription, setTempDescription] = useState('');
 
   const [createStoreMutation] = useMutation(CREATE_STORE);
+  const [createRestaurantMutation] = useMutation(CREATE_RESTAURANT);
+  const [createTourismCompanyMutation] = useMutation(CREATE_TOURISM_COMPANY);
+  const [createServiceProviderMutation] = useMutation(CREATE_SERVICE_PROVIDER);
   const session = useSessionStore();
   // hydrate session from server cookie if not present
   useEffect(() => {
@@ -483,25 +867,27 @@ export default function InteractiveChatStore() {
   };
 
   useEffect(() => {
-    // Initial bot message with typing animation
+    // Initial bot message with typing animation - start with business type selection
     setIsTyping(true);
     setTimeout(() => {
       setIsTyping(false);
       setMessages([
         {
           from: 'bot',
-          text: questions[0].text,
-          type: questions[0].type,
-          options: questions[0].options,
-          field: questions[0].field,
+          text: businessTypeQuestion.text,
+          type: businessTypeQuestion.type,
+          options: businessTypeQuestion.options,
+          field: businessTypeQuestion.field,
         },
       ]);
     }, 1000);
   }, []);
 
   useEffect(() => {
-    setProgress((currentStep / questions.length) * 100);
-  }, [currentStep]);
+    if (questions.length > 0) {
+      setProgress((currentStep / questions.length) * 100);
+    }
+  }, [currentStep, questions.length]);
 
   // Auto-scroll to bottom on any message or typing change
   useEffect(() => {
@@ -551,7 +937,52 @@ export default function InteractiveChatStore() {
     }, 800);
   };
 
-  const handleResponse = (value: string) => {
+  const handleResponse = async (value: string) => {
+    // Si aún no se ha seleccionado el tipo de negocio
+    if (!selectedBusinessType && questions.length === 0) {
+      // Guardar el tipo de negocio seleccionado
+      let businessCategory: 'products' | 'restaurant' | 'services' | 'tourism_services';
+      let questionsToUse: any[];
+
+      if (value === 'Productos') {
+        businessCategory = 'products';
+        questionsToUse = productsQuestions;
+      } else if (value === 'Restaurante') {
+        businessCategory = 'restaurant';
+        questionsToUse = restaurantQuestions;
+      } else {
+        businessCategory = 'services';
+        questionsToUse = servicesQuestions;
+      }
+
+      setSelectedBusinessType(value);
+      setStoreData((prev) => ({ ...prev, businessCategory }));
+      setQuestions(questionsToUse);
+
+      // Mostrar mensaje del usuario
+      setMessages((prev) => [...prev, { from: 'user', text: value, type: 'text' }]);
+
+      // Empezar con la primera pregunta del flujo seleccionado
+      setIsTyping(true);
+      setTimeout(() => {
+        setIsTyping(false);
+        setMessages((prev) => [
+          ...prev,
+          {
+            from: 'bot',
+            text: questionsToUse[0].text,
+            type: questionsToUse[0].type,
+            options: questionsToUse[0].options,
+            field: questionsToUse[0].field,
+          },
+        ]);
+        setCurrentStep(0);
+      }, 800);
+
+      setInput('');
+      return;
+    }
+
     const currentQuestion = questions[currentStep];
     const field = currentQuestion.field as keyof StoreData;
 
@@ -603,6 +1034,99 @@ export default function InteractiveChatStore() {
     if (field === 'city' && customCityOpen) {
       setCustomCityOpen(false);
       setCustomCityValue('');
+    }
+
+    // if we were in custom business type flow, close it after receiving a manual type
+    if (field === 'businessType' && customBusinessTypeOpen) {
+      setCustomBusinessTypeOpen(false);
+      setCustomBusinessTypeValue('');
+    }
+
+    // 🤖 Generar descripción con IA para restaurantes cuando se completa cuisineType
+    if (field === 'cuisineType' && storeData.businessCategory === 'restaurant' && storeData.name) {
+      const generateRestaurantDescription = async () => {
+        try {
+          setIsTyping(true);
+          const requestBody = {
+            name: storeData.name,
+            cuisineType: value,
+            city: storeData.city || 'Colombia',
+          };
+
+          const apiUrl = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:4000';
+          const response = await fetch(`${apiUrl}/chatbot/create-restaurant-description`, {
+            method: 'POST',
+            headers: {
+              'Content-Type': 'application/json',
+            },
+            body: JSON.stringify(requestBody),
+          });
+
+          if (response.ok) {
+            const result = await response.json();
+            if (result.description) {
+              // Guardar la descripción temporalmente
+              setTempDescription(result.description);
+
+              // Mostrar el campo de edición
+              setIsTyping(false);
+              setShowDescriptionEdit(true);
+            }
+          }
+        } catch (error) {
+          console.error('Error generando descripción:', error);
+        } finally {
+          setIsTyping(false);
+        }
+      };
+
+      // Ejecutar la generación de descripción
+      await generateRestaurantDescription();
+      return; // No avanzar automáticamente
+    }
+
+    // 🤖 Generar descripción con IA para servicios cuando se completa businessType
+    if (field === 'businessType' && storeData.businessCategory === 'services' && storeData.name) {
+      const generateServiceDescription = async () => {
+        try {
+          setIsTyping(true);
+          const requestBody = {
+            businessName: storeData.name,
+            type: value,
+            city: storeData.city || 'Colombia',
+          };
+
+          const apiUrl = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:4000';
+          const response = await fetch(`${apiUrl}/chatbot/create-services-description`, {
+            method: 'POST',
+            headers: {
+              'Content-Type': 'application/json',
+            },
+            body: JSON.stringify(requestBody),
+          });
+
+          if (response.ok) {
+            const result = await response.json();
+            if (result.description) {
+              // Guardar la descripción temporalmente
+              setTempDescription(result.description);
+
+              // Mostrar mensaje del bot con la descripción generada y botones
+              setIsTyping(false);
+
+              setShowDescriptionEdit(true);
+            }
+          }
+        } catch (error) {
+          console.error('Error generando descripción:', error);
+        } finally {
+          setIsTyping(false);
+        }
+      };
+
+      // Ejecutar la generación de descripción
+      await generateServiceDescription();
+      return; // No avanzar automáticamente
     }
 
     // 🚀 Avanzar o mostrar resumen
@@ -717,43 +1241,49 @@ export default function InteractiveChatStore() {
         return (
           <div>
             <span>{msg.text}</span>
-            {currentStep === questions.findIndex((q) => q.field === msg.field) && (
-              <div>
-                <FileUpload onFile={handleResponse} accept="image/*" storeId={storeData?.storeId} />
-                {msg.optional && (
-                  <button
-                    onClick={handleSkip}
-                    className="mt-3 px-4 py-2 bg-gray-100 text-gray-600 rounded-lg hover:bg-gray-200 transition-colors text-sm flex items-center gap-2"
-                  >
-                    <span>⏭️</span>
-                    Saltar imagen
-                  </button>
-                )}
-              </div>
-            )}
+            {questions.length > 0 &&
+              currentStep === questions.findIndex((q) => q.field === msg.field) && (
+                <div>
+                  <FileUpload
+                    onFile={handleResponse}
+                    accept="image/*"
+                    storeId={storeData?.storeId}
+                  />
+                  {msg.optional && (
+                    <button
+                      onClick={handleSkip}
+                      className="mt-3 px-4 py-2 bg-gray-100 text-gray-600 rounded-lg hover:bg-gray-200 transition-colors text-sm flex items-center gap-2"
+                    >
+                      <span>⏭️</span>
+                      Saltar imagen
+                    </button>
+                  )}
+                </div>
+              )}
           </div>
         );
       case 'color':
         return (
           <div>
             <span>{msg.text}</span>
-            {currentStep === questions.findIndex((q) => q.field === msg.field) && (
-              <div>
-                <ColorPicker
-                  value={storeData[msg.field as keyof StoreData] as string}
-                  onChange={handleResponse}
-                />
-                {msg.optional && (
-                  <button
-                    onClick={handleSkip}
-                    className="mt-3 px-4 py-2 bg-gray-100 text-gray-600 rounded-lg hover:bg-gray-200 transition-colors text-sm flex items-center gap-2"
-                  >
-                    <span>⏭️</span>
-                    Usar color por defecto
-                  </button>
-                )}
-              </div>
-            )}
+            {questions.length > 0 &&
+              currentStep === questions.findIndex((q) => q.field === msg.field) && (
+                <div>
+                  <ColorPicker
+                    value={storeData[msg.field as keyof StoreData] as string}
+                    onChange={handleResponse}
+                  />
+                  {msg.optional && (
+                    <button
+                      onClick={handleSkip}
+                      className="mt-3 px-4 py-2 bg-gray-100 text-gray-600 rounded-lg hover:bg-gray-200 transition-colors text-sm flex items-center gap-2"
+                    >
+                      <span>⏭️</span>
+                      Usar color por defecto
+                    </button>
+                  )}
+                </div>
+              )}
           </div>
         );
 
@@ -761,61 +1291,101 @@ export default function InteractiveChatStore() {
         return (
           <div>
             <span>{msg.text}</span>
-            {currentStep === questions.findIndex((q) => q.field === msg.field) && msg.options && (
-              <div>
-                {/* If this is the city field, handle 'Otra' to open a custom input */}
-                {msg.field === 'city' ? (
-                  <div>
-                    {!customCityOpen ? (
-                      <SelectInput
-                        options={msg.options}
-                        onSelect={(val: string) => {
-                          if (val === 'Otra') {
-                            setCustomCityOpen(true);
-                          } else {
-                            handleResponse(val);
-                          }
-                        }}
-                      />
-                    ) : (
-                      <div className="mt-3 flex gap-2">
-                        <input
-                          type="text"
-                          value={customCityValue}
-                          onChange={(e) => setCustomCityValue(e.target.value)}
-                          placeholder="Escribe tu ciudad"
-                          className="flex-1 px-3 py-2 rounded border bg-slate-700 text-white"
-                        />
-                        <button
-                          onClick={() => {
-                            if (customCityValue.trim()) {
-                              handleResponse(customCityValue.trim());
+            {/* Mostrar opciones si es la pregunta de tipo de negocio (businessCategory) O si es la pregunta actual */}
+            {((msg.field === 'businessCategory' && !selectedBusinessType) ||
+              (questions.length > 0 &&
+                currentStep === questions.findIndex((q) => q.field === msg.field))) &&
+              msg.options && (
+                <div>
+                  {/* Handle custom input for city field */}
+                  {msg.field === 'city' ? (
+                    <div>
+                      {!customCityOpen ? (
+                        <SelectInput
+                          options={msg.options}
+                          onSelect={(val: string) => {
+                            if (val === 'Otra') {
+                              setCustomCityOpen(true);
+                            } else {
+                              handleResponse(val);
                             }
                           }}
-                          className="px-4 py-2 bg-blue-600 rounded text-white"
-                        >
-                          Aceptar
-                        </button>
-                      </div>
-                    )}
-                  </div>
-                ) : (
-                  <div>
-                    <SelectInput options={msg.options} onSelect={handleResponse} />
-                  </div>
-                )}
+                        />
+                      ) : (
+                        <div className="mt-3 flex gap-2">
+                          <input
+                            type="text"
+                            value={customCityValue}
+                            onChange={(e) => setCustomCityValue(e.target.value)}
+                            placeholder="Escribe tu ciudad"
+                            className="flex-1 px-3 py-2 rounded border bg-slate-700 text-white"
+                          />
+                          <button
+                            onClick={() => {
+                              if (customCityValue.trim()) {
+                                handleResponse(customCityValue.trim());
+                              }
+                            }}
+                            className="px-4 py-2 bg-blue-600 rounded text-white"
+                          >
+                            Aceptar
+                          </button>
+                        </div>
+                      )}
+                    </div>
+                  ) : msg.field === 'businessType' && storeData.businessCategory === 'services' ? (
+                    /* Handle custom input for service businessType field */
+                    <div>
+                      {!customBusinessTypeOpen ? (
+                        <SelectInput
+                          options={msg.options}
+                          onSelect={(val: string) => {
+                            if (val === 'Otro') {
+                              setCustomBusinessTypeOpen(true);
+                            } else {
+                              handleResponse(val);
+                            }
+                          }}
+                        />
+                      ) : (
+                        <div className="mt-3 flex gap-2">
+                          <input
+                            type="text"
+                            value={customBusinessTypeValue}
+                            onChange={(e) => setCustomBusinessTypeValue(e.target.value)}
+                            placeholder="Escribe el tipo de servicio"
+                            className="flex-1 px-3 py-2 rounded border bg-slate-700 text-white"
+                          />
+                          <button
+                            onClick={() => {
+                              if (customBusinessTypeValue.trim()) {
+                                handleResponse(customBusinessTypeValue.trim());
+                              }
+                            }}
+                            className="px-4 py-2 bg-blue-600 rounded text-white"
+                          >
+                            Aceptar
+                          </button>
+                        </div>
+                      )}
+                    </div>
+                  ) : (
+                    <div>
+                      <SelectInput options={msg.options} onSelect={handleResponse} />
+                    </div>
+                  )}
 
-                {msg.optional && (
-                  <button
-                    onClick={handleSkip}
-                    className="mt-3 px-4 py-2 bg-gray-100 text-gray-600 rounded-lg hover:bg-gray-200 transition-colors text-sm flex items-center gap-2"
-                  >
-                    <span>⏭️</span>
-                    Saltar selección
-                  </button>
-                )}
-              </div>
-            )}
+                  {msg.optional && (
+                    <button
+                      onClick={handleSkip}
+                      className="mt-3 px-4 py-2 bg-gray-100 text-gray-600 rounded-lg hover:bg-gray-200 transition-colors text-sm flex items-center gap-2"
+                    >
+                      <span>⏭️</span>
+                      Saltar selección
+                    </button>
+                  )}
+                </div>
+              )}
           </div>
         );
 
@@ -856,7 +1426,9 @@ export default function InteractiveChatStore() {
             />
           </div>
           <p className="text-sm text-slate-300">
-            Paso {currentStep + 1} de {questions.length} • {Math.round(progress)}% completado
+            {questions.length > 0
+              ? `Paso ${currentStep + 1} de ${questions.length} • ${Math.round(progress)}% completado`
+              : 'Selecciona el tipo de emprendimiento para comenzar'}
           </p>
         </div>
         {/* Chat Area */}
@@ -928,9 +1500,82 @@ export default function InteractiveChatStore() {
           )}
           <div ref={bottomRef} />
         </div>
+
+        {/* Campo de edición de descripción con diseño mejorado */}
+        {showDescriptionEdit && tempDescription && (
+          <div className="px-6 py-4 bg-gradient-to-br from-slate-800 to-slate-900 border-t border-slate-700 shadow-inner">
+            <div className="space-y-3">
+              <div className="flex items-center gap-2 mb-2">
+                <span className="text-lg">✨</span>
+                <label className="text-sm font-medium text-slate-300">
+                  Descripción generada por IA
+                </label>
+              </div>
+              <div className="relative">
+                <textarea
+                  value={tempDescription}
+                  onChange={(e) => setTempDescription(e.target.value)}
+                  rows={4}
+                  className="w-full px-4 py-3 bg-slate-700/50 text-white border-2 border-slate-600 rounded-xl focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500 resize-none transition-all duration-200 placeholder-slate-400 shadow-sm hover:border-slate-500"
+                  placeholder="Edita la descripción aquí..."
+                />
+                <div className="absolute bottom-2 right-2 text-xs text-slate-500">
+                  {tempDescription.length} caracteres
+                </div>
+              </div>
+              <div className="flex items-center justify-between pt-2">
+                <p className="text-xs text-slate-400 flex items-center gap-1">
+                  <span>💡</span>
+                  Puedes modificar el texto antes de continuar
+                </p>
+                <div className="flex gap-2">
+                  <button
+                    onClick={() => {
+                      setStoreData((prev) => ({
+                        ...prev,
+                        description: tempDescription,
+                      }));
+                      setShowDescriptionEdit(false);
+                      setMessages((prev) => [
+                        ...prev,
+                        {
+                          from: 'user',
+                          text: `📝 ${tempDescription}`,
+                          type: 'text',
+                        },
+                      ]);
+                      setTempDescription('');
+                      // Avanzar al siguiente paso
+                      if (currentStep + 1 < questions.length) {
+                        setCurrentStep((prev) => prev + 1);
+                        addBotMessage(currentStep + 1);
+                      } else {
+                        setCurrentStep(questions.length);
+                      }
+                    }}
+                    className="px-4 py-2 text-sm font-medium bg-gradient-to-r from-green-600 to-green-700 text-white rounded-lg hover:from-green-700 hover:to-green-800 transition-all duration-200 transform hover:scale-105 shadow-md flex items-center gap-1"
+                  >
+                    <span>✅</span>
+                    Confirmar
+                  </button>
+                </div>
+              </div>
+            </div>
+          </div>
+        )}
+
         {/* Input Area */}
-        {currentStep < questions.length &&
-          !['image', 'color', 'select'].includes(questions[currentStep]?.type) && (
+        {/* Mostrar input cuando estamos en preguntas normales O cuando aún no se ha seleccionado tipo de negocio */}
+        {!showDescriptionEdit &&
+          ((questions.length > 0 && currentStep < questions.length) ||
+            (questions.length === 0 && !selectedBusinessType)) &&
+          messages.length > 0 &&
+          messages[messages.length - 1]?.from === 'bot' &&
+          !['image', 'color', 'select'].includes(
+            questions.length > 0
+              ? questions[currentStep]?.type
+              : messages[messages.length - 1]?.type
+          ) && (
             <div className="p-6 bg-slate-800 border-t border-slate-700">
               {validationError && (
                 <div className="mb-4 p-3 bg-red-900/40 border-l-4 border-red-500 text-red-300 rounded animate-pulse">
@@ -938,7 +1583,7 @@ export default function InteractiveChatStore() {
                     <span className="text-red-400">⚠️</span>
                     {validationError}
                   </div>
-                  {questions[currentStep]?.validation?.message && (
+                  {questions.length > 0 && questions[currentStep]?.validation?.message && (
                     <p className="text-sm mt-1 text-red-300">
                       💡 {questions[currentStep]?.validation?.message}
                     </p>
@@ -955,7 +1600,11 @@ export default function InteractiveChatStore() {
                     setValidationError(null);
                   }}
                   onKeyPress={handleKeyPress}
-                  placeholder={`Responde: ${questions[currentStep]?.text.split('?')[0]}...`}
+                  placeholder={
+                    questions.length > 0
+                      ? `Responde: ${questions[currentStep]?.text.split('?')[0]}...`
+                      : 'Escribe tu respuesta...'
+                  }
                   className={`flex-1 px-4 py-3 border-2 rounded-xl focus:outline-none transition-colors text-slate-200 placeholder-slate-400 ${
                     validationError
                       ? 'border-red-500 focus:border-red-400'
@@ -964,7 +1613,7 @@ export default function InteractiveChatStore() {
                 />
 
                 <div className="flex gap-2">
-                  {questions[currentStep]?.optional && (
+                  {questions.length > 0 && questions[currentStep]?.optional && (
                     <button
                       onClick={handleSkip}
                       className="px-4 py-3 bg-slate-700 text-slate-200 rounded-xl hover:bg-slate-600 transition-all duration-200 transform hover:scale-105 flex items-center gap-2"
@@ -977,7 +1626,9 @@ export default function InteractiveChatStore() {
 
                   <button
                     onClick={handleSend}
-                    disabled={!input.trim() && !questions[currentStep]?.optional}
+                    disabled={
+                      !input.trim() && questions.length > 0 && !questions[currentStep]?.optional
+                    }
                     className="px-6 py-3 bg-gradient-to-r from-blue-600 to-indigo-600 text-white rounded-xl hover:from-blue-700 hover:to-indigo-700 disabled:opacity-50 disabled:cursor-not-allowed transition-all duration-200 transform hover:scale-105 flex items-center gap-2"
                   >
                     <Send className="w-4 h-4" />
@@ -986,7 +1637,7 @@ export default function InteractiveChatStore() {
                 </div>
               </div>
 
-              {questions[currentStep]?.optional && (
+              {questions.length > 0 && questions[currentStep]?.optional && (
                 <p className="text-xs text-slate-400 mt-2 flex items-center gap-1">
                   <span>💡</span>
                   Esta pregunta es opcional - puedes saltarla si no aplica
@@ -995,15 +1646,21 @@ export default function InteractiveChatStore() {
             </div>
           )}
 
-        {currentStep >= questions.length && (
+        {questions.length > 0 && currentStep >= questions.length && (
           <div className="mt-6">
             {createdStoreId ? (
-              // Mensaje de éxito cuando la tienda ya fue creada
+              // Mensaje de éxito cuando el negocio ya fue creado
               <div className="text-center space-y-4 py-6">
                 <div className="w-16 h-16 bg-green-500 rounded-full flex items-center justify-center mx-auto">
                   <span className="text-white text-2xl">✓</span>
                 </div>
-                <h2 className="text-xl font-bold text-white">¡Tu tienda ha sido creada!</h2>
+                <h2 className="text-xl font-bold text-white">
+                  {storeData.businessCategory === 'restaurant'
+                    ? '¡Tu restaurante ha sido creado!'
+                    : storeData.businessCategory === 'tourism_services'
+                      ? '¡Tu empresa de servicios ha sido creada!'
+                      : '¡Tu tienda ha sido creada!'}
+                </h2>
                 <p className="text-slate-300">
                   Proximamente recibirás un email con los detalles de acceso.
                 </p>
@@ -1012,7 +1669,7 @@ export default function InteractiveChatStore() {
                     href={`http://emprendyup.com`}
                     className="px-6 py-3 bg-green-500 text-white rounded-lg font-semibold hover:bg-green-600 transition-colors"
                   >
-                    Ir a la pagina principal
+                    Ir a la página principal
                   </a>
                 </div>
               </div>
@@ -1025,40 +1682,206 @@ export default function InteractiveChatStore() {
                     className="px-6 pl-6 py-3 bg-blue-500 text-white rounded-lg font-semibold hover:bg-blue-600 transition-colors"
                     disabled={creating}
                   >
-                    {creating ? 'Creando tienda...' : 'Revisar información'}
+                    {creating
+                      ? storeData.businessCategory === 'restaurant'
+                        ? 'Creando restaurante...'
+                        : storeData.businessCategory === 'services'
+                          ? 'Creando empresa...'
+                          : 'Creando tienda...'
+                      : 'Revisar información'}
                   </button>
                 </div>
 
-                {/* Modal StoreSummary */}
-                <StoreSummary
-                  open={showSummary}
-                  onClose={() => setShowSummary(false)}
-                  data={createdStore || storeData}
-                  onConfirm={async (updatedData) => {
-                    setCreateError(null);
-                    setCreating(true);
-                    try {
-                      const input = {
-                        ...updatedData,
-                        status: 'active',
-                        userId: session?.user?.id || 'anonymous',
-                      };
-                      const { data } = await createStoreMutation({ variables: { input } });
-                      const created = data?.createStore;
-                      if (created) {
-                        setCreatedStoreId(created.storeId);
-                        setCreatedStore(created);
-                        session.setCurrentStore?.(created as any);
-                        session.addStore?.(created as any);
+                {/* Modal - Usar el componente correcto según el tipo de negocio */}
+                {storeData.businessCategory === 'restaurant' ? (
+                  <RestaurantSummary
+                    open={showSummary}
+                    onClose={() => setShowSummary(false)}
+                    data={createdStore || storeData}
+                    onConfirm={async (updatedData) => {
+                      setCreateError(null);
+                      setCreating(true);
+                      try {
+                        let created: any = null;
+
+                        // Crear restaurante con branding
+                        const input = {
+                          name: updatedData.name,
+                          description: updatedData.description || '',
+                          cuisineType: updatedData.cuisineType,
+                          city: updatedData.city,
+                          address: updatedData.address,
+                          phone: updatedData.phone,
+                          googleLocation: updatedData.googleLocation || '',
+                          branding: {
+                            logoUrl: updatedData.logoUrl || '',
+                            faviconUrl: updatedData.faviconUrl || '',
+                            bannerUrl: updatedData.bannerUrl || '',
+                            coverImageUrl: updatedData.coverImage || '',
+                            primaryColor: updatedData.primaryColor || '#3B82F6',
+                            secondaryColor: updatedData.secondaryColor || '#1F2937',
+                            accentColor: updatedData.accentColor || '#10B981',
+                            backgroundColor: updatedData.backgroundColor || '#FFFFFF',
+                            textColor: updatedData.textColor || '#111827',
+                          },
+                          businessConfig: {
+                            email: updatedData.email,
+                            phone: updatedData.phone,
+                            whatsappNumber: updatedData.whatsappNumber || updatedData.phone,
+                            address: updatedData.address,
+                            city: updatedData.city,
+                            department: updatedData.department || '',
+                            country: updatedData.country || 'Colombia',
+                            facebookUrl: updatedData.facebookUrl || '',
+                            instagramUrl: updatedData.instagramUrl || '',
+                            twitterUrl: updatedData.twitterUrl || '',
+                            metaTitle: `${updatedData.name} - ${updatedData.cuisineType}`,
+                            metaDescription:
+                              updatedData.description ||
+                              `Restaurante de ${updatedData.cuisineType} en ${updatedData.city}`,
+                            metaKeywords: `restaurante, ${updatedData.cuisineType}, ${updatedData.city}`,
+                            currency: 'COP',
+                            language: 'es',
+                            timezone: 'America/Bogota',
+                            taxId: updatedData.taxId || '',
+                            businessName: updatedData.businessName || updatedData.name,
+                            businessType: updatedData.businessType || 'Restaurante',
+                          },
+                        };
+                        const { data } = await createRestaurantMutation({ variables: { input } });
+                        created = data?.createRestaurantWithBranding;
+                        if (created) {
+                          setCreatedStoreId(created.id);
+                          setCreatedStore(created);
+                        }
+
+                        setShowSummary(false);
+                      } catch (err: any) {
+                        setCreateError(err?.message || 'Error al crear el restaurante');
+                      } finally {
+                        setCreating(false);
                       }
-                      setShowSummary(false);
-                    } catch (err: any) {
-                      setCreateError(err?.message || 'Error al crear la tienda');
-                    } finally {
-                      setCreating(false);
-                    }
-                  }}
-                />
+                    }}
+                  />
+                ) : storeData.businessCategory === 'services' ? (
+                  <ServicesSummary
+                    open={showSummary}
+                    onClose={() => setShowSummary(false)}
+                    data={createdStore || storeData}
+                    onConfirm={async (updatedData) => {
+                      setCreateError(null);
+                      setCreating(true);
+                      try {
+                        let created: any = null;
+
+                        // Crear proveedor de servicios con branding
+                        const slug = updatedData.name
+                          .toLowerCase()
+                          .replace(/[^a-z0-9]+/g, '-')
+                          .replace(/^-|-$/g, '');
+
+                        const input = {
+                          businessName: updatedData.name,
+                          type: updatedData.businessType || 'OTHER',
+                          description: updatedData.description || '',
+                          location: `${updatedData.city}, ${updatedData.department || 'Colombia'}`,
+                          address: updatedData.address,
+                          phone: updatedData.phone,
+                          whatsappNumber: updatedData.whatsappNumber || updatedData.phone,
+                          email: updatedData.email,
+                          slug,
+                          isActive: true,
+                          branding: {
+                            logoUrl: updatedData.logoUrl || '',
+                            faviconUrl: updatedData.faviconUrl || '',
+                            bannerUrl: updatedData.bannerUrl || '',
+                            coverImageUrl: updatedData.coverImage || '',
+                            primaryColor: updatedData.primaryColor || '#7C3AED',
+                            secondaryColor: updatedData.secondaryColor || '#1F2937',
+                            accentColor: updatedData.accentColor || '#10B981',
+                            backgroundColor: updatedData.backgroundColor || '#F9FAFB',
+                            textColor: updatedData.textColor || '#111827',
+                          },
+                          businessConfig: {
+                            email: updatedData.email,
+                            phone: updatedData.phone,
+                            whatsappNumber: updatedData.whatsappNumber || updatedData.phone,
+                            address: updatedData.address,
+                            city: updatedData.city,
+                            department: updatedData.department || '',
+                            country: updatedData.country || 'Colombia',
+                            facebookUrl: updatedData.facebookUrl || '',
+                            instagramUrl: updatedData.instagramUrl || '',
+                            twitterUrl: updatedData.twitterUrl || '',
+                            metaTitle: `${updatedData.name} - Servicios Profesionales`,
+                            metaDescription:
+                              updatedData.description ||
+                              `Servicios profesionales en ${updatedData.city}`,
+                            metaKeywords: `servicios, ${updatedData.businessType}, ${updatedData.city}`,
+                            currency: 'COP',
+                            language: 'es',
+                            timezone: 'America/Bogota',
+                            taxId: updatedData.taxId || '',
+                            businessName: updatedData.businessName || updatedData.name,
+                            businessType: updatedData.businessType || 'Servicios',
+                          },
+                        };
+                        const { data } = await createServiceProviderMutation({
+                          variables: { input },
+                        });
+                        created = data?.createServiceProviderWithBranding;
+                        if (created) {
+                          setCreatedStoreId(created.id);
+                          setCreatedStore(created);
+                        }
+
+                        setShowSummary(false);
+                      } catch (err: any) {
+                        setCreateError(err?.message || 'Error al crear la empresa de servicios');
+                      } finally {
+                        setCreating(false);
+                      }
+                    }}
+                  />
+                ) : (
+                  <StoreSummary
+                    open={showSummary}
+                    onClose={() => setShowSummary(false)}
+                    data={createdStore || storeData}
+                    onConfirm={async (updatedData) => {
+                      setCreateError(null);
+                      setCreating(true);
+                      try {
+                        let created: any = null;
+
+                        // Crear tienda de productos (flujo original)
+                        // Filtrar solo los campos válidos para CreateStoreInput
+                        const { businessCategory, coverImage, googleLocation, ...validStoreData } =
+                          updatedData;
+
+                        const input = {
+                          ...validStoreData,
+                          status: 'active',
+                          userId: session?.user?.id || 'anonymous',
+                        };
+                        const { data } = await createStoreMutation({ variables: { input } });
+                        created = data?.createStore;
+                        if (created) {
+                          setCreatedStoreId(created.storeId);
+                          setCreatedStore(created);
+                          session.setCurrentStore?.(created as any);
+                          session.addStore?.(created as any);
+                        }
+
+                        setShowSummary(false);
+                      } catch (err: any) {
+                        setCreateError(err?.message || 'Error al crear la tienda');
+                      } finally {
+                        setCreating(false);
+                      }
+                    }}
+                  />
+                )}
               </>
             )}
 
@@ -1073,7 +1896,11 @@ export default function InteractiveChatStore() {
             {creating && (
               <div className="mt-4 p-3 bg-blue-900 border border-blue-700 text-blue-300 rounded flex items-center gap-2">
                 <div className="w-4 h-4 border-2 border-blue-300 border-t-transparent rounded-full animate-spin"></div>
-                Creando tienda...
+                {storeData.businessCategory === 'restaurant'
+                  ? 'Creando restaurante...'
+                  : storeData.businessCategory === 'services'
+                    ? 'Creando empresa de servicios...'
+                    : 'Creando tienda...'}
               </div>
             )}
           </div>
