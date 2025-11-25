@@ -123,7 +123,7 @@ const WhatsappCampaignPage = () => {
 
       const payload = {
         phoneNumbers,
-        templateName: 'HX45a62bef4d9e090b7a77b8fda2edcf90', // Nuevo templateName solicitado
+        templateName: process.env.NEXT_PUBLIC_WS_TEMPLATE_ID, // Nuevo templateName solicitado
         languageCode: 'es',
         parameters,
       };
