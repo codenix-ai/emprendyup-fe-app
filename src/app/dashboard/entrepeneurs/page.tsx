@@ -98,23 +98,34 @@ const WhatsappCampaignPage = () => {
         return;
       }
 
-      const phoneNumbers = selectedIds.map((id) => {
+      // Construir phoneNumbers y parameters
+      const phoneNumbers: string[] = [];
+      const parameters: Record<
+        string,
+        Array<{ type: string; parameter_name: string; text: string }>
+      > = {};
+
+      selectedIds.forEach((id) => {
         const ent = entrepreneurs.find((e) => e.id === id);
-        return ent && ent?.phone?.startsWith('+') ? ent.phone : `+57${ent?.phone}`;
+        let phone = ent?.phone || '';
+        if (!phone.startsWith('+')) {
+          phone = `+57${phone}`;
+        }
+        phoneNumbers.push(phone);
+        parameters[phone] = [
+          {
+            type: 'text',
+            parameter_name: '1',
+            text: ent?.name || '', // nombre del emprendedor
+          },
+        ];
       });
 
       const payload = {
-        username: user.username || user.name || user.email,
         phoneNumbers,
-        templateName: 'creacion_tienda',
-        languageCode: 'es_CO',
-        parameters: [
-          {
-            type: 'text',
-            parameter_name: 'name',
-            text: 'emprendedor',
-          },
-        ],
+        templateName: 'HX45a62bef4d9e090b7a77b8fda2edcf90', // Nuevo templateName solicitado
+        languageCode: 'es',
+        parameters,
       };
 
       const response = await fetch(`${process.env.NEXT_PUBLIC_API_URL}/whatsapp/send-bulk`, {
@@ -125,17 +136,33 @@ const WhatsappCampaignPage = () => {
         body: JSON.stringify(payload),
       });
 
+      let data;
+      const contentType = response.headers.get('content-type');
       if (!response.ok) {
-        const errorData = await response.json();
-        console.error('Error del servidor:', errorData);
-        toast.error(`Error al enviar la campaña: ${errorData.message || response.statusText}`);
+        if (contentType && contentType.includes('application/json')) {
+          const errorData = await response.json();
+          console.error('Error del servidor:', errorData);
+          toast.error(`Error al enviar la campaña: ${errorData.message || response.statusText}`);
+        } else {
+          const text = await response.text();
+          console.error('Respuesta no JSON:', text);
+          toast.error(
+            'Error al enviar la campaña: El servidor respondió con un formato inesperado.'
+          );
+        }
         return;
       }
 
-      const data = await response.json();
-      toast.success(
-        `✅ Campaña procesada: ${data.success} exitosos, ${data.failed} fallidos de ${data.total} total.`
-      );
+      if (contentType && contentType.includes('application/json')) {
+        data = await response.json();
+        toast.success(
+          `✅ Campaña procesada: ${data.success} exitosos, ${data.failed} fallidos de ${data.total} total.`
+        );
+      } else {
+        const text = await response.text();
+        console.error('Respuesta no JSON:', text);
+        toast.error('La campaña fue enviada pero la respuesta no es JSON. Revisa la consola.');
+      }
     } catch (error) {
       console.error('Error general al enviar la campaña:', error);
       toast.error('Hubo un error al enviar la campaña. Revisa la consola.');
@@ -272,7 +299,7 @@ const WhatsappCampaignPage = () => {
                     </div>
                   </td>
                   <td className="px-6 py-4 text-sm text-gray-600 dark:text-gray-300">
-                    {e.companyName}
+                    {e.companyName || 'No registrado'}
                   </td>
                   <td className="px-6 py-4 text-sm text-gray-600 dark:text-gray-300">
                     {e.city || 'N/A'}
@@ -346,7 +373,9 @@ const WhatsappCampaignPage = () => {
                 </div>
                 <div className="flex-1 min-w-0">
                   <h3 className="font-semibold text-gray-900 dark:text-white mb-1">{e.name}</h3>
-                  <p className="text-sm text-gray-500 dark:text-gray-400">{e.companyName}</p>
+                  <p className="text-sm text-gray-500 dark:text-gray-400">
+                    {e.companyName || 'No registrado'}
+                  </p>
                 </div>
                 <input
                   type="checkbox"
