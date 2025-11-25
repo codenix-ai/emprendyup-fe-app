@@ -193,12 +193,12 @@ const UPDATE_STORE_POLICY = gql`
 export default function SingleStoreSettingsPage() {
   const [deletePolicy] = useMutation(DELETE_STORE_POLICY);
 
-  const currentStore = useSessionStore((s: any) => s.currentStore);
-  const storeId = currentStore?.storeId;
-  const userData = JSON.parse(localStorage.getItem('user') || '{}');
+  const { user } = useSessionStore();
+  const storeId = user?.storeId;
+
   const { data, loading, error } = useQuery(GET_STORE_CONFIG, {
-    variables: { storeId: userData?.storeId || '' },
-    skip: !userData?.storeId,
+    variables: { storeId: storeId || '' },
+    skip: !storeId,
   });
 
   const [updateStore] = useMutation(UPDATE_STORE_CONFIG);
@@ -219,8 +219,8 @@ export default function SingleStoreSettingsPage() {
     language: 'es',
   });
   const { data: policiesData, refetch: refetchPolicies } = useQuery(GET_POLICIES, {
-    variables: { storeId: userData?.storeId || '' },
-    skip: !userData?.storeId,
+    variables: { storeId: storeId || '' },
+    skip: !storeId,
   });
   const [createPolicy] = useMutation(CREATE_STORE_POLICY);
   const [updatePolicy] = useMutation(UPDATE_STORE_POLICY);
@@ -255,7 +255,7 @@ export default function SingleStoreSettingsPage() {
     try {
       await createPolicy({
         variables: {
-          storeId: userData?.storeId,
+          storeId: storeId,
           input: {
             ...policyForm,
           },
@@ -350,7 +350,7 @@ export default function SingleStoreSettingsPage() {
 
       await updateStore({
         variables: {
-          storeId: userData?.storeId || '',
+          storeId: storeId || '',
           input: inputData,
         },
       });
@@ -386,7 +386,7 @@ export default function SingleStoreSettingsPage() {
     { id: 'policies', label: 'Políticas', icon: ShieldCheck },
   ];
 
-  if (!userData?.storeId) {
+  if (!storeId) {
     return (
       <div className="min-h-screen bg-gray-50 dark:bg-gray-900 flex items-center justify-center">
         <div className="text-center">
@@ -487,7 +487,7 @@ export default function SingleStoreSettingsPage() {
               {/* Detalles Tab */}
               {activeTab === 'detalles' && (
                 <>
-                  <DetailsStore storeId={userData?.storeId} storeData={formData} />
+                  <DetailsStore storeId={storeId} storeData={formData} />
                 </>
               )}
 

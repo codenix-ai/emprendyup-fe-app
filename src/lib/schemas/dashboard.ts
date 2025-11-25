@@ -143,6 +143,8 @@ export const UserProfileSchema = z.object({
   company: z.string().optional(),
   timezone: z.string().optional(),
   storeId: z.string().optional(),
+  serviceProviderId: z.string().optional(),
+  restaurantId: z.string().optional(),
 });
 
 export const UpdateProfileSchema = z.object({
