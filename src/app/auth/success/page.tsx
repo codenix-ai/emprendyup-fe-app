@@ -53,7 +53,7 @@ function AuthSuccessPage() {
       }
 
       const timer = setTimeout(() => {
-        if (user?.storeId) {
+        if (user?.storeId || user?.restaurantId || user?.serviceProviderId) {
           router.push('/dashboard/insights');
         } else {
           router.push('/dashboard/store/new');

@@ -25,6 +25,12 @@ import {
   Layers,
   List,
   BookUser,
+  UtensilsCrossed,
+  Briefcase,
+  Plane,
+  Building2,
+  ShoppingBag,
+  Calendar,
 } from 'lucide-react';
 import Image from 'next/image';
 import { useSessionStore } from '@/lib/store/dashboard';
@@ -35,10 +41,20 @@ import { toast } from 'sonner';
 // Estructura de navegación agrupada para ADMIN
 const adminNavigationGroups = [
   {
-    name: 'Tienda',
-    icon: Store,
+    name: 'Emprendimientos',
+    icon: Building2,
     items: [
-      { name: 'Tiendas', href: '/dashboard/stores', icon: Store },
+      { name: 'Negocios', href: '/dashboard/business', icon: Briefcase },
+      { name: 'Tiendas', href: '/dashboard/business/stores', icon: Store },
+      { name: 'Restaurantes', href: '/dashboard/business/restaurants', icon: UtensilsCrossed },
+      { name: 'Servicios', href: '/dashboard/business/services', icon: Briefcase },
+      { name: 'Turismo', href: '/dashboard/business/tourism', icon: Plane },
+    ],
+  },
+  {
+    name: 'Marketplace',
+    icon: ShoppingBag,
+    items: [
       { name: 'Pedidos', href: '/dashboard/orders', icon: ShoppingCart },
       { name: 'Productos', href: '/dashboard/products', icon: Package },
       { name: 'Categorias por tienda', href: '/dashboard/categoriesAdmin', icon: List },
@@ -85,38 +101,155 @@ const adminNavigationGroups = [
   },
 ];
 
-// Estructura de navegación agrupada para STORE_ADMIN
-const storeAdminNavigationGroups = [
-  {
-    name: 'Tienda',
-    icon: Store,
-    items: [
-      { name: 'Tienda', href: '/dashboard/store', icon: Store },
-      { name: 'Pedidos', href: '/dashboard/orders', icon: ShoppingCart },
-      { name: 'Productos', href: '/dashboard/products', icon: Package },
-      { name: 'Categorias', href: '/dashboard/categories', icon: List },
-    ],
-  },
-  {
-    name: 'Usuarios',
-    icon: Users,
-    items: [{ name: 'Usuarios por tienda', href: '/dashboard/usersbyStore', icon: Users }],
-  },
-  {
-    name: 'Otros',
-    icon: Gift,
-    items: [
-      { name: 'Bonos', href: '/dashboard/bonuses', icon: Gift },
-      { name: 'Mi suscripción', href: '/dashboard/plans', icon: Layers },
-    ],
-  },
-  {
-    name: 'Pagos',
-    icon: CreditCard,
-    href: '/dashboard/payments',
-    isSingle: true,
-  },
-];
+// Navegación para Tiendas
+const getStoreNavigationGroups = () => {
+  return [
+    {
+      name: 'Tienda',
+      icon: Store,
+      items: [
+        { name: 'Mi Tienda', href: '/dashboard/store', icon: Store },
+        { name: 'Pedidos', href: '/dashboard/orders', icon: ShoppingCart },
+        { name: 'Productos', href: '/dashboard/products', icon: Package },
+        { name: 'Categorias', href: '/dashboard/categories', icon: List },
+      ],
+    },
+    {
+      name: 'Usuarios',
+      icon: Users,
+      items: [{ name: 'Usuarios por tienda', href: '/dashboard/usersbyStore', icon: Users }],
+    },
+    {
+      name: 'Otros',
+      icon: Gift,
+      items: [
+        { name: 'Bonos', href: '/dashboard/bonuses', icon: Gift },
+        { name: 'Mi suscripción', href: '/dashboard/plans', icon: Layers },
+      ],
+    },
+    {
+      name: 'Pagos',
+      icon: CreditCard,
+      href: '/dashboard/payments',
+      isSingle: true,
+    },
+  ];
+};
+
+// Navegación para Servicios
+const getServiceNavigationGroups = () => {
+  return [
+    {
+      name: 'Servicio',
+      icon: Briefcase,
+      items: [
+        { name: 'Mi Servicio', href: '/dashboard/service', icon: Briefcase },
+        { name: 'Calendario', href: '/dashboard/service-calendar', icon: Calendar },
+      ],
+    },
+    {
+      name: 'Usuarios',
+      icon: Users,
+      items: [{ name: 'Usuarios', href: '/dashboard/user-by-service', icon: Users }],
+    },
+    {
+      name: 'Otros',
+      icon: Gift,
+      items: [
+        { name: 'Bonos', href: '/dashboard/bonuses', icon: Gift },
+        { name: 'Mi suscripción', href: '/dashboard/plans', icon: Layers },
+      ],
+    },
+    {
+      name: 'Pagos',
+      icon: CreditCard,
+      href: '/dashboard/payments',
+      isSingle: true,
+    },
+  ];
+};
+
+// Navegación para Restaurantes
+const getRestaurantNavigationGroups = () => {
+  return [
+    {
+      name: 'Restaurante',
+      icon: UtensilsCrossed,
+      items: [
+        { name: 'Mi Restaurante', href: '/dashboard/restaurant', icon: UtensilsCrossed },
+        { name: 'Reservaciones', href: '/dashboard/reservaciones', icon: Calendar },
+        { name: 'Imágenes del Menú', href: '/dashboard/menu-images', icon: Package },
+      ],
+    },
+    {
+      name: 'Usuarios',
+      icon: Users,
+      items: [{ name: 'Usuarios', href: '/dashboard/user-by-restaurant', icon: Users }],
+    },
+    {
+      name: 'Otros',
+      icon: Gift,
+      items: [
+        { name: 'Bonos', href: '/dashboard/bonuses', icon: Gift },
+        { name: 'Mi suscripción', href: '/dashboard/plans', icon: Layers },
+      ],
+    },
+    {
+      name: 'Pagos',
+      icon: CreditCard,
+      href: '/dashboard/payments',
+      isSingle: true,
+    },
+  ];
+};
+
+// Navegación para Turismo
+const getTourismNavigationGroups = () => {
+  return [
+    {
+      name: 'Turismo',
+      icon: Plane,
+      items: [
+        { name: 'Mi Negocio', href: '/dashboard/tourism', icon: Plane },
+        { name: 'Reservas', href: '/dashboard/orders', icon: ShoppingCart },
+        { name: 'Experiencias', href: '/dashboard/products', icon: Package },
+        { name: 'Categorias', href: '/dashboard/categories', icon: List },
+      ],
+    },
+    {
+      name: 'Usuarios',
+      icon: Users,
+      items: [{ name: 'Usuarios', href: '/dashboard/user-by-tourism', icon: Users }],
+    },
+    {
+      name: 'Otros',
+      icon: Gift,
+      items: [
+        { name: 'Bonos', href: '/dashboard/bonuses', icon: Gift },
+        { name: 'Mi suscripción', href: '/dashboard/plans', icon: Layers },
+      ],
+    },
+    {
+      name: 'Pagos',
+      icon: CreditCard,
+      href: '/dashboard/payments',
+      isSingle: true,
+    },
+  ];
+};
+
+// Función para obtener la navegación según el tipo de negocio del usuario
+const getStoreAdminNavigationGroups = (user: any) => {
+  if (user?.serviceProviderId) {
+    return getServiceNavigationGroups();
+  } else if (user?.restaurantId) {
+    return getRestaurantNavigationGroups();
+  } else if (user?.tourismId) {
+    return getTourismNavigationGroups();
+  }
+  // Default: tienda
+  return getStoreNavigationGroups();
+};
 
 export default function DashboardLayout({ children }: { children: React.ReactNode }) {
   const { isAuthenticated, isLoading } = useAuth();
@@ -173,12 +306,10 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
   };
 
   if (!user) {
-    console.log('🔍 Dashboard Layout - No user found, showing loading...');
     return <div>Cargando...</div>;
   }
 
   if (isLoading) {
-    console.log('🔍 Dashboard Layout - Auth loading...');
     return (
       <div className="flex items-center justify-center h-screen">
         <Loader className="h-8 w-8 animate-spin text-fourth-base" />
@@ -187,17 +318,12 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
   }
 
   const isStoreNewPage = pathname === '/dashboard/store/new';
-  console.log('🔍 Dashboard Layout - User role:', user?.role);
-  console.log('🔍 Dashboard Layout - Is store new page:', isStoreNewPage);
-  console.log('🔍 Dashboard Layout - Is authenticated:', isAuthenticated);
 
   if (!isStoreNewPage && (!user || !['ADMIN', 'STORE_ADMIN', 'USER'].includes(user.role))) {
-    console.log('❌ Dashboard Layout - User role not authorized:', user?.role);
     return null;
   }
 
   if (!isAuthenticated) {
-    console.log('❌ Dashboard Layout - User not authenticated');
     return null;
   }
 
@@ -206,7 +332,7 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
   }
 
   const navigationGroups =
-    user.role === 'ADMIN' ? adminNavigationGroups : storeAdminNavigationGroups;
+    user.role === 'ADMIN' ? adminNavigationGroups : getStoreAdminNavigationGroups(user);
 
   return (
     <div
@@ -254,9 +380,9 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
             {navigationGroups.map((group) => {
               const isGroupExpanded = expandedGroups[group.name];
               const hasActiveItem = group.items
-                ? group.items.some(
-                    (item) => pathname === item.href || pathname.startsWith(item.href + '/')
-                  )
+                ? group.items
+                    .filter(Boolean)
+                    .some((item) => pathname === item.href || pathname.startsWith(item.href + '/'))
                 : (group as any).href &&
                   (pathname === (group as any).href ||
                     pathname.startsWith((group as any).href + '/'));
@@ -321,7 +447,7 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
                   {/* Items del grupo (solo si no está colapsado y el grupo está expandido) */}
                   {!collapsed && isGroupExpanded && group.items && (
                     <div className="ml-6 mt-1 space-y-1">
-                      {group.items.map((item) => {
+                      {group.items.filter(Boolean).map((item) => {
                         const isActive =
                           pathname === item.href || pathname.startsWith(item.href + '/');
                         return (
@@ -440,9 +566,11 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
               {navigationGroups.map((group) => {
                 const isGroupExpanded = expandedGroups[group.name];
                 const hasActiveItem = group.items
-                  ? group.items.some(
-                      (item) => pathname === item.href || pathname.startsWith(item.href + '/')
-                    )
+                  ? group.items
+                      .filter(Boolean)
+                      .some(
+                        (item) => pathname === item.href || pathname.startsWith(item.href + '/')
+                      )
                   : (group as any).href &&
                     (pathname === (group as any).href ||
                       pathname.startsWith((group as any).href + '/'));
@@ -503,7 +631,7 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
                     {isGroupExpanded && (
                       <div className="ml-6 mt-1 space-y-1">
                         {group.items &&
-                          group.items.map((item) => {
+                          group.items.filter(Boolean).map((item) => {
                             const isActive =
                               pathname === item.href || pathname.startsWith(item.href + '/');
                             return (
