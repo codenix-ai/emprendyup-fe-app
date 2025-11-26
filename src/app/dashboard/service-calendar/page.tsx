@@ -91,6 +91,22 @@ const CREATE_SERVICE = gql`
   }
 `;
 
+const UPDATE_SERVICE = gql`
+  mutation UpdateService($id: String!, $data: UpdateServiceInput!) {
+    updateService(id: $id, data: $data) {
+      id
+      name
+      description
+      durationMinutes
+      priceAmount
+      currency
+      allowsOnlinePayment
+      isActive
+      updatedAt
+    }
+  }
+`;
+
 const CREATE_APPOINTMENT = gql`
   mutation CreateAppointment($data: CreateAppointmentInput!) {
     createAppointment(data: $data) {
@@ -147,6 +163,7 @@ export default function ServiceCalendar() {
   const [isModalOpen, setIsModalOpen] = useState(false);
   const [isServiceModalOpen, setIsServiceModalOpen] = useState(false);
   const [selectedEvent, setSelectedEvent] = useState<CalendarEvent | null>(null);
+  const [selectedService, setSelectedService] = useState<any | null>(null);
   const [events, setEvents] = useState<CalendarEvent[]>([]);
 
   // Appointment Form
@@ -183,6 +200,7 @@ export default function ServiceCalendar() {
   });
 
   const [createService] = useMutation(CREATE_SERVICE);
+  const [updateService] = useMutation(UPDATE_SERVICE);
   const [createAppointment] = useMutation(CREATE_APPOINTMENT);
   const [updateAppointment] = useMutation(UPDATE_APPOINTMENT);
   const [deleteAppointment] = useMutation(DELETE_APPOINTMENT);
@@ -275,19 +293,39 @@ export default function ServiceCalendar() {
 
   const handleCreateService = async () => {
     try {
-      await createService({
-        variables: {
-          data: {
-            ...serviceForm,
-            serviceProviderId,
+      if (selectedService) {
+        // Update existing service
+        await updateService({
+          variables: {
+            id: selectedService.id,
+            data: {
+              name: serviceForm.name,
+              description: serviceForm.description,
+              durationMinutes: serviceForm.durationMinutes,
+              priceAmount: serviceForm.priceAmount,
+              currency: serviceForm.currency,
+              allowsOnlinePayment: serviceForm.allowsOnlinePayment,
+              isActive: serviceForm.isActive,
+            },
           },
-        },
-      });
+        });
+      } else {
+        // Create new service
+        await createService({
+          variables: {
+            data: {
+              ...serviceForm,
+              serviceProviderId,
+            },
+          },
+        });
+      }
       await refetchServices();
       setIsServiceModalOpen(false);
       resetServiceForm();
+      setSelectedService(null);
     } catch (error) {
-      console.error('Error creating service:', error);
+      console.error('Error saving service:', error);
     }
   };
 
@@ -391,6 +429,20 @@ export default function ServiceCalendar() {
     });
   };
 
+  const handleEditService = (service: any) => {
+    setSelectedService(service);
+    setServiceForm({
+      name: service.name,
+      description: service.description || '',
+      durationMinutes: service.durationMinutes,
+      priceAmount: service.priceAmount,
+      currency: service.currency,
+      allowsOnlinePayment: service.allowsOnlinePayment,
+      isActive: service.isActive,
+    });
+    setIsServiceModalOpen(true);
+  };
+
   if (!serviceProviderId) {
     return (
       <div className="min-h-screen bg-gray-50 dark:bg-gray-900 flex items-center justify-center">
@@ -415,7 +467,11 @@ export default function ServiceCalendar() {
         </div>
         <div className="flex flex-col sm:flex-row gap-2 sm:gap-3">
           <button
-            onClick={() => setIsServiceModalOpen(true)}
+            onClick={() => {
+              setSelectedService(null);
+              resetServiceForm();
+              setIsServiceModalOpen(true);
+            }}
             className="inline-flex items-center justify-center px-4 py-2.5 bg-gray-600 text-white rounded-lg hover:bg-gray-700 transition-colors text-sm sm:text-base w-full sm:w-auto"
           >
             <Plus className="h-4 w-4 mr-2" />
@@ -453,7 +509,7 @@ export default function ServiceCalendar() {
                         : 'border-gray-200 bg-gray-50 dark:bg-gray-700/50 dark:border-gray-600'
                     }`}
                   >
-                    <div className="flex items-start justify-between">
+                    <div className="flex items-start justify-between mb-2">
                       <div className="flex-1">
                         <h4 className="font-medium text-gray-900 dark:text-white text-sm">
                           {service.name}
@@ -475,6 +531,12 @@ export default function ServiceCalendar() {
                         {service.isActive ? 'Activo' : 'Inactivo'}
                       </span>
                     </div>
+                    <button
+                      onClick={() => handleEditService(service)}
+                      className="w-full px-2 py-1.5 text-xs  text-white rounded-lg hover:opacity-90 transition-colors"
+                    >
+                      Editar Servicio
+                    </button>
                   </div>
                 ))
               ) : (
@@ -760,10 +822,14 @@ export default function ServiceCalendar() {
           <div className="bg-white dark:bg-gray-800 rounded-lg shadow-xl max-w-2xl w-full max-h-[95vh] sm:max-h-[90vh] overflow-y-auto">
             <div className="p-4 sm:p-6 border-b border-gray-200 dark:border-gray-700 flex justify-between items-center sticky top-0 bg-white dark:bg-gray-800 z-10">
               <h2 className="text-lg sm:text-xl font-semibold text-gray-900 dark:text-white">
-                Crear Nuevo Servicio
+                {selectedService ? 'Editar Servicio' : 'Crear Nuevo Servicio'}
               </h2>
               <button
-                onClick={() => setIsServiceModalOpen(false)}
+                onClick={() => {
+                  setIsServiceModalOpen(false);
+                  setSelectedService(null);
+                  resetServiceForm();
+                }}
                 className="text-gray-400 hover:text-gray-600 dark:hover:text-gray-300 p-1"
               >
                 <X className="h-5 w-5" />
@@ -869,7 +935,11 @@ export default function ServiceCalendar() {
 
             <div className="p-4 sm:p-6 border-t border-gray-200 dark:border-gray-700 flex flex-col sm:flex-row justify-end gap-2 sm:gap-3 sticky bottom-0 bg-white dark:bg-gray-800">
               <button
-                onClick={() => setIsServiceModalOpen(false)}
+                onClick={() => {
+                  setIsServiceModalOpen(false);
+                  setSelectedService(null);
+                  resetServiceForm();
+                }}
                 className="px-4 py-2.5 border border-gray-300 dark:border-gray-600 text-gray-700 dark:text-gray-300 rounded-lg hover:bg-gray-50 dark:hover:bg-gray-700 transition-colors text-sm sm:text-base w-full sm:w-auto"
               >
                 Cancelar
@@ -879,7 +949,7 @@ export default function ServiceCalendar() {
                 className="inline-flex items-center justify-center px-4 py-2.5 bg-[var(--fourth-base)] text-white rounded-lg hover:opacity-90 transition-colors text-sm sm:text-base w-full sm:w-auto"
               >
                 <Check className="h-4 w-4 mr-2" />
-                Crear Servicio
+                {selectedService ? 'Actualizar Servicio' : 'Crear Servicio'}
               </button>
             </div>
           </div>

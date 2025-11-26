@@ -28,8 +28,8 @@ const GET_SERVICE_PROVIDER = gql`
 `;
 
 const UPDATE_SERVICE_PROVIDER = gql`
-  mutation UpdateServiceProvider($id: String!, $input: UpdateServiceProviderInput!) {
-    updateServiceProvider(id: $id, input: $input) {
+  mutation UpdateServiceProvider($id: String!, $data: UpdateServiceProviderInput!) {
+    updateServiceProvider(id: $id, data: $data) {
       id
       businessName
       type
@@ -89,7 +89,7 @@ export default function ServiceDetailPage() {
       await updateService({
         variables: {
           id: serviceId,
-          input: inputData,
+          data: inputData,
         },
       });
 

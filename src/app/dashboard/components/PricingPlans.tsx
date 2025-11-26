@@ -220,10 +220,9 @@ export default function PricingPlans({
 
               <div className="text-center mb-8">
                 <h3 className="text-2xl font-bold text-white mb-3">{plan.name}</h3>
-                <p className="text-sm text-slate-400 mb-6 min-h-[40px]">{plan.description}</p>
 
                 <div className="mb-6">
-                  <div className="flex items-baseline justify-center gap-1 text-white">
+                  <div className="flex items-baseline justify-center gap-1 text-gray-500 line-through">
                     <span className="text-lg">$</span>
                     <span className="text-4xl font-bold">{getDisplayPrice(plan.price)}</span>
                     <span className="text-sm text-slate-400">
@@ -261,6 +260,16 @@ export default function PricingPlans({
                     'Empieza gratis'
                   )}
                 </button>
+
+                {/* Description as list below button */}
+                <div className="mt-6 text-left space-y-2">
+                  {plan.description.split(',').map((item, i) => (
+                    <div key={i} className="flex items-start gap-2">
+                      <FiCheck className="w-4 h-4 text-green-400 mt-0.5 flex-shrink-0" />
+                      <span className="text-sm text-slate-400">{item.trim()}</span>
+                    </div>
+                  ))}
+                </div>
               </div>
 
               <div className="space-y-3 text-sm">
