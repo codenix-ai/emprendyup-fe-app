@@ -2,8 +2,20 @@
 import { useQuery, useMutation, gql } from '@apollo/client';
 import { useParams, useRouter } from 'next/navigation';
 import { useState, useEffect } from 'react';
-import { Save, CheckCircle, AlertCircle, Info, MapPin, Phone, Mail, Globe } from 'lucide-react';
+import {
+  Save,
+  CheckCircle,
+  AlertCircle,
+  Info,
+  MapPin,
+  Phone,
+  Mail,
+  Globe,
+  ImageIcon,
+} from 'lucide-react';
 import AdminGuard from '@/app/components/AdminGuard';
+import FileUpload from '@/app/components/FileUpload';
+import Image from 'next/image';
 
 const GET_SERVICE_PROVIDER = gql`
   query GetServiceProvider($id: String!) {
@@ -17,6 +29,7 @@ const GET_SERVICE_PROVIDER = gql`
       location
       address
       whatsappNumber
+      coverImage
       slug
       brandingId
       businessConfigId
@@ -35,6 +48,7 @@ const UPDATE_SERVICE_PROVIDER = gql`
       type
       phone
       email
+      coverImage
       description
       location
       address
@@ -104,6 +118,7 @@ export default function ServiceDetailPage() {
   const tabs = [
     { id: 'details', label: 'Detalles', icon: Info },
     { id: 'location', label: 'Ubicación', icon: MapPin },
+    { id: 'images', label: 'Imágenes', icon: ImageIcon },
     { id: 'contact', label: 'Contacto', icon: Phone },
   ];
 
@@ -139,7 +154,21 @@ export default function ServiceDetailPage() {
 
   const inputClassName =
     'w-full px-4 py-3 border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-700 text-gray-900 dark:text-white focus:ring-2 focus:ring-fourth-base focus:border-transparent';
-
+  const resolveImageUrl = (value?: string) => {
+    if (!value) return '';
+    if (
+      value.startsWith('http') ||
+      value.startsWith('https') ||
+      value.startsWith('blob:') ||
+      value.startsWith('data:')
+    ) {
+      return value;
+    }
+    return `https://emprendyup-images.s3.us-east-1.amazonaws.com/${value}`;
+  };
+  const handleRemoveImage = (field: string) => {
+    setFormData((prev: any) => ({ ...prev, [field]: '' }));
+  };
   return (
     <AdminGuard>
       <div className="min-h-screen bg-gray-50 dark:bg-gray-900">
@@ -319,6 +348,59 @@ export default function ServiceDetailPage() {
                               className={inputClassName}
                               placeholder="Calle 72 #10-15, Bogotá, Colombia"
                             />
+                          </div>
+                        </div>
+                      </div>
+                    </div>
+                  </div>
+                )}
+                {/* Images Tab */}
+                {activeTab === 'images' && (
+                  <div className="space-y-6">
+                    <div>
+                      <h2 className="text-xl font-semibold text-gray-900 dark:text-white mb-6">
+                        Imágenen de portada
+                      </h2>
+
+                      <div className="bg-white dark:bg-gray-800 rounded-lg border border-gray-200 dark:border-gray-700 p-6">
+                        <div>
+                          <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
+                            Imagen de servicio
+                          </label>
+                          <div className="border-gray-300 dark:border-gray-600 rounded-lg p-4">
+                            {formData.coverImage ? (
+                              <div className="space-y-2">
+                                <div className="relative inline-block">
+                                  <Image
+                                    src={resolveImageUrl(formData.coverImage)}
+                                    alt="Cover"
+                                    width={400}
+                                    height={200}
+                                    className="w-full h-48 rounded object-cover"
+                                    unoptimized={Boolean(
+                                      formData.coverImage?.startsWith('blob:') ||
+                                        formData.coverImage?.startsWith('data:')
+                                    )}
+                                  />
+                                  <button
+                                    type="button"
+                                    onClick={() => handleRemoveImage('coverImage')}
+                                    className="absolute top-2 right-2 w-8 h-8 bg-red-600 hover:bg-red-700 text-white rounded-full text-sm flex items-center justify-center transition-colors"
+                                  >
+                                    ✕
+                                  </button>
+                                </div>
+                              </div>
+                            ) : (
+                              <div>
+                                <FileUpload
+                                  onFile={(url) =>
+                                    setFormData((prev: any) => ({ ...prev, coverImage: url }))
+                                  }
+                                  storeId={serviceId}
+                                />
+                              </div>
+                            )}
                           </div>
                         </div>
                       </div>
