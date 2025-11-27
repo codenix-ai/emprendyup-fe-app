@@ -19,6 +19,8 @@ const LOGIN_MUTATION = gql`
         createdAt
         updatedAt
         storeId
+        serviceProviderId
+        restaurantId
       }
     }
   }
@@ -87,7 +89,11 @@ function LoginForm() {
       // Conditional redirect
       if (data.login.user.role === 'ADMIN') {
         router.push('/dashboard/insights');
-      } else if (data.login.user.storeId) {
+      } else if (
+        data.login.user.storeId ||
+        data.login.user.restaurantId ||
+        data.login.user.serviceProviderId
+      ) {
         router.push('/dashboard/insights');
       } else {
         router.push('/dashboard/store/new');

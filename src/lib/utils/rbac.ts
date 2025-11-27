@@ -193,11 +193,28 @@ export function getCurrentUser(): UserProfile | null {
                 .join('')
             );
             const payload = JSON.parse(json);
+
+            // Mapear el rol correctamente
+            let mappedRole: 'MODERATOR' | 'STORE_ADMIN' | 'ADMIN' | 'USER' | 'CUSTOMER' = 'USER';
+            if (payload.role) {
+              const role = payload.role.toUpperCase();
+              if (['ADMIN', 'STORE_ADMIN', 'MODERATOR', 'USER', 'CUSTOMER'].includes(role)) {
+                mappedRole = role as any;
+              } else if (role === 'admin') {
+                mappedRole = 'ADMIN';
+              } else if (role === 'user') {
+                mappedRole = 'USER';
+              }
+            }
+
             const user: UserProfile = {
               id: payload.sub || payload.user_id || payload.id || '',
               name: payload.name || payload.username || payload.email || '',
               email: payload.email || '',
-              role: (payload.role && (payload.role === 'admin' ? 'admin' : 'user')) || 'user',
+              role: mappedRole,
+              serviceProviderId: payload.serviceProviderId,
+              restaurantId: payload.restaurantId,
+              storeId: payload.storeId,
             };
             return user;
           } catch {

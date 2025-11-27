@@ -93,6 +93,7 @@ export const useSessionStore = create<SessionState>()(
       (set) => ({
         user: null,
         currentStore: null,
+        currentServiceId: null,
         stores: [],
         setUser: (user) => set({ user }),
         setCurrentStore: (store) => set({ currentStore: store }),
