@@ -17,8 +17,11 @@ import {
   DollarSign,
   CheckCircle,
   XCircle,
+  Send,
+  MessageCircle,
 } from 'lucide-react';
 import { gql, useQuery, useMutation } from '@apollo/client';
+import toast from 'react-hot-toast';
 
 const CREATE_EVENT = gql`
   mutation CreateEvent($input: CreateEventInput!) {
@@ -79,6 +82,15 @@ const GET_EVENT_ASSISTANTS = gql`
         startDate
         endDate
       }
+    }
+  }
+`;
+
+const UPDATE_ASSISTANT_METADATA = gql`
+  mutation UpdateAssistantMetadata($id: ID!, $metadata: JSON!) {
+    updateEventAssistant(id: $id, input: { metadata: $metadata }) {
+      id
+      metadata
     }
   }
 `;
@@ -235,8 +247,23 @@ const StatusBadge = ({ status }: { status: string }) => {
 };
 
 // Componente AssistantCard para móvil
-const AssistantCard = ({ assistant }: { assistant: EventAssistant }) => (
-  <div className="bg-white dark:bg-gray-800 rounded-lg border border-gray-200 dark:border-gray-700 p-4 hover:shadow-md transition-all">
+const AssistantCard = ({
+  assistant,
+  isSelected,
+  onToggleSelect,
+}: {
+  assistant: EventAssistant;
+  isSelected: boolean;
+  onToggleSelect: (id: string) => void;
+}) => (
+  <div
+    onClick={() => onToggleSelect(assistant.id)}
+    className={`bg-white dark:bg-gray-800 rounded-lg border-2 p-4 hover:shadow-md transition-all cursor-pointer ${
+      isSelected
+        ? 'border-green-500 bg-green-50 dark:bg-green-900/20'
+        : 'border-gray-200 dark:border-gray-700'
+    }`}
+  >
     <div className="flex items-start justify-between mb-3">
       <div className="flex-1 min-w-0">
         <h3 className="font-semibold text-gray-900 dark:text-white truncate">
@@ -253,9 +280,13 @@ const AssistantCard = ({ assistant }: { assistant: EventAssistant }) => (
           </div>
         )}
       </div>
-      <button className="text-gray-400 hover:text-gray-600 dark:hover:text-gray-300 p-2">
-        <MoreVertical className="h-4 w-4" />
-      </button>
+      <input
+        type="checkbox"
+        checked={isSelected}
+        onChange={() => onToggleSelect(assistant.id)}
+        className="accent-green-600 h-5 w-5 mt-1"
+        onClick={(e) => e.stopPropagation()}
+      />
     </div>
 
     <div className="space-y-2 mb-3">
@@ -316,6 +347,7 @@ const EventsPage = () => {
     refetch: refetchEvents,
   } = useQuery(GET_EVENTS);
   const [createEvent] = useMutation(CREATE_EVENT);
+  const [updateAssistantMetadata] = useMutation(UPDATE_ASSISTANT_METADATA);
   const [activeTab, setActiveTab] = useState<'assistants' | 'events'>('assistants');
   const [searchTerm, setSearchTerm] = useState('');
   const [statusFilter, setStatusFilter] = useState('all');
@@ -323,7 +355,12 @@ const EventsPage = () => {
   const [selectedEvent, setSelectedEvent] = useState('all');
   const [showCreateModal, setShowCreateModal] = useState(false);
   const [isSubmitting, setIsSubmitting] = useState(false);
-  const [toast, setToast] = useState<{ message: string; type: 'success' | 'error' } | null>(null);
+  const [selectedIds, setSelectedIds] = useState<string[]>([]);
+  const [isSendingCampaign, setIsSendingCampaign] = useState(false);
+  const [localToast, setLocalToast] = useState<{
+    message: string;
+    type: 'success' | 'error';
+  } | null>(null);
   const [formData, setFormData] = useState({
     title: '',
     description: '',
@@ -435,10 +472,10 @@ const EventsPage = () => {
       setShowCreateModal(false);
       refetchEvents();
       refetchAssistants();
-      setToast({ message: 'Evento creado exitosamente', type: 'success' });
+      setLocalToast({ message: 'Evento creado exitosamente', type: 'success' });
     } catch (error) {
       console.error('Error creating event:', error);
-      setToast({
+      setLocalToast({
         message: 'Error al crear el evento. Por favor, inténtalo de nuevo.',
         type: 'error',
       });
@@ -449,13 +486,13 @@ const EventsPage = () => {
 
   // Auto-hide toast after 5 seconds
   useEffect(() => {
-    if (toast) {
+    if (localToast) {
       const timer = setTimeout(() => {
-        setToast(null);
+        setLocalToast(null);
       }, 5000);
       return () => clearTimeout(timer);
     }
-  }, [toast]);
+  }, [localToast]);
 
   const formatDate = (dateString: string) => {
     return new Date(dateString).toLocaleDateString('es-ES', {
@@ -515,6 +552,181 @@ const EventsPage = () => {
     a.click();
   };
 
+  // WhatsApp Campaign Functions
+  const toggleSelect = (id: string) => {
+    setSelectedIds((prev) => (prev.includes(id) ? prev.filter((i) => i !== id) : [...prev, id]));
+  };
+
+  const toggleSelectAll = () => {
+    if (selectedIds.length === filteredAssistants.length) {
+      setSelectedIds([]);
+    } else {
+      setSelectedIds(filteredAssistants.map((a) => a.id));
+    }
+  };
+
+  const handleSendWhatsAppCampaign = async () => {
+    if (selectedIds.length === 0) {
+      toast.error('Selecciona al menos un asistente.');
+      return;
+    }
+
+    setIsSendingCampaign(true);
+
+    try {
+      // Construir phoneNumbers y parameters
+      const phoneNumbers: string[] = [];
+      const parameters: Record<
+        string,
+        Array<{ type: string; parameter_name: string; text: string }>
+      > = {};
+
+      // Track used numbers to avoid duplicates in this batch
+      const usedNumbers = new Set<number>();
+      const assignmentsToSave: Array<{ id: string; number: number; metadata: any }> = [];
+
+      // First pass: collect all existing assigned numbers from metadata
+      assistants.forEach((assistant) => {
+        if (assistant.metadata?.campaignNumber) {
+          usedNumbers.add(assistant.metadata.campaignNumber);
+        }
+      });
+
+      // Get or generate assigned numbers for each assistant
+      selectedIds.forEach((id, index) => {
+        const assistant = assistants.find((a) => a.id === id);
+        if (!assistant) return;
+
+        // Format phone number with +57 prefix if not present
+        let phone = assistant.phone || '';
+        if (!phone.startsWith('+')) {
+          phone = `+57${phone}`;
+        }
+        phoneNumbers.push(phone);
+
+        // Strategy: Try to get from metadata first, then assign sequentially
+        let assignedNumber: number;
+        let needsUpdate = false;
+
+        // Check if assistant already has an assigned number in metadata
+        if (assistant.metadata?.campaignNumber) {
+          assignedNumber = assistant.metadata.campaignNumber;
+        } else {
+          // Find next available number (1-100)
+          assignedNumber = 1;
+          while (usedNumbers.has(assignedNumber) && assignedNumber <= 100) {
+            assignedNumber++;
+          }
+          // If all numbers 1-100  are used, cycle back and reuse
+          if (assignedNumber > 100) {
+            assignedNumber = (index % 100) + 1;
+          }
+
+          needsUpdate = true;
+          usedNumbers.add(assignedNumber);
+
+          // Queue this assignment to be saved to backend
+          assignmentsToSave.push({
+            id: assistant.id,
+            number: assignedNumber,
+            metadata: {
+              ...(assistant.metadata || {}),
+              campaignNumber: assignedNumber,
+              lastCampaignSent: new Date().toISOString(),
+            },
+          });
+        }
+
+        // Build parameters: name and assigned number
+        parameters[phone] = [
+          {
+            type: 'text',
+            parameter_name: '1',
+            text: `${assistant.firstName} ${assistant.lastName}`, // Full name
+          },
+          {
+            type: 'text',
+            parameter_name: '2',
+            text: assignedNumber.toString(), // Assigned number between 1-30
+          },
+        ];
+      });
+
+      const payload = {
+        phoneNumbers,
+        templateName: process.env.NEXT_PUBLIC_WS_EVENTS_TEMPLATE_ID,
+        languageCode: 'es',
+        parameters,
+      };
+
+      const response = await fetch(`${process.env.NEXT_PUBLIC_API_URL}/whatsapp/send-bulk`, {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify(payload),
+      });
+
+      let data;
+      const contentType = response.headers.get('content-type');
+      if (!response.ok) {
+        if (contentType && contentType.includes('application/json')) {
+          const errorData = await response.json();
+          console.error('Error del servidor:', errorData);
+          toast.error(`Error al enviar la campaña: ${errorData.message || response.statusText}`);
+        } else {
+          const text = await response.text();
+          console.error('Respuesta no JSON:', text);
+          toast.error(
+            'Error al enviar la campaña: El servidor respondió con un formato inesperado.'
+          );
+        }
+        return;
+      }
+
+      if (contentType && contentType.includes('application/json')) {
+        data = await response.json();
+
+        // Save assigned numbers to backend for persistence
+        if (assignmentsToSave.length > 0) {
+          try {
+            await Promise.all(
+              assignmentsToSave.map((assignment) =>
+                updateAssistantMetadata({
+                  variables: {
+                    id: assignment.id,
+                    metadata: assignment.metadata,
+                  },
+                })
+              )
+            );
+            console.log(`✅ Saved ${assignmentsToSave.length} number assignments to database`);
+          } catch (error) {
+            console.error('Error saving number assignments:', error);
+            // Don't fail the campaign if saving metadata fails
+          }
+        }
+
+        toast.success(
+          `✅ Campaña procesada: ${data.success} exitosos, ${data.failed} fallidos de ${data.total} total.`
+        );
+        // Clear selection after successful send
+        setSelectedIds([]);
+        // Refetch to get updated metadata
+        refetchAssistants();
+      } else {
+        const text = await response.text();
+        console.error('Respuesta no JSON:', text);
+        toast.error('La campaña fue enviada pero la respuesta no es JSON. Revisa la consola.');
+      }
+    } catch (error) {
+      console.error('Error general al enviar la campaña:', error);
+      toast.error('Hubo un error al enviar la campaña. Revisa la consola.');
+    } finally {
+      setIsSendingCampaign(false);
+    }
+  };
+
   if (loading) {
     return (
       <div className="min-h-screen bg-gray-50 dark:bg-gray-900 p-4 sm:p-6 flex items-center justify-center">
@@ -544,23 +756,23 @@ const EventsPage = () => {
   return (
     <div className="min-h-screen bg-gray-50 dark:bg-gray-900 p-4 sm:p-6">
       {/* Toast Notification */}
-      {toast && (
+      {localToast && (
         <div className="fixed top-4 right-4 z-50 animate-in slide-in-from-top-2 duration-300">
           <div
             className={`flex items-center gap-3 px-4 py-3 rounded-lg shadow-lg border ${
-              toast.type === 'success'
+              localToast.type === 'success'
                 ? 'bg-green-50 border-green-200 text-green-800 dark:bg-green-900/20 dark:border-green-800 dark:text-green-400'
                 : 'bg-red-50 border-red-200 text-red-800 dark:bg-red-900/20 dark:border-red-800 dark:text-red-400'
             }`}
           >
-            {toast.type === 'success' ? (
+            {localToast.type === 'success' ? (
               <CheckCircle className="h-5 w-5" />
             ) : (
               <XCircle className="h-5 w-5" />
             )}
-            <span className="font-medium">{toast.message}</span>
+            <span className="font-medium">{localToast.message}</span>
             <button
-              onClick={() => setToast(null)}
+              onClick={() => setLocalToast(null)}
               className="ml-2 hover:opacity-70 transition-opacity"
             >
               <X className="h-4 w-4" />
@@ -965,6 +1177,16 @@ const EventsPage = () => {
                 Crear Evento
               </button>
             )}
+            {activeTab === 'assistants' && selectedIds.length > 0 && (
+              <button
+                onClick={handleSendWhatsAppCampaign}
+                disabled={isSendingCampaign}
+                className="bg-green-600 hover:bg-green-700 text-white px-4 py-2 rounded-lg flex items-center gap-2 transition-colors w-fit disabled:opacity-50 disabled:cursor-not-allowed"
+              >
+                <Send className="h-4 w-4" />
+                {isSendingCampaign ? 'Enviando...' : `Enviar WhatsApp (${selectedIds.length})`}
+              </button>
+            )}
             <button
               onClick={exportToCSV}
               className="bg-blue-600 hover:bg-blue-700 text-white px-4 py-2 rounded-lg flex items-center gap-2 transition-colors w-fit"
@@ -1075,12 +1297,33 @@ const EventsPage = () => {
                 {/* Mobile Card View */}
                 <div className="block lg:hidden">
                   <div className="space-y-3">
-                    <div className="text-sm text-gray-600 dark:text-gray-400 px-1">
-                      {filteredAssistants.length} asistente
-                      {filteredAssistants.length !== 1 ? 's' : ''}
+                    <div className="flex items-center justify-between px-1 mb-3">
+                      <div className="text-sm text-gray-600 dark:text-gray-400">
+                        {filteredAssistants.length} asistente
+                        {filteredAssistants.length !== 1 ? 's' : ''}
+                      </div>
+                      <div className="flex items-center gap-2">
+                        <input
+                          type="checkbox"
+                          checked={
+                            selectedIds.length === filteredAssistants.length &&
+                            filteredAssistants.length > 0
+                          }
+                          onChange={toggleSelectAll}
+                          className="accent-green-600 h-5 w-5"
+                        />
+                        <span className="text-sm font-medium text-gray-700 dark:text-gray-300">
+                          Seleccionar todos
+                        </span>
+                      </div>
                     </div>
                     {filteredAssistants.map((assistant) => (
-                      <AssistantCard key={assistant.id} assistant={assistant} />
+                      <AssistantCard
+                        key={assistant.id}
+                        assistant={assistant}
+                        isSelected={selectedIds.includes(assistant.id)}
+                        onToggleSelect={toggleSelect}
+                      />
                     ))}
                   </div>
                 </div>
@@ -1096,6 +1339,17 @@ const EventsPage = () => {
                     <table className="w-full">
                       <thead className="bg-gray-50 dark:bg-gray-900/50">
                         <tr>
+                          <th className="px-6 py-4 text-left">
+                            <input
+                              type="checkbox"
+                              checked={
+                                selectedIds.length === filteredAssistants.length &&
+                                filteredAssistants.length > 0
+                              }
+                              onChange={toggleSelectAll}
+                              className="accent-green-600 h-4 w-4"
+                            />
+                          </th>
                           <th className="px-6 py-4 text-left text-xs font-semibold text-gray-500 dark:text-gray-400 uppercase tracking-wider">
                             Asistente
                           </th>
@@ -1120,8 +1374,20 @@ const EventsPage = () => {
                         {filteredAssistants.map((assistant) => (
                           <tr
                             key={assistant.id}
-                            className="hover:bg-gray-50 dark:hover:bg-gray-700/50 transition-colors"
+                            className={`transition-colors ${
+                              selectedIds.includes(assistant.id)
+                                ? 'bg-green-50 dark:bg-green-900/20'
+                                : 'hover:bg-gray-50 dark:hover:bg-gray-700/50'
+                            }`}
                           >
+                            <td className="px-6 py-4">
+                              <input
+                                type="checkbox"
+                                checked={selectedIds.includes(assistant.id)}
+                                onChange={() => toggleSelect(assistant.id)}
+                                className="accent-green-600 h-4 w-4"
+                              />
+                            </td>
                             <td className="px-6 py-4">
                               <div>
                                 <div className="font-medium text-gray-900 dark:text-white">
