@@ -77,6 +77,16 @@ interface Service {
   createdAt: string;
 }
 
+// Helper function to parse appointment datetime
+// The API returns timestamps that may be either unix milliseconds (string) or ISO string
+const parseAppointmentDate = (datetime: string): Date => {
+  const parsed = parseInt(datetime, 10);
+  if (!isNaN(parsed) && parsed > 0) {
+    return new Date(parsed);
+  }
+  return new Date(datetime);
+};
+
 export default function ServiceDashboard() {
   const { user } = useSessionStore();
   const serviceProviderId = user?.serviceProviderId;
@@ -124,7 +134,7 @@ export default function ServiceDashboard() {
           totalEarnings += service.priceAmount;
 
           // Check if appointment is in current month
-          const aptDate = new Date(parseInt(apt.startDatetime) || apt.startDatetime);
+          const aptDate = parseAppointmentDate(apt.startDatetime);
           if (aptDate >= startOfMonth) {
             monthlyEarnings += service.priceAmount;
           }
@@ -135,7 +145,7 @@ export default function ServiceDashboard() {
     // Calculate upcoming appointments (next 7 days)
     const nextWeek = new Date(now.getTime() + 7 * 24 * 60 * 60 * 1000);
     const upcomingAppointments = appointments.filter((apt) => {
-      const aptDate = new Date(parseInt(apt.startDatetime) || apt.startDatetime);
+      const aptDate = parseAppointmentDate(apt.startDatetime);
       return aptDate >= now && aptDate <= nextWeek && apt.status !== 'CANCELLED';
     }).length;
 
@@ -161,7 +171,7 @@ export default function ServiceDashboard() {
       const monthLabel = monthDate.toLocaleDateString('es-ES', { month: 'short', year: '2-digit' });
 
       const monthAppointments = appointments.filter((apt) => {
-        const aptDate = new Date(parseInt(apt.startDatetime) || apt.startDatetime);
+        const aptDate = parseAppointmentDate(apt.startDatetime);
         return aptDate >= monthDate && aptDate <= monthEnd;
       }).length;
 
@@ -186,7 +196,7 @@ export default function ServiceDashboard() {
 
       let monthEarnings = 0;
       appointments.forEach((apt) => {
-        const aptDate = new Date(parseInt(apt.startDatetime) || apt.startDatetime);
+        const aptDate = parseAppointmentDate(apt.startDatetime);
         if (aptDate >= monthDate && aptDate <= monthEnd) {
           if (apt.status === 'CONFIRMED' || apt.status === 'COMPLETED') {
             const service = services.find((s) => s.id === apt.serviceId);
@@ -234,12 +244,12 @@ export default function ServiceDashboard() {
     const now = new Date();
     return appointments
       .filter((apt) => {
-        const aptDate = new Date(parseInt(apt.startDatetime) || apt.startDatetime);
+        const aptDate = parseAppointmentDate(apt.startDatetime);
         return aptDate >= now && apt.status !== 'CANCELLED';
       })
       .sort((a, b) => {
-        const dateA = new Date(parseInt(a.startDatetime) || a.startDatetime);
-        const dateB = new Date(parseInt(b.startDatetime) || b.startDatetime);
+        const dateA = parseAppointmentDate(a.startDatetime);
+        const dateB = parseAppointmentDate(b.startDatetime);
         return dateA.getTime() - dateB.getTime();
       })
       .slice(0, 10);
@@ -278,10 +288,10 @@ export default function ServiceDashboard() {
         <div className="text-center">
           <AlertCircle className="h-12 w-12 text-yellow-500 mx-auto mb-4" />
           <h2 className="text-xl font-semibold text-gray-900 dark:text-white mb-2">
-            No se encontró el servicio
+            No se encontró el proveedor de servicios
           </h2>
           <p className="text-gray-600 dark:text-gray-400">
-            No tienes un servicio asociado a tu cuenta.
+            No tienes un proveedor de servicios asociado a tu cuenta.
           </p>
         </div>
       </div>
@@ -312,28 +322,24 @@ export default function ServiceDashboard() {
           title="Total de Citas"
           value={kpis.totalAppointments}
           icon={Calendar}
-          trend={{ value: 0, isPositive: true }}
           loading={isLoading}
         />
         <KPICard
           title="Citas Confirmadas"
           value={kpis.confirmedAppointments}
           icon={CheckCircle}
-          trend={{ value: 0, isPositive: true }}
           loading={isLoading}
         />
         <KPICard
           title="Citas Pendientes"
           value={kpis.pendingAppointments}
           icon={Clock}
-          trend={{ value: 0, isPositive: true }}
           loading={isLoading}
         />
         <KPICard
           title="Ganancias del Mes"
           value={`$${kpis.monthlyEarnings.toLocaleString()}`}
           icon={DollarSign}
-          trend={{ value: 0, isPositive: true }}
           loading={isLoading}
         />
       </div>
@@ -471,7 +477,7 @@ export default function ServiceDashboard() {
               <tbody className="divide-y divide-gray-200 dark:divide-gray-700">
                 {upcomingAppointmentsList.map((apt) => {
                   const service = services.find((s) => s.id === apt.serviceId);
-                  const aptDate = new Date(parseInt(apt.startDatetime) || apt.startDatetime);
+                  const aptDate = parseAppointmentDate(apt.startDatetime);
 
                   return (
                     <tr key={apt.id} className="hover:bg-gray-50 dark:hover:bg-gray-700 transition">
