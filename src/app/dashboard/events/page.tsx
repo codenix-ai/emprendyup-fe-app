@@ -581,17 +581,6 @@ const EventsPage = () => {
         Array<{ type: string; parameter_name: string; text: string }>
       > = {};
 
-      // Track used numbers to avoid duplicates in this batch
-      const usedNumbers = new Set<number>();
-      const assignmentsToSave: Array<{ id: string; number: number; metadata: any }> = [];
-
-      // First pass: collect all existing assigned numbers from metadata
-      assistants.forEach((assistant) => {
-        if (assistant.metadata?.campaignNumber) {
-          usedNumbers.add(assistant.metadata.campaignNumber);
-        }
-      });
-
       // Get or generate assigned numbers for each assistant
       selectedIds.forEach((id, index) => {
         const assistant = assistants.find((a) => a.id === id);
@@ -604,40 +593,10 @@ const EventsPage = () => {
         }
         phoneNumbers.push(phone);
 
-        // Strategy: Try to get from metadata first, then assign sequentially
-        let assignedNumber: number;
+        // Use the ticket number as the identifier to send to the user
+        const ticketNumber = assistant.ticketNumber || 'N/A';
 
-        // Check if assistant already has an assigned number in metadata
-        if (assistant.metadata?.campaignNumber) {
-          assignedNumber = assistant.metadata.campaignNumber;
-          // Add to usedNumbers to prevent duplicates
-          usedNumbers.add(assignedNumber);
-        } else {
-          // Find next available number (1-100)
-          assignedNumber = 1;
-          while (usedNumbers.has(assignedNumber) && assignedNumber <= 100) {
-            assignedNumber++;
-          }
-          // If all numbers 1-100  are used, cycle back and reuse
-          if (assignedNumber > 100) {
-            assignedNumber = (index % 100) + 1;
-          }
-
-          usedNumbers.add(assignedNumber);
-
-          // Queue this assignment to be saved to backend
-          assignmentsToSave.push({
-            id: assistant.id,
-            number: assignedNumber,
-            metadata: {
-              ...(assistant.metadata || {}),
-              campaignNumber: assignedNumber,
-              lastCampaignSent: new Date().toISOString(),
-            },
-          });
-        }
-
-        // Build parameters: name and assigned number
+        // Build parameters: name and ticket number
         parameters[phone] = [
           {
             type: 'text',
@@ -647,7 +606,7 @@ const EventsPage = () => {
           {
             type: 'text',
             parameter_name: '2',
-            text: assignedNumber.toString(), // Assigned number between 1-30
+            text: ticketNumber, // Send the actual ticket number
           },
         ];
       });
@@ -687,33 +646,11 @@ const EventsPage = () => {
       if (contentType && contentType.includes('application/json')) {
         data = await response.json();
 
-        // Save assigned numbers to backend for persistence
-        if (assignmentsToSave.length > 0) {
-          try {
-            await Promise.all(
-              assignmentsToSave.map((assignment) =>
-                updateAssistantMetadata({
-                  variables: {
-                    id: assignment.id,
-                    metadata: assignment.metadata,
-                  },
-                })
-              )
-            );
-            console.log(`✅ Saved ${assignmentsToSave.length} number assignments to database`);
-          } catch (error) {
-            console.error('Error saving number assignments:', error);
-            // Don't fail the campaign if saving metadata fails
-          }
-        }
-
         toast.success(
           `✅ Campaña procesada: ${data.success} exitosos, ${data.failed} fallidos de ${data.total} total.`
         );
         // Clear selection after successful send
         setSelectedIds([]);
-        // Refetch to get updated metadata
-        refetchAssistants();
       } else {
         const text = await response.text();
         console.error('Respuesta no JSON:', text);
