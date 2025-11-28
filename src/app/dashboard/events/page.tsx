@@ -606,11 +606,12 @@ const EventsPage = () => {
 
         // Strategy: Try to get from metadata first, then assign sequentially
         let assignedNumber: number;
-        let needsUpdate = false;
 
         // Check if assistant already has an assigned number in metadata
         if (assistant.metadata?.campaignNumber) {
           assignedNumber = assistant.metadata.campaignNumber;
+          // Add to usedNumbers to prevent duplicates
+          usedNumbers.add(assignedNumber);
         } else {
           // Find next available number (1-100)
           assignedNumber = 1;
@@ -622,7 +623,6 @@ const EventsPage = () => {
             assignedNumber = (index % 100) + 1;
           }
 
-          needsUpdate = true;
           usedNumbers.add(assignedNumber);
 
           // Queue this assignment to be saved to backend

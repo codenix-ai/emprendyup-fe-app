@@ -763,6 +763,9 @@ export default function InteractiveChatStore() {
   const [customBusinessTypeValue, setCustomBusinessTypeValue] = useState('');
   const [showDescriptionEdit, setShowDescriptionEdit] = useState(false);
   const [tempDescription, setTempDescription] = useState('');
+  const [showSpecialtiesSelector, setShowSpecialtiesSelector] = useState(false);
+  const [selectedSpecialties, setSelectedSpecialties] = useState<string[]>([]);
+  const [availableSpecialties, setAvailableSpecialties] = useState<string[]>([]);
 
   const [createStoreMutation] = useMutation(CREATE_STORE);
   const [createRestaurantMutation] = useMutation(CREATE_RESTAURANT);
@@ -795,6 +798,40 @@ export default function InteractiveChatStore() {
     })();
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
+
+  // Obtener especialidades según el tipo de negocio
+  const getSpecialtiesForType = (type: string, category: string): string[] => {
+    if (category === 'restaurant') {
+      const specialtiesMap: { [key: string]: string[] } = {
+        'Comida Rápida': ['Hamburguesas', 'Hot Dogs', 'Papas Fritas', 'Pizza', 'Alitas'],
+        Italiana: ['Pizza', 'Pasta', 'Risotto', 'Lasagna', 'Tiramisú'],
+        Mexicana: ['Tacos', 'Burritos', 'Quesadillas', 'Enchiladas', 'Guacamole'],
+        China: ['Arroz Frito', 'Chow Mein', 'Dim Sum', 'Wonton', 'Pollo Agridulce'],
+        Japonesa: ['Sushi', 'Ramen', 'Tempura', 'Yakitori', 'Teriyaki'],
+        Colombiana: ['Bandeja Paisa', 'Ajiaco', 'Sancocho', 'Empanadas', 'Arepa'],
+        Internacional: ['Ensaladas', 'Carnes', 'Pescados', 'Sopas', 'Postres'],
+        'Vegetariana/Vegana': ['Ensaladas', 'Bowls', 'Wraps', 'Smoothies', 'Tofu'],
+        Mariscos: ['Ceviche', 'Camarones', 'Pulpo', 'Pescado Frito', 'Cazuela'],
+        Carnes: ['Asado', 'Costillas', 'T-Bone', 'Churrasco', 'Parrillada'],
+        Parrilla: ['Carne', 'Chorizo', 'Morcilla', 'Costillas', 'Pollo'],
+        Postres: ['Tortas', 'Helados', 'Brownies', 'Cheesecake', 'Mousse'],
+        Cafetería: ['Café', 'Cappuccino', 'Latte', 'Croissants', 'Muffins'],
+      };
+      return specialtiesMap[type] || ['Plato 1', 'Plato 2', 'Plato 3', 'Bebidas', 'Postres'];
+    } else if (category === 'services') {
+      const specialtiesMap: { [key: string]: string[] } = {
+        Plomería: ['Reparaciones', 'Instalaciones', 'Destapes', 'Fugas', 'Mantenimiento'],
+        Electricidad: ['Instalación', 'Reparación', 'Iluminación', 'Cableado', 'Emergencias'],
+        Carpintería: ['Muebles', 'Reparaciones', 'Closets', 'Puertas', 'Ventanas'],
+        Pintura: ['Interior', 'Exterior', 'Comercial', 'Residencial', 'Decorativa'],
+        Limpieza: ['Residencial', 'Comercial', 'Profunda', 'Post-construcción', 'Oficinas'],
+      };
+      return (
+        specialtiesMap[type] || ['Servicio 1', 'Servicio 2', 'Servicio 3', 'Consultoría', 'Soporte']
+      );
+    }
+    return [];
+  };
 
   const validateInput = (
     value: string,
@@ -1042,91 +1079,22 @@ export default function InteractiveChatStore() {
       setCustomBusinessTypeValue('');
     }
 
-    // 🤖 Generar descripción con IA para restaurantes cuando se completa cuisineType
+    // 🤖 Mostrar selector de especialidades para restaurantes
     if (field === 'cuisineType' && storeData.businessCategory === 'restaurant' && storeData.name) {
-      const generateRestaurantDescription = async () => {
-        try {
-          setIsTyping(true);
-          const requestBody = {
-            name: storeData.name,
-            cuisineType: value,
-            city: storeData.city || 'Colombia',
-          };
-
-          const apiUrl = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:4000';
-          const response = await fetch(`${apiUrl}/chatbot/create-restaurant-description`, {
-            method: 'POST',
-            headers: {
-              'Content-Type': 'application/json',
-            },
-            body: JSON.stringify(requestBody),
-          });
-
-          if (response.ok) {
-            const result = await response.json();
-            if (result.description) {
-              // Guardar la descripción temporalmente
-              setTempDescription(result.description);
-
-              // Mostrar el campo de edición
-              setIsTyping(false);
-              setShowDescriptionEdit(true);
-            }
-          }
-        } catch (error) {
-          console.error('Error generando descripción:', error);
-        } finally {
-          setIsTyping(false);
-        }
-      };
-
-      // Ejecutar la generación de descripción
-      await generateRestaurantDescription();
-      return; // No avanzar automáticamente
+      const specialties = getSpecialtiesForType(value, 'restaurant');
+      setAvailableSpecialties(specialties);
+      setSelectedSpecialties([]);
+      setShowSpecialtiesSelector(true);
+      return; // Esperar a que el usuario seleccione especialidades
     }
 
-    // 🤖 Generar descripción con IA para servicios cuando se completa businessType
+    // 🤖 Mostrar selector de especialidades para servicios
     if (field === 'businessType' && storeData.businessCategory === 'services' && storeData.name) {
-      const generateServiceDescription = async () => {
-        try {
-          setIsTyping(true);
-          const requestBody = {
-            businessName: storeData.name,
-            type: value,
-            city: storeData.city || 'Colombia',
-          };
-
-          const apiUrl = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:4000';
-          const response = await fetch(`${apiUrl}/chatbot/create-services-description`, {
-            method: 'POST',
-            headers: {
-              'Content-Type': 'application/json',
-            },
-            body: JSON.stringify(requestBody),
-          });
-
-          if (response.ok) {
-            const result = await response.json();
-            if (result.description) {
-              // Guardar la descripción temporalmente
-              setTempDescription(result.description);
-
-              // Mostrar mensaje del bot con la descripción generada y botones
-              setIsTyping(false);
-
-              setShowDescriptionEdit(true);
-            }
-          }
-        } catch (error) {
-          console.error('Error generando descripción:', error);
-        } finally {
-          setIsTyping(false);
-        }
-      };
-
-      // Ejecutar la generación de descripción
-      await generateServiceDescription();
-      return; // No avanzar automáticamente
+      const specialties = getSpecialtiesForType(value, 'services');
+      setAvailableSpecialties(specialties);
+      setSelectedSpecialties([]);
+      setShowSpecialtiesSelector(true);
+      return; // Esperar a que el usuario seleccione especialidades
     }
 
     // 🚀 Avanzar o mostrar resumen
@@ -1418,7 +1386,7 @@ export default function InteractiveChatStore() {
       <div className="bg-slate-800 rounded-3xl shadow-2xl overflow-hidden">
         {/* Header with progress */}
         <div className="bg-gradient-to-r from-indigo-900 to-slate-800 p-6 text-white">
-          <h1 className="text-2xl font-bold mb-2 text-white">Creador de Tienda Online</h1>
+          <h1 className="text-2xl font-bold mb-2 text-white">Asistente creacion emprendimiento</h1>
           <div className="w-full bg-slate-700 rounded-full h-2 mb-2">
             <div
               className="bg-indigo-500 h-2 rounded-full transition-all duration-500 ease-out"
@@ -1564,9 +1532,158 @@ export default function InteractiveChatStore() {
           </div>
         )}
 
+        {/* Specialties Selector */}
+        {showSpecialtiesSelector && (
+          <div className="p-6 bg-gradient-to-br from-slate-800 to-slate-900 border-t border-slate-700">
+            <div className="max-w-2xl mx-auto">
+              <div className="mb-4">
+                <h3 className="text-lg font-semibold text-white flex items-center gap-2">
+                  <span>✨</span>
+                  Selecciona tus especialidades
+                </h3>
+                <p className="text-sm text-slate-400 mt-1">
+                  Elige al menos 3 especialidades para generar una mejor descripción
+                </p>
+              </div>
+
+              <div className="grid grid-cols-2 sm:grid-cols-3 gap-2 mb-4">
+                {availableSpecialties.map((specialty) => (
+                  <button
+                    key={specialty}
+                    onClick={() => {
+                      setSelectedSpecialties((prev) =>
+                        prev.includes(specialty)
+                          ? prev.filter((s) => s !== specialty)
+                          : [...prev, specialty]
+                      );
+                    }}
+                    className={`px-4 py-3 rounded-lg font-medium transition-all duration-200 transform hover:scale-105 ${
+                      selectedSpecialties.includes(specialty)
+                        ? 'bg-gradient-to-r from-green-600 to-green-700 text-white shadow-lg'
+                        : 'bg-slate-700 text-slate-300 hover:bg-slate-600'
+                    }`}
+                  >
+                    {selectedSpecialties.includes(specialty) && <span className="mr-1">✓</span>}
+                    {specialty}
+                  </button>
+                ))}
+              </div>
+
+              <div className="flex items-center justify-between gap-3">
+                <p className="text-sm text-slate-400">
+                  {selectedSpecialties.length} seleccionada
+                  {selectedSpecialties.length !== 1 ? 's' : ''}
+                </p>
+                <div className="flex gap-2">
+                  <button
+                    onClick={() => {
+                      setShowSpecialtiesSelector(false);
+                      setSelectedSpecialties([]);
+                      // Avanzar sin especialidades
+                      if (currentStep + 1 < questions.length) {
+                        setCurrentStep((prev) => prev + 1);
+                        addBotMessage(currentStep + 1);
+                      }
+                    }}
+                    className="px-4 py-2 text-sm font-medium bg-slate-700 text-slate-300 rounded-lg hover:bg-slate-600 transition-all"
+                  >
+                    Omitir
+                  </button>
+                  <button
+                    onClick={async () => {
+                      if (selectedSpecialties.length === 0) {
+                        return;
+                      }
+
+                      setShowSpecialtiesSelector(false);
+
+                      // Generar descripción con IA
+                      const isRestaurant = storeData.businessCategory === 'restaurant';
+                      try {
+                        setIsTyping(true);
+                        const requestBody = {
+                          name: storeData.name,
+                          type: isRestaurant ? 'restaurant' : 'service',
+                          category: isRestaurant ? storeData.cuisineType : storeData.businessType,
+                          city: storeData.city || 'Bogotá',
+                          specialties: selectedSpecialties,
+                          tone: isRestaurant ? 'elegant' : 'professional',
+                          language: 'es',
+                        };
+
+                        const apiUrl = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:4000';
+                        console.log('🚀 Enviando request a IA:', requestBody);
+
+                        const response = await fetch(`${apiUrl}/ai/description/generate`, {
+                          method: 'POST',
+                          headers: {
+                            'Content-Type': 'application/json',
+                          },
+                          body: JSON.stringify(requestBody),
+                        });
+
+                        console.log('📡 Response status:', response.status, response.statusText);
+
+                        // 200 OK o 201 Created son válidos
+                        if (response.ok || response.status === 201) {
+                          const result = await response.json();
+                          console.log('✅ Respuesta de IA:', result);
+                          if (result.data.description) {
+                            setTempDescription(result.data.description);
+                            setIsTyping(false);
+                            setShowDescriptionEdit(true);
+                          } else {
+                            console.warn('⚠️ No se encontró description en la respuesta:', result);
+                            // Intentar de todas formas mostrar el editor con mensaje de error
+                            setTempDescription(
+                              'No se pudo generar una descripción. Por favor, escribe una manualmente.'
+                            );
+                            setIsTyping(false);
+                            setShowDescriptionEdit(true);
+                          }
+                        } else {
+                          console.error(
+                            '❌ Error en la respuesta:',
+                            response.status,
+                            response.statusText
+                          );
+                          const errorText = await response.text();
+                          console.error('Error details:', errorText);
+                          // Mostrar editor con mensaje de error
+                          setTempDescription(
+                            'Hubo un error al generar la descripción. Por favor, escribe una manualmente.'
+                          );
+                          setIsTyping(false);
+                          setShowDescriptionEdit(true);
+                        }
+                      } catch (error) {
+                        console.error('💥 Error generando descripción:', error);
+                        // Mostrar editor con mensaje de error
+                        setTempDescription(
+                          'Error de conexión. Por favor, escribe una descripción manualmente.'
+                        );
+                        setIsTyping(false);
+                        setShowDescriptionEdit(true);
+                      } finally {
+                        setIsTyping(false);
+                      }
+                    }}
+                    disabled={selectedSpecialties.length === 0}
+                    className="px-6 py-2 text-sm font-medium bg-gradient-to-r from-blue-600 to-indigo-600 text-white rounded-lg hover:from-blue-700 hover:to-indigo-700 disabled:opacity-50 disabled:cursor-not-allowed transition-all duration-200 transform hover:scale-105 shadow-md flex items-center gap-2"
+                  >
+                    <span>✨</span>
+                    Generar Descripción
+                  </button>
+                </div>
+              </div>
+            </div>
+          </div>
+        )}
+
         {/* Input Area */}
         {/* Mostrar input cuando estamos en preguntas normales O cuando aún no se ha seleccionado tipo de negocio */}
         {!showDescriptionEdit &&
+          !showSpecialtiesSelector &&
           ((questions.length > 0 && currentStep < questions.length) ||
             (questions.length === 0 && !selectedBusinessType)) &&
           messages.length > 0 &&
