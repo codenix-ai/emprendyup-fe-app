@@ -1666,7 +1666,7 @@ export default function InteractiveChatStore() {
                 </p>
                 <div className="flex items-center justify-center gap-4">
                   <a
-                    href={`http://emprendyup.com`}
+                    href={`https://app.emprendy.ai/dashboard`}
                     className="px-6 py-3 bg-green-500 text-white rounded-lg font-semibold hover:bg-green-600 transition-colors"
                   >
                     Ir a la página principal
