@@ -258,7 +258,11 @@ export function ImageUploader({ images, onChange, maxImages = 10 }: ImageUploade
                   {/* Thumbnail */}
                   <div className="relative w-16 h-16 bg-gray-700 rounded-lg overflow-hidden flex-shrink-0">
                     <Image
-                      src={`https://emprendyup-images.s3.us-east-1.amazonaws.com/${image.url}`}
+                      src={
+                        image.url.startsWith('blob:')
+                          ? image.url
+                          : `https://emprendyup-images.s3.us-east-1.amazonaws.com/${image.url}`
+                      }
                       alt={image.alt || `Producto imagen ${index + 1}`}
                       fill
                       className="object-cover"
