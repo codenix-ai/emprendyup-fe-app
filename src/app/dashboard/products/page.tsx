@@ -209,7 +209,7 @@ export default function ProductsPage() {
   const userData = JSON.parse(localStorage.getItem('user') || '{}');
   // Pagination state
   const [currentPage, setCurrentPage] = useState(1);
-  const [pageSize, setPageSize] = useState(15);
+  const pageSize = 15; // Fixed page size
 
   const isAdmin =
     userData?.role === 'ADMIN' ||
@@ -222,6 +222,7 @@ export default function ProductsPage() {
   } = useQuery(GET_PRODUCTS_BY_STORE, {
     variables: { storeId: userData?.storeId || '', page: currentPage, pageSize },
     skip: isAdmin || !userData?.storeId,
+    fetchPolicy: 'network-only',
   });
 
   const {
@@ -231,6 +232,7 @@ export default function ProductsPage() {
   } = useQuery(PAGINATED_PRODUCTS_QUERY, {
     variables: { page: currentPage, pageSize },
     skip: !isAdmin,
+    fetchPolicy: 'network-only',
   });
 
   const productsData = isAdmin ? adminData : storeData;
@@ -271,9 +273,7 @@ export default function ProductsPage() {
   const totalProducts = isAdmin
     ? productsData?.paginatedProducts?.total || 0
     : productsData?.productsByStore?.total || 0;
-  const totalPages = isAdmin
-    ? Math.ceil((productsData?.paginatedProducts?.total || 0) / pageSize)
-    : productsData?.productsByStore?.totalPages || 1; // Use backend-provided totalPages when available
+  const totalPages = Math.ceil(totalProducts / pageSize) || 1;
 
   const filteredProducts = products.filter(
     (product: Product) =>
@@ -287,12 +287,6 @@ export default function ProductsPage() {
   // Pagination handlers
   const handlePageChange = (page: number) => {
     setCurrentPage(page);
-    setSelectedProducts([]);
-  };
-
-  const handlePageSizeChange = (newPageSize: number) => {
-    setPageSize(newPageSize);
-    setCurrentPage(1);
     setSelectedProducts([]);
   };
 
@@ -895,29 +889,14 @@ export default function ProductsPage() {
           </div>
 
           <div className="hidden sm:flex sm:flex-1 sm:items-center sm:justify-between">
-            <div className="flex items-center space-x-4">
+            <div>
               <p className="text-sm text-gray-300">
                 Mostrando{' '}
-                <span className="font-medium">
-                  {Math.min((currentPage - 1) * pageSize + 1, totalProducts)}
-                </span>{' '}
-                a{' '}
                 <span className="font-medium">
                   {Math.min(currentPage * pageSize, totalProducts)}
                 </span>{' '}
                 de <span className="font-medium">{totalProducts}</span> productos
               </p>
-              <select
-                value={pageSize}
-                onChange={(e) => handlePageSizeChange(Number(e.target.value))}
-                className="rounded-lg border border-gray-600 bg-gray-800 text-white px-3 py-1 text-sm focus:border-transparent focus:ring-2 focus:outline-none"
-                style={{ '--tw-ring-color': primaryColor } as React.CSSProperties}
-              >
-                <option value={10}>10 por página</option>
-                <option value={15}>15 por página</option>
-                <option value={25}>25 por página</option>
-                <option value={50}>50 por página</option>
-              </select>
             </div>
 
             <div>
@@ -933,33 +912,48 @@ export default function ProductsPage() {
                   <ChevronLeft className="h-5 w-5" />
                 </button>
 
-                {Array.from({ length: Math.min(totalPages, 7) }, (_, i) => {
-                  let pageNumber;
-                  if (totalPages <= 7) {
-                    pageNumber = i + 1;
-                  } else if (currentPage <= 4) {
-                    pageNumber = i + 1;
-                  } else if (currentPage >= totalPages - 3) {
-                    pageNumber = totalPages - 6 + i;
-                  } else {
-                    pageNumber = currentPage - 3 + i;
+                {(() => {
+                  const maxVisiblePages = 3;
+                  let startPage = 1;
+                  let endPage = totalPages;
+
+                  if (totalPages > maxVisiblePages) {
+                    // Calcular el rango de páginas a mostrar
+                    if (currentPage <= 2) {
+                      // Si estamos en las primeras páginas, mostrar 1, 2, 3
+                      startPage = 1;
+                      endPage = maxVisiblePages;
+                    } else if (currentPage >= totalPages - 1) {
+                      // Si estamos en las últimas páginas, mostrar las últimas 3
+                      startPage = totalPages - maxVisiblePages + 1;
+                      endPage = totalPages;
+                    } else {
+                      // Si estamos en el medio, mostrar página actual y vecinas
+                      startPage = currentPage - 1;
+                      endPage = currentPage + 1;
+                    }
                   }
 
-                  return (
-                    <button
-                      key={pageNumber}
-                      onClick={() => handlePageChange(pageNumber)}
-                      className={`relative inline-flex items-center px-4 py-2 text-sm font-semibold transition-colors ${
-                        currentPage === pageNumber
-                          ? 'z-10 text-white focus:z-20'
-                          : 'text-gray-300 ring-1 ring-inset ring-gray-600 hover:bg-gray-700 focus:z-20 focus:outline-offset-0'
-                      }`}
-                      style={currentPage === pageNumber ? { backgroundColor: primaryColor } : {}}
-                    >
-                      {pageNumber}
-                    </button>
-                  );
-                })}
+                  const pages = [];
+                  for (let i = startPage; i <= endPage; i++) {
+                    pages.push(
+                      <button
+                        key={i}
+                        onClick={() => handlePageChange(i)}
+                        className={`relative inline-flex items-center px-4 py-2 text-sm font-semibold transition-colors ${
+                          currentPage === i
+                            ? 'z-10 text-white focus:z-20'
+                            : 'text-gray-300 ring-1 ring-inset ring-gray-600 hover:bg-gray-700 focus:z-20 focus:outline-offset-0'
+                        }`}
+                        style={currentPage === i ? { backgroundColor: primaryColor } : {}}
+                      >
+                        {i}
+                      </button>
+                    );
+                  }
+
+                  return pages;
+                })()}
 
                 <button
                   onClick={() => handlePageChange(currentPage + 1)}
