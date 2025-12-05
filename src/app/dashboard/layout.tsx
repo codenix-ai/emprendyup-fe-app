@@ -117,7 +117,7 @@ const getStoreNavigationGroups = () => {
     {
       name: 'Usuarios',
       icon: Users,
-      items: [{ name: 'Usuarios por tienda', href: '/dashboard/usersbyStore', icon: Users }],
+      items: [{ name: 'Usuarios por tienda', href: '/dashboard/user-by-store', icon: Users }],
     },
     {
       name: 'Otros',

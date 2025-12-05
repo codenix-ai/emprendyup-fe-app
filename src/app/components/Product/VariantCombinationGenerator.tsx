@@ -1,6 +1,6 @@
 'use client';
 
-import { useState, useMemo, useEffect } from 'react';
+import { useState, useMemo, useEffect, useRef } from 'react';
 import { Zap, Package, Hash } from 'lucide-react';
 import { ProductColor, ProductSize } from '@/app/utils/types/Product';
 
@@ -47,6 +47,16 @@ export function VariantCombinationGenerator({
   );
   const [combinations, setCombinations] = useState<VariantCombination[]>(existingCombinations);
 
+  // Track previous variant counts to detect actual changes
+  const prevVariantsRef = useRef({
+    colorsCount: colors.length,
+    sizesCount: sizes.length,
+    customVariantsCount: customVariants.length,
+  });
+
+  // Track if we've already initialized combinations
+  const hasInitialized = useRef(false);
+
   // Group custom variants by type
   const customVariantsByType = useMemo(() => {
     const grouped: Record<string, CustomVariant[]> = {};
@@ -62,13 +72,174 @@ export function VariantCombinationGenerator({
 
   // Update combinations when existingCombinations change (for edit mode)
   useEffect(() => {
-    if (isEditMode && existingCombinations.length > 0 && combinations.length === 0) {
+    if (
+      isEditMode &&
+      existingCombinations.length > 0 &&
+      combinations.length === 0 &&
+      !hasInitialized.current
+    ) {
       console.log('🔄 Loading existing combinations:', existingCombinations.length);
       setCombinations(existingCombinations);
       setShowCombinations(true);
       onCombinationsChange(existingCombinations);
+      hasInitialized.current = true;
     }
   }, [existingCombinations, isEditMode]); // Removed onCombinationsChange from deps to avoid loops
+
+  // Auto-generate combinations when variants change
+  useEffect(() => {
+    const hasVariants = colors.length > 0 || sizes.length > 0 || customVariants.length > 0;
+
+    // Check if variants actually changed
+    const variantsChanged =
+      prevVariantsRef.current.colorsCount !== colors.length ||
+      prevVariantsRef.current.sizesCount !== sizes.length ||
+      prevVariantsRef.current.customVariantsCount !== customVariants.length;
+
+    // Update the ref
+    prevVariantsRef.current = {
+      colorsCount: colors.length,
+      sizesCount: sizes.length,
+      customVariantsCount: customVariants.length,
+    };
+
+    // Only auto-generate if:
+    // 1. We have variants
+    // 2. Variants actually changed
+    // 3. We're not in edit mode OR we don't have existing combinations loaded
+    if (hasVariants && variantsChanged && (!isEditMode || !hasInitialized.current)) {
+      console.log('🔄 Auto-generating combinations due to variant changes');
+      autoGenerateCombinations();
+    }
+  }, [colors.length, sizes.length, customVariants.length]);
+
+  // Auto-generate combinations without confirmation
+  const autoGenerateCombinations = () => {
+    const allVariantTypes: Array<{
+      type: string;
+      variants: Array<{ name: string; value: string; hex?: string }>;
+    }> = [];
+
+    // Add colors
+    if (colors.length > 0) {
+      allVariantTypes.push({
+        type: 'color',
+        variants: colors.map((color) => ({
+          name: color.name,
+          value: color.name,
+          hex: color.hex,
+        })),
+      });
+    }
+
+    // Add sizes
+    if (sizes.length > 0) {
+      allVariantTypes.push({
+        type: 'size',
+        variants: sizes.map((size) => ({
+          name: size.name,
+          value: size.value || size.name,
+        })),
+      });
+    }
+
+    // Add custom variants by type
+    Object.entries(customVariantsByType).forEach(([type, variants]) => {
+      if (variants.length > 0) {
+        allVariantTypes.push({
+          type,
+          variants: variants.map((variant) => ({
+            name: variant.name,
+            value: variant.value || variant.name,
+          })),
+        });
+      }
+    });
+
+    if (allVariantTypes.length === 0) {
+      setCombinations([]);
+      setShowCombinations(false);
+      onCombinationsChange([]);
+      return;
+    }
+
+    // Generate cartesian product
+    const generateCartesianProduct = (
+      arrays: Array<{
+        type: string;
+        variants: Array<{ name: string; value: string; hex?: string }>;
+      }>
+    ): VariantCombination[] => {
+      if (arrays.length === 0) return [];
+      if (arrays.length === 1) {
+        return arrays[0].variants.map((variant, index) => ({
+          id: `combination-${index}`,
+          name: variant.name,
+          variants: [
+            {
+              type: arrays[0].type,
+              name: variant.name,
+              value: variant.value,
+            },
+          ],
+          stock: 10,
+          price: basePrice ?? 0,
+        }));
+      }
+
+      const result: VariantCombination[] = [];
+      const [first, ...rest] = arrays;
+      const restCombinations = generateCartesianProduct(rest);
+
+      first.variants.forEach((variant) => {
+        restCombinations.forEach((restCombination, index) => {
+          const combinationName = `${variant.name} - ${restCombination.name}`;
+          result.push({
+            id: `combination-${variant.name}-${restCombination.id}-${index}`,
+            name: combinationName,
+            variants: [
+              {
+                type: first.type,
+                name: variant.name,
+                value: variant.value,
+              },
+              ...restCombination.variants,
+            ],
+            stock: 10,
+            price: basePrice ?? 0,
+          });
+        });
+      });
+
+      return result;
+    };
+
+    const newCombinations = generateCartesianProduct(allVariantTypes);
+
+    // Try to preserve stock values from existing combinations
+    const combinationsWithPreservedStock = newCombinations.map((newCombo) => {
+      const existingCombo = combinations.find(
+        (existing) =>
+          existing.name === newCombo.name ||
+          (existing.variants.length === newCombo.variants.length &&
+            existing.variants.every(
+              (ev, i) =>
+                ev.type === newCombo.variants[i].type && ev.name === newCombo.variants[i].name
+            ))
+      );
+
+      return {
+        ...newCombo,
+        stock: existingCombo ? existingCombo.stock : 10,
+        price: existingCombo ? existingCombo.price : basePrice,
+        id: existingCombo ? existingCombo.id : newCombo.id,
+      };
+    });
+
+    setCombinations(combinationsWithPreservedStock);
+    setShowCombinations(true);
+    onCombinationsChange(combinationsWithPreservedStock);
+  };
 
   // Generate all possible combinations
   const generateCombinations = () => {

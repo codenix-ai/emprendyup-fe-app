@@ -142,6 +142,12 @@ const UPDATE_PRODUCT = gql`
         url
         order
       }
+      variants {
+        id
+        name
+        type
+        jsonData
+      }
       createdAt
       updatedAt
     }
@@ -861,9 +867,16 @@ export function ProductFormWizard({
           });
         }
       }
+
+      // Cerrar el toast de loading y mostrar éxito
+      toast.success('Combinaciones guardadas exitosamente', {
+        id: 'variant-combinations',
+      });
     } catch (error) {
       console.error('Error saving variant combinations:', error);
-      toast.error('Error al guardar combinaciones de variantes');
+      toast.error('Error al guardar combinaciones de variantes', {
+        id: 'variant-combinations',
+      });
       throw error;
     }
   };
@@ -982,11 +995,13 @@ export function ProductFormWizard({
             colorHex: color.hex,
           })),
           sizes: sizes.map((size) => size.name),
+          variants: convertVariantsToNewFormat(), // Add variants here
         };
 
         console.log('🔍 UPDATE Input being sent:', {
           colors: updateInput.colors,
           sizes: updateInput.sizes,
+          variants: updateInput.variants,
           customVariants: customVariants,
           stock: updateInput.stock,
         });
