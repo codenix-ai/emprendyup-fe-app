@@ -298,13 +298,6 @@ const restaurantQuestions = [
     optional: true,
   },
   {
-    text: '🖼️ Sube el favicon (ícono de pestaña):',
-    field: 'faviconUrl',
-    type: 'image' as const,
-    validation: { type: 'url' as const, required: false },
-    optional: true,
-  },
-  {
     text: '🌆 Sube una imagen de banner:',
     field: 'bannerUrl',
     type: 'image' as const,
@@ -449,13 +442,6 @@ const servicesQuestions = [
   {
     text: '🎨 Sube el logo de tu empresa:',
     field: 'logoUrl',
-    type: 'image' as const,
-    validation: { type: 'url' as const, required: false },
-    optional: true,
-  },
-  {
-    text: '🖼️ Sube el favicon (ícono de pestaña):',
-    field: 'faviconUrl',
     type: 'image' as const,
     validation: { type: 'url' as const, required: false },
     optional: true,
