@@ -400,10 +400,10 @@ const UsersPage = () => {
               Gestiona los usuarios y sus tiendas asignadas
             </p>
           </div>
-          <button className="bg-blue-600 hover:bg-blue-700 text-white px-4 py-2 rounded-lg flex items-center gap-2 transition-colors w-fit">
+          {/* <button className="bg-blue-600 hover:bg-blue-700 text-white px-4 py-2 rounded-lg flex items-center gap-2 transition-colors w-fit">
             <Plus className="h-4 w-4" />
             Nuevo Usuario
-          </button>
+          </button> */}
         </div>
 
         {/* KPI Cards */}

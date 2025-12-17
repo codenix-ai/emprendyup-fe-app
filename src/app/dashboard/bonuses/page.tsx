@@ -17,6 +17,7 @@ import {
 import { gql, useQuery, useMutation } from '@apollo/client';
 import toast from 'react-hot-toast';
 import { useRouter } from 'next/navigation';
+import { getUserFromLocalStorage } from '@/lib/utils/localAuth';
 
 // =======================
 // GraphQL QUERIES / MUTATIONS
@@ -75,7 +76,8 @@ const DELETE_COUPON = gql`
 // COMPONENT
 // =======================
 export default function CouponsPage() {
-  const storeId = 'b1dd4319-06de-460b-9fdf-d8056b4e156e';
+  const user = getUserFromLocalStorage();
+  const storeId = user?.storeId || process.env.NEXT_PUBLIC_DEFAULT_STORE_ID || '';
   const { data, loading, error, refetch } = useQuery(GET_STORE_COUPONS, {
     variables: { storeId },
   });

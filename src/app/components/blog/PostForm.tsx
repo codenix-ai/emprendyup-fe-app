@@ -226,7 +226,7 @@ export default function PostForm({ initialData }: PostFormProps) {
       }
 
       setMessageType('success');
-      router.push(`/blog-detalle/${saved.slug}`);
+      router.push(`/dashboard/blog`);
     } catch (err: any) {
       console.error(err);
       setMessage(err.message || 'Error al guardar. Intenta nuevamente.');
