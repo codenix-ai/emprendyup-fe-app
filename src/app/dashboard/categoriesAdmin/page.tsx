@@ -306,10 +306,14 @@ const CategoryFormModal = ({
 
       if (category) {
         // Update existing category
+        // The GraphQL UpdateCategoryInput does not accept `storeId`, remove it
+        const updatePayload = { ...inputPayload };
+        delete updatePayload.storeId;
+
         await updateCategory({
           variables: {
             id: category.id,
-            input: inputPayload,
+            input: updatePayload,
           },
         });
         toast.success('Categoría actualizada exitosamente');
