@@ -11,6 +11,12 @@ function ResetPasswordContent() {
 
   const [newPassword, setNewPassword] = useState('');
   const [confirmPassword, setConfirmPassword] = useState('');
+  const [showPassword, setShowPassword] = useState(false);
+  const hasUpper = /[A-Z]/.test(newPassword);
+  const hasLower = /[a-z]/.test(newPassword);
+  const hasNumber = /\d/.test(newPassword);
+  const hasSpecial = /[\W_]/.test(newPassword);
+  const hasMin = newPassword.length >= 8;
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState('');
   const [success, setSuccess] = useState('');
@@ -23,8 +29,12 @@ function ResetPasswordContent() {
       setError('Por favor ingresa y confirma tu nueva contraseña.');
       return;
     }
-    if (newPassword.length < 6) {
-      setError('La contraseña debe tener al menos 6 caracteres.');
+    // Enforce password policy: min 8, uppercase, lowercase, number, special
+    const passwordRegex = /^(?=.*[a-z])(?=.*[A-Z])(?=.*\d)(?=.*[\W_]).{8,}$/;
+    if (!passwordRegex.test(newPassword)) {
+      setError(
+        'La contraseña debe tener mínimo 8 caracteres e incluir mayúscula, minúscula, número y un carácter especial.'
+      );
       return;
     }
     if (newPassword !== confirmPassword) {
@@ -76,15 +86,77 @@ function ResetPasswordContent() {
           >
             Nueva contraseña
           </label>
-          <input
-            id="newPassword"
-            type="password"
-            value={newPassword}
-            onChange={(e) => setNewPassword(e.target.value)}
-            className="w-full px-3 py-2 border rounded bg-transparent text-black dark:text-white dark:border-gray-700 mb-4"
-            placeholder="********"
-            required
-          />
+          <div className="relative mb-2">
+            <input
+              id="newPassword"
+              type={showPassword ? 'text' : 'password'}
+              value={newPassword}
+              onChange={(e) => setNewPassword(e.target.value)}
+              className="w-full px-3 py-2 border rounded bg-transparent text-black dark:text-white dark:border-gray-700 mb-1"
+              placeholder="********"
+              required
+            />
+            <button
+              type="button"
+              onClick={() => setShowPassword((s) => !s)}
+              aria-label={showPassword ? 'Ocultar contraseña' : 'Mostrar contraseña'}
+              className="absolute right-2 top-1/2 -translate-y-1/2 text-gray-600 dark:text-gray-300"
+            >
+              {showPassword ? (
+                <svg
+                  xmlns="http://www.w3.org/2000/svg"
+                  width="18"
+                  height="18"
+                  viewBox="0 0 24 24"
+                  fill="none"
+                  stroke="currentColor"
+                  strokeWidth="2"
+                  strokeLinecap="round"
+                  strokeLinejoin="round"
+                >
+                  <path d="M17.94 17.94A10.94 10.94 0 0 1 12 20c-9 0-11-8-11-8a17.38 17.38 0 0 1 5-5" />
+                  <path d="M1 1l22 22" />
+                </svg>
+              ) : (
+                <svg
+                  xmlns="http://www.w3.org/2000/svg"
+                  width="18"
+                  height="18"
+                  viewBox="0 0 24 24"
+                  fill="none"
+                  stroke="currentColor"
+                  strokeWidth="2"
+                  strokeLinecap="round"
+                  strokeLinejoin="round"
+                >
+                  <path d="M1 12s2-7 11-7 11 7 11 7-2 7-11 7S1 12 1 12z" />
+                  <circle cx="12" cy="12" r="3" />
+                </svg>
+              )}
+            </button>
+          </div>
+          {/* Strength meter */}
+          <div className="mb-3">
+            <div className="w-full h-2 bg-gray-200 rounded overflow-hidden">
+              <div
+                className={`h-2 rounded ${
+                  hasMin && hasUpper && hasLower && hasNumber && hasSpecial
+                    ? 'bg-emerald-500'
+                    : hasMin && (hasUpper || hasLower || hasNumber || hasSpecial)
+                      ? 'bg-yellow-400'
+                      : 'bg-red-400'
+                }`}
+                style={{
+                  width: `${([hasMin, hasUpper, hasLower, hasNumber, hasSpecial].filter(Boolean).length / 5) * 100}%`,
+                }}
+              />
+            </div>
+            <div className="text-xs text-gray-600 dark:text-gray-300 mt-1">
+              {hasMin ? '✓' : '•'} 8 caracteres • {hasUpper ? '✓' : '•'} mayúscula •{' '}
+              {hasLower ? '✓' : '•'} minúscula • {hasNumber ? '✓' : '•'} número •{' '}
+              {hasSpecial ? '✓' : '•'} carácter especial
+            </div>
+          </div>
           <label
             className="block mb-2 text-sm font-medium text-gray-700 dark:text-gray-300"
             htmlFor="confirmPassword"
@@ -93,7 +165,7 @@ function ResetPasswordContent() {
           </label>
           <input
             id="confirmPassword"
-            type="password"
+            type={showPassword ? 'text' : 'password'}
             value={confirmPassword}
             onChange={(e) => setConfirmPassword(e.target.value)}
             className="w-full px-3 py-2 border rounded bg-transparent text-black dark:text-white dark:border-gray-700 mb-4"

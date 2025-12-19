@@ -297,20 +297,20 @@ const restaurantQuestions = [
     validation: { type: 'url' as const, required: false },
     optional: true,
   },
-  {
-    text: '🖼️ Sube el favicon (ícono de pestaña):',
-    field: 'faviconUrl',
-    type: 'image' as const,
-    validation: { type: 'url' as const, required: false },
-    optional: true,
-  },
-  {
-    text: '🌆 Sube una imagen de banner:',
-    field: 'bannerUrl',
-    type: 'image' as const,
-    validation: { type: 'url' as const, required: false },
-    optional: true,
-  },
+  // {
+  //   text: '🖼️ Sube el favicon (ícono de pestaña):',
+  //   field: 'faviconUrl',
+  //   type: 'image' as const,
+  //   validation: { type: 'url' as const, required: false },
+  //   optional: true,
+  // },
+  // {
+  //   text: '🌆 Sube una imagen de banner:',
+  //   field: 'bannerUrl',
+  //   type: 'image' as const,
+  //   validation: { type: 'url' as const, required: false },
+  //   optional: true,
+  // },
   {
     text: '🎨 Elige tu color principal (color primario):',
     field: 'primaryColor',
@@ -453,20 +453,20 @@ const servicesQuestions = [
     validation: { type: 'url' as const, required: false },
     optional: true,
   },
-  {
-    text: '🖼️ Sube el favicon (ícono de pestaña):',
-    field: 'faviconUrl',
-    type: 'image' as const,
-    validation: { type: 'url' as const, required: false },
-    optional: true,
-  },
-  {
-    text: '🌆 Sube una imagen de banner:',
-    field: 'bannerUrl',
-    type: 'image' as const,
-    validation: { type: 'url' as const, required: false },
-    optional: true,
-  },
+  // {
+  //   text: '🖼️ Sube el favicon (ícono de pestaña):',
+  //   field: 'faviconUrl',
+  //   type: 'image' as const,
+  //   validation: { type: 'url' as const, required: false },
+  //   optional: true,
+  // },
+  // {
+  //   text: '🌆 Sube una imagen de banner:',
+  //   field: 'bannerUrl',
+  //   type: 'image' as const,
+  //   validation: { type: 'url' as const, required: false },
+  //   optional: true,
+  // },
 
   {
     text: '🎨 Elige tu color principal:',
@@ -1783,7 +1783,7 @@ export default function InteractiveChatStore() {
                 </p>
                 <div className="flex items-center justify-center gap-4">
                   <a
-                    href={`http://emprendyup.com`}
+                    href={`http://emprendy.ai`}
                     className="px-6 py-3 bg-green-500 text-white rounded-lg font-semibold hover:bg-green-600 transition-colors"
                   >
                     Ir a la página principal
@@ -1832,8 +1832,8 @@ export default function InteractiveChatStore() {
                           googleLocation: updatedData.googleLocation || '',
                           branding: {
                             logoUrl: updatedData.logoUrl || '',
-                            faviconUrl: updatedData.faviconUrl || '',
-                            bannerUrl: updatedData.bannerUrl || '',
+                            // faviconUrl: updatedData.faviconUrl || '',
+                            // bannerUrl: updatedData.bannerUrl || '',
                             coverImageUrl: updatedData.coverImage || '',
                             primaryColor: updatedData.primaryColor || '#3B82F6',
                             secondaryColor: updatedData.secondaryColor || '#1F2937',
@@ -1910,8 +1910,8 @@ export default function InteractiveChatStore() {
                           isActive: true,
                           branding: {
                             logoUrl: updatedData.logoUrl || '',
-                            faviconUrl: updatedData.faviconUrl || '',
-                            bannerUrl: updatedData.bannerUrl || '',
+                            // faviconUrl: updatedData.faviconUrl || '',
+                            // bannerUrl: updatedData.bannerUrl || '',
                             coverImageUrl: updatedData.coverImage || '',
                             primaryColor: updatedData.primaryColor || '#7C3AED',
                             secondaryColor: updatedData.secondaryColor || '#1F2937',

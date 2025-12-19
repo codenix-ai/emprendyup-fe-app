@@ -22,6 +22,12 @@ function ForgotPassword() {
   // Password reset state
   const [newPassword, setNewPassword] = useState('');
   const [confirmPassword, setConfirmPassword] = useState('');
+  const [showPassword, setShowPassword] = useState(false);
+  const hasUpper = /[A-Z]/.test(newPassword);
+  const hasLower = /[a-z]/.test(newPassword);
+  const hasNumber = /\d/.test(newPassword);
+  const hasSpecial = /[\W_]/.test(newPassword);
+  const hasMin = newPassword.length >= 8;
   const [resetLoading, setResetLoading] = useState(false);
   const [resetError, setResetError] = useState('');
   const [resetSuccess, setResetSuccess] = useState('');
@@ -71,6 +77,14 @@ function ForgotPassword() {
     }
     if (newPassword !== confirmPassword) {
       setResetError('Las contraseñas no coinciden.');
+      return;
+    }
+    // Enforce password policy
+    const passwordRegex = /^(?=.*[a-z])(?=.*[A-Z])(?=.*\d)(?=.*[\W_]).{8,}$/;
+    if (!passwordRegex.test(newPassword)) {
+      setResetError(
+        'La contraseña debe tener mínimo 8 caracteres e incluir mayúscula, minúscula, número y un carácter especial.'
+      );
       return;
     }
     setResetLoading(true);
@@ -189,15 +203,79 @@ function ForgotPassword() {
                           <label className="font-semibold" htmlFor="newPassword">
                             Nueva contraseña
                           </label>
-                          <input
-                            id="newPassword"
-                            type="password"
-                            value={newPassword}
-                            onChange={(e) => setNewPassword(e.target.value)}
-                            className="mt-3 w-full py-2 px-3 h-10 bg-transparent dark:bg-slate-900 dark:text-slate-200 rounded outline-none border border-gray-100 dark:border-gray-800 focus:ring-0"
-                            placeholder="********"
-                            required
-                          />
+                          <div className="mt-3 relative">
+                            <input
+                              id="newPassword"
+                              type={showPassword ? 'text' : 'password'}
+                              value={newPassword}
+                              onChange={(e) => setNewPassword(e.target.value)}
+                              className="w-full py-2 px-3 h-10 bg-transparent dark:bg-slate-900 dark:text-slate-200 rounded outline-none border border-gray-100 dark:border-gray-800 focus:ring-0"
+                              placeholder="********"
+                              required
+                            />
+                            <button
+                              type="button"
+                              onClick={() => setShowPassword((s) => !s)}
+                              aria-label={
+                                showPassword ? 'Ocultar contraseña' : 'Mostrar contraseña'
+                              }
+                              className="absolute right-2 top-1/2 -translate-y-1/2 text-gray-600 dark:text-gray-300"
+                            >
+                              {showPassword ? (
+                                <svg
+                                  xmlns="http://www.w3.org/2000/svg"
+                                  width="18"
+                                  height="18"
+                                  viewBox="0 0 24 24"
+                                  fill="none"
+                                  stroke="currentColor"
+                                  strokeWidth="2"
+                                  strokeLinecap="round"
+                                  strokeLinejoin="round"
+                                >
+                                  <path d="M17.94 17.94A10.94 10.94 0 0 1 12 20c-9 0-11-8-11-8a17.38 17.38 0 0 1 5-5" />
+                                  <path d="M1 1l22 22" />
+                                </svg>
+                              ) : (
+                                <svg
+                                  xmlns="http://www.w3.org/2000/svg"
+                                  width="18"
+                                  height="18"
+                                  viewBox="0 0 24 24"
+                                  fill="none"
+                                  stroke="currentColor"
+                                  strokeWidth="2"
+                                  strokeLinecap="round"
+                                  strokeLinejoin="round"
+                                >
+                                  <path d="M1 12s2-7 11-7 11 7 11 7-2 7-11 7S1 12 1 12z" />
+                                  <circle cx="12" cy="12" r="3" />
+                                </svg>
+                              )}
+                            </button>
+                          </div>
+                          {/* Strength meter */}
+                          <div className="mb-3">
+                            <div className="w-full h-2 bg-gray-200 rounded overflow-hidden">
+                              <div
+                                className={`h-2 rounded ${
+                                  hasMin && hasUpper && hasLower && hasNumber && hasSpecial
+                                    ? 'bg-emerald-500'
+                                    : hasMin && (hasUpper || hasLower || hasNumber || hasSpecial)
+                                      ? 'bg-yellow-400'
+                                      : 'bg-red-400'
+                                }`}
+                                style={{
+                                  width: `${([hasMin, hasUpper, hasLower, hasNumber, hasSpecial].filter(Boolean).length / 5) * 100}%`,
+                                }}
+                              />
+                            </div>
+                            <div className="text-xs text-gray-600 dark:text-gray-300 mt-1">
+                              {hasMin ? '✓' : '•'} 8 caracteres • {hasUpper ? '✓' : '•'} mayúscula •{' '}
+                              {hasLower ? '✓' : '•'} minúscula • {hasNumber ? '✓' : '•'} número •{' '}
+                              {hasSpecial ? '✓' : '•'} carácter especial
+                            </div>
+                          </div>
                         </div>
                         <div className="mb-4">
                           <label className="font-semibold" htmlFor="confirmPassword">
@@ -205,7 +283,7 @@ function ForgotPassword() {
                           </label>
                           <input
                             id="confirmPassword"
-                            type="password"
+                            type={showPassword ? 'text' : 'password'}
                             value={confirmPassword}
                             onChange={(e) => setConfirmPassword(e.target.value)}
                             className="mt-3 w-full py-2 px-3 h-10 bg-transparent dark:bg-slate-900 dark:text-slate-200 rounded outline-none border border-gray-100 dark:border-gray-800 focus:ring-0"
