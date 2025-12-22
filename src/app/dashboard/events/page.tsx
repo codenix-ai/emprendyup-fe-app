@@ -580,7 +580,6 @@ const EventsPage = () => {
         string,
         Array<{ type: string; parameter_name: string; text: string }>
       > = {};
-
       // Get or generate assigned numbers for each assistant
       selectedIds.forEach((id, index) => {
         const assistant = assistants.find((a) => a.id === id);
