@@ -30,6 +30,15 @@ function SignupForm() {
   const [password, setPassword] = useState('');
   const [storeId, setStoreId] = useState('');
   const [acceptTerms, setAcceptTerms] = useState(false);
+  const [showPassword, setShowPassword] = useState(false);
+
+  // Password policy checks (live)
+  const hasUpper = /[A-Z]/.test(password);
+  const [showPasswordRequirements, setShowPasswordRequirements] = useState(false);
+  const hasLower = /[a-z]/.test(password);
+  const hasNumber = /\d/.test(password);
+  const hasSpecial = /[\W_]/.test(password);
+  const hasMin = password.length >= 8;
 
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState('');
@@ -42,20 +51,20 @@ function SignupForm() {
     const message = searchParams.get('message');
 
     if (oauthError) {
-      const errorMessages = {
+      const errorMessages: Record<string, string> = {
         oauth_cancelled: 'Has cancelado el registro con Google.',
         no_authorization_code: 'Error de autorización con Google.',
         oauth_not_configured: 'Google OAuth no está configurado correctamente.',
         token_exchange_failed: 'Error al intercambiar el token de Google.',
         profile_fetch_failed: 'Error al obtener tu perfil de Google.',
         backend_not_configured: 'Backend no configurado.',
-        backend_auth_failed: 'Error de autenticación en el servidor.',
-        unexpected_error: 'Error inesperado durante el registro con Google.',
-        no_account_found: message || 'No tienes una cuenta. Por favor regístrate primero.',
       };
-      setError(errorMessages[oauthError as keyof typeof errorMessages] || 'Error desconocido');
 
-      // Clear the error from URL
+      setError(
+        errorMessages[oauthError] || message || 'Ocurrió un error durante el registro con Google.'
+      );
+
+      // Limpia la URL
       const newUrl = new URL(window.location.href);
       newUrl.searchParams.delete('error');
       newUrl.searchParams.delete('message');
@@ -96,8 +105,12 @@ function SignupForm() {
       return;
     }
 
-    if (password.length < 6) {
-      setError('La contraseña debe tener al menos 6 caracteres.');
+    // Enforce password policy: min 8 chars, uppercase, lowercase, number, special char
+    const passwordRegex = /^(?=.*[a-z])(?=.*[A-Z])(?=.*\d)(?=.*[\W_]).{8,}$/;
+    if (!passwordRegex.test(password)) {
+      setError(
+        'La contraseña debe tener mínimo 8 caracteres e incluir mayúscula, minúscula, número y un carácter especial.'
+      );
       return;
     }
 
@@ -210,14 +223,82 @@ function SignupForm() {
                     <label className="font-semibold text-white" htmlFor="RegisterPassword">
                       Contraseña:
                     </label>
-                    <input
-                      id="RegisterPassword"
-                      type="password"
-                      value={password}
-                      onChange={(e) => setPassword(e.target.value)}
-                      className="mt-3 w-full py-2 px-3 h-10 bg-transparent border rounded text-white placeholder-gray-400"
-                      required
-                    />
+                    <div className="mt-3 relative">
+                      <input
+                        id="RegisterPassword"
+                        type={showPassword ? 'text' : 'password'}
+                        value={password}
+                        onChange={(e) => {
+                          const v = e.target.value;
+                          setPassword(v);
+                          // If requirements are shown and user fixed the password, hide checklist
+                          const passwordRegex = /^(?=.*[a-z])(?=.*[A-Z])(?=.*\d)(?=.*[\W_]).{8,}$/;
+                          if (showPasswordRequirements && passwordRegex.test(v)) {
+                            setShowPasswordRequirements(false);
+                          }
+                        }}
+                        className="w-full py-2 px-3 h-10 pr-10 bg-transparent border rounded text-white placeholder-gray-400"
+                        required
+                      />
+                      <button
+                        type="button"
+                        onClick={() => setShowPassword((s) => !s)}
+                        aria-label={showPassword ? 'Ocultar contraseña' : 'Mostrar contraseña'}
+                        className="absolute right-2 top-1/2 -translate-y-1/2 text-white opacity-80 hover:opacity-100"
+                      >
+                        {showPassword ? (
+                          <svg
+                            xmlns="http://www.w3.org/2000/svg"
+                            width="18"
+                            height="18"
+                            viewBox="0 0 24 24"
+                            fill="none"
+                            stroke="currentColor"
+                            strokeWidth="2"
+                            strokeLinecap="round"
+                            strokeLinejoin="round"
+                          >
+                            <path d="M17.94 17.94A10.94 10.94 0 0 1 12 20c-9 0-11-8-11-8a17.38 17.38 0 0 1 5-5" />
+                            <path d="M1 1l22 22" />
+                          </svg>
+                        ) : (
+                          <svg
+                            xmlns="http://www.w3.org/2000/svg"
+                            width="18"
+                            height="18"
+                            viewBox="0 0 24 24"
+                            fill="none"
+                            stroke="currentColor"
+                            strokeWidth="2"
+                            strokeLinecap="round"
+                            strokeLinejoin="round"
+                          >
+                            <path d="M1 12s2-7 11-7 11 7 11 7-2 7-11 7S1 12 1 12z" />
+                            <circle cx="12" cy="12" r="3" />
+                          </svg>
+                        )}
+                      </button>
+                    </div>
+                    {/* Password policy checklist (hidden until failed submit) */}
+                    {showPasswordRequirements && (
+                      <ul className="mt-2 text-sm space-y-1">
+                        <li className={`${hasMin ? 'text-emerald-400' : 'text-slate-400'}`}>
+                          {hasMin ? '✔' : '•'} Mínimo 8 caracteres
+                        </li>
+                        <li className={`${hasUpper ? 'text-emerald-400' : 'text-slate-400'}`}>
+                          {hasUpper ? '✔' : '•'} Una letra mayúscula
+                        </li>
+                        <li className={`${hasLower ? 'text-emerald-400' : 'text-slate-400'}`}>
+                          {hasLower ? '✔' : '•'} Una letra minúscula
+                        </li>
+                        <li className={`${hasNumber ? 'text-emerald-400' : 'text-slate-400'}`}>
+                          {hasNumber ? '✔' : '•'} Un número
+                        </li>
+                        <li className={`${hasSpecial ? 'text-emerald-400' : 'text-slate-400'}`}>
+                          {hasSpecial ? '✔' : '•'} Un carácter especial (ej. !@#$%)
+                        </li>
+                      </ul>
+                    )}
                   </div>
 
                   <div className="mb-4">

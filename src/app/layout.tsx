@@ -45,7 +45,7 @@ export const metadata = {
   openGraph: {
     type: 'website',
     locale: 'es_ES',
-    url: 'https://www.emprendyup.com/',
+    url: 'https://www.emprendy.ai/',
     siteName: 'EmprendyUp',
     title:
       'Herramientas digitales para emprendedores que quieren escalar su negocio con IA, tecnología y una comunidad que impulsa su crecimiento - EmprendyUp',
