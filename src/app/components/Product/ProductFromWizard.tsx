@@ -973,6 +973,8 @@ export function ProductFormWizard({
 
       if (product?.id) {
         const updateInput = {
+          // Ensure storeId is present to avoid server-side errors when resolving updateProduct
+          storeId: product.storeId || undefined,
           name: formData.name,
           title: formData.title,
           description: formData.description,

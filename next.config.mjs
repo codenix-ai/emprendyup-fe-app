@@ -11,7 +11,12 @@ const nextConfig = {
         pathname: '/**',
       },
     ],
-    domains: ['images.unsplash.com', 'source.unsplash.com', 'emprendyup-images.s3.us-east-1.amazonaws.com'],
+    domains: [
+      'images.unsplash.com',
+      'source.unsplash.com',
+      'emprendyup-images.s3.us-east-1.amazonaws.com',
+      'example.com',
+    ],
   },
 };
 

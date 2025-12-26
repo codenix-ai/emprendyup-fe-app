@@ -220,6 +220,8 @@ export default function StoresPage() {
     window.URL.revokeObjectURL(url);
   };
 
+  const safe = (v: any) => (typeof v === 'number' && Number.isNaN(v) ? '' : (v ?? ''));
+
   return (
     <AdminGuard>
       <div className="space-y-6">
@@ -339,17 +341,17 @@ export default function StoresPage() {
                               <Image
                                 className="h-10 w-10 rounded-full mr-3"
                                 src={store.logoUrl}
-                                alt={`${store.name} logo`}
+                                alt={`${safe(store.name)} logo`}
                                 width={40}
                                 height={40}
                               />
                             )}
                             <div>
                               <div className="text-sm font-medium text-gray-900 dark:text-white">
-                                {store.name}
+                                {safe(store.name)}
                               </div>
                               <div className="text-sm text-gray-500 dark:text-gray-400">
-                                ID: {store.storeId}
+                                ID: {safe(store.storeId)}
                               </div>
                             </div>
                           </div>
@@ -358,25 +360,27 @@ export default function StoresPage() {
                           <div className="text-sm text-gray-900 dark:text-white">
                             <div className="flex items-center mb-1">
                               <Mail className="h-3 w-3 mr-1 text-gray-400" />
-                              {store.email}
+                              {safe(store.email)}
                             </div>
                             <div className="flex items-center">
                               <Phone className="h-3 w-3 mr-1 text-gray-400" />
-                              {store.phone}
+                              {safe(store.phone)}
                             </div>
                           </div>
                         </td>
                         <td className="px-6 py-4 whitespace-nowrap">
-                          <div className="text-sm text-gray-900 dark:text-white">{store.city}</div>
+                          <div className="text-sm text-gray-900 dark:text-white">
+                            {safe(store.city)}
+                          </div>
                           <div className="text-sm text-gray-500 dark:text-gray-400">
-                            {store.city}
+                            {safe(store.city)}
                           </div>
                         </td>
                         <td className="px-6 py-4 whitespace-nowrap">
-                          {getPlatformBadge(store.platform)}
+                          {getPlatformBadge(safe(store.platform) as string)}
                         </td>
                         <td className="px-6 py-4 whitespace-nowrap">
-                          {getStatusBadge(store.status)}
+                          {getStatusBadge(safe(store.status) as string)}
                         </td>
                         <td className="px-6 py-4 whitespace-nowrap text-sm font-medium">
                           <button
@@ -406,36 +410,36 @@ export default function StoresPage() {
                           <img
                             className="h-12 w-12 rounded-full mr-3"
                             src={store.logoUrl}
-                            alt={`${store.name} logo`}
+                            alt={`${safe(store.name)} logo`}
                           />
                         )}
                         <div>
                           <h3 className="font-medium text-gray-900 dark:text-white">
-                            {store.name}
+                            {safe(store.name)}
                           </h3>
                           <p className="text-sm text-gray-500 dark:text-gray-400">
-                            ID: {store.storeId}
+                            ID: {safe(store.storeId)}
                           </p>
                         </div>
                       </div>
                       <div className="flex flex-col gap-1">
-                        {getStatusBadge(store.status)}
-                        {getPlatformBadge(store.platform)}
+                        {getStatusBadge(safe(store.status) as string)}
+                        {getPlatformBadge(safe(store.platform) as string)}
                       </div>
                     </div>
 
                     <div className="space-y-2">
                       <div className="flex items-center text-sm text-gray-600 dark:text-gray-300">
                         <Mail className="h-4 w-4 mr-2 text-gray-400" />
-                        {store.email}
+                        {safe(store.email)}
                       </div>
                       <div className="flex items-center text-sm text-gray-600 dark:text-gray-300">
                         <Phone className="h-4 w-4 mr-2 text-gray-400" />
-                        {store.phone}
+                        {safe(store.phone)}
                       </div>
                       <div className="flex items-center text-sm text-gray-600 dark:text-gray-300">
                         <Globe className="h-4 w-4 mr-2 text-gray-400" />
-                        {store.city}, {store.department}
+                        {safe(store.city)}, {safe(store.department)}
                       </div>
                     </div>
 

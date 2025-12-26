@@ -11,6 +11,7 @@ import {
   ChevronLeft,
   ChevronRight,
   MoreVertical,
+  Copy,
 } from 'lucide-react';
 import { gql, useMutation, useQuery } from '@apollo/client';
 import { CreateProductInput, Product } from '@/app/utils/types/Product';
@@ -200,6 +201,48 @@ const DELETE_PRODUCTS = gql`
   }
 `;
 
+const DUPLICATE_PRODUCT = gql`
+  mutation DuplicateProduct($id: String!) {
+    duplicateProduct(id: $id) {
+      id
+      name
+      title
+      storeId
+      price
+      currency
+      imageUrl
+      images {
+        id
+        url
+        order
+      }
+      colors {
+        id
+        color
+        colorHex
+      }
+      sizes {
+        id
+        size
+      }
+      categories {
+        category {
+          id
+          name
+          slug
+        }
+      }
+      comments {
+        id
+        comment
+        createdAt
+      }
+      createdAt
+      updatedAt
+    }
+  }
+`;
+
 export default function ProductsPage() {
   const [searchTerm, setSearchTerm] = useState('');
   const [showForm, setShowForm] = useState(false);
@@ -261,6 +304,7 @@ export default function ProductsPage() {
   const [updateProduct, { loading: updating }] = useMutation(UPDATE_PRODUCT);
   const [deleteProduct, { loading: deleting }] = useMutation(DELETE_PRODUCT);
   const [deleteProducts, { loading: deletingMultiple }] = useMutation(DELETE_PRODUCTS);
+  const [duplicateProduct, { loading: duplicating }] = useMutation(DUPLICATE_PRODUCT);
 
   if (!productsData) {
     return null;
@@ -493,6 +537,27 @@ export default function ProductsPage() {
     }
   };
 
+  const handleDuplicateProduct = async (productId: string) => {
+    try {
+      const { data } = await duplicateProduct({ variables: { id: productId } });
+      // Debug log to inspect server response when errors occur
+      // eslint-disable-next-line no-console
+      console.log('duplicateProduct response:', data);
+
+      if (data?.duplicateProduct) {
+        // Refetch list to show duplicated product
+        await refetchProducts({ page: currentPage, pageSize });
+        toast.success('Producto duplicado exitosamente');
+      } else {
+        console.warn('duplicateProduct returned no product', data);
+      }
+    } catch (error: any) {
+      console.error('Error duplicando producto:', error);
+      toast.error(error.message || 'Error al duplicar el producto');
+    }
+    setOpenDropdown(null);
+  };
+
   const toggleProductSelection = (productId: string) => {
     setSelectedProducts((prev) =>
       prev.includes(productId) ? prev.filter((id) => id !== productId) : [...prev, productId]
@@ -707,6 +772,14 @@ export default function ProductsPage() {
                             <Edit className="w-4 h-4" />
                           </button>
                           <button
+                            onClick={() => handleDuplicateProduct(product.id)}
+                            disabled={duplicating}
+                            className="p-2 text-slate-400 hover:bg-gray-700 hover:text-white rounded-lg transition-colors"
+                            title="Duplicar producto"
+                          >
+                            <Copy className="w-4 h-4" />
+                          </button>
+                          <button
                             onClick={() => handleDeleteProduct(product.id)}
                             disabled={deleting}
                             className="p-2 text-red-400 hover:bg-red-900 hover:text-red-300 rounded-lg disabled:opacity-50 disabled:cursor-not-allowed transition-colors"
@@ -818,6 +891,14 @@ export default function ProductsPage() {
                           >
                             <Edit className="w-4 h-4 mr-2" style={{ color: primaryColor }} />
                             Editar
+                          </button>
+                          <button
+                            onClick={() => handleDuplicateProduct(product.id)}
+                            disabled={duplicating}
+                            className="flex items-center w-full px-4 py-2 text-sm text-gray-300 hover:bg-gray-700"
+                          >
+                            <Copy className="w-4 h-4 mr-2" />
+                            Duplicar
                           </button>
                           <button
                             onClick={() => handleDeleteProduct(product.id)}
