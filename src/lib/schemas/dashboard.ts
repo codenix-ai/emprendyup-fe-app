@@ -130,6 +130,24 @@ export const ChartDataSchema = z.object({
       percentage: z.number(),
     })
   ),
+  ordersByPeriod: z
+    .array(
+      z.object({
+        date: z.string(),
+        count: z.number(),
+      })
+    )
+    .optional(),
+  salesByPeriod: z
+    .array(
+      z.object({
+        date: z.string(),
+        totalSales: z.number(),
+        totalOrders: z.number(),
+        averageOrderValue: z.number(),
+      })
+    )
+    .optional(),
 });
 
 // User profile schema

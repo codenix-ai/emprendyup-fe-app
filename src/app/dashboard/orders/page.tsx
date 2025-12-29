@@ -152,7 +152,7 @@ export default function OrderPage() {
             : null,
         })),
         total: o.total || 0,
-        status: o.status || 'pending',
+        status: (o.status || 'pending').toLowerCase(),
         createdAt: o.createdAt,
         updatedAt: o.updatedAt || o.createdAt,
       }));
@@ -181,7 +181,7 @@ export default function OrderPage() {
             : null,
         })),
         total: o.total || 0,
-        status: o.status || 'pending',
+        status: (o.status || 'pending').toLowerCase(),
         createdAt: o.createdAt,
         updatedAt: o.updatedAt || o.createdAt,
       }));
@@ -235,21 +235,33 @@ export default function OrderPage() {
   };
 
   const obtenerBadgeEstado = (estado: string) => {
-    const estilos = {
+    const estilos: Record<string, string> = {
       pending: 'bg-yellow-900/30 text-yellow-300 border-yellow-700',
+      confirmed: 'bg-green-900/30 text-green-300 border-green-700',
       processing: 'bg-blue-900/30 text-blue-300 border-blue-700',
       shipped: 'bg-purple-900/30 text-purple-300 border-purple-700',
       delivered: 'bg-green-900/30 text-green-300 border-green-700',
       cancelled: 'bg-red-900/30 text-red-300 border-red-700',
     };
 
+    const labels: Record<string, string> = {
+      pending: 'Pendiente',
+      confirmed: 'Confirmado',
+      processing: 'Procesando',
+      shipped: 'Enviado',
+      delivered: 'Entregado',
+      cancelled: 'Cancelado',
+    };
+
+    const key = (estado || '').toLowerCase();
+
     return (
       <span
         className={`px-3 py-1 text-xs font-semibold rounded-full border ${
-          estilos[estado as keyof typeof estilos] || estilos.pending
+          estilos[key] || estilos.pending
         }`}
       >
-        {estado.charAt(0).toUpperCase() + estado.slice(1)}
+        {labels[key] || estado.charAt(0).toUpperCase() + estado.slice(1)}
       </span>
     );
   };
@@ -268,7 +280,18 @@ export default function OrderPage() {
           order.customerName,
           order.customerEmail,
           order.total,
-          order.status,
+          // translate status for export
+          (function (s: string) {
+            const map: Record<string, string> = {
+              pending: 'Pendiente',
+              confirmed: 'Confirmado',
+              processing: 'Procesando',
+              shipped: 'Enviado',
+              delivered: 'Entregado',
+              cancelled: 'Cancelado',
+            };
+            return map[(s || '').toLowerCase()] || s;
+          })(order.status),
           new Date(order.createdAt).toLocaleDateString(),
         ].join(',')
       ),
@@ -371,6 +394,7 @@ export default function OrderPage() {
           >
             <option value="all">Todos los estados</option>
             <option value="pending">Pendiente</option>
+            <option value="confirmed">Confirmado</option>
             <option value="processing">Procesando</option>
             <option value="shipped">Enviado</option>
             <option value="delivered">Entregado</option>
