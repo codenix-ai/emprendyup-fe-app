@@ -1782,12 +1782,25 @@ export default function InteractiveChatStore() {
                   Proximamente recibirás un email con los detalles de acceso.
                 </p>
                 <div className="flex items-center justify-center gap-4">
-                  <a
-                    href={`http://emprendy.ai`}
-                    className="px-6 py-3 bg-green-500 text-white rounded-lg font-semibold hover:bg-green-600 transition-colors"
-                  >
-                    Ir a la página principal
-                  </a>
+                  {(() => {
+                    const storeUrl =
+                      (createdStore &&
+                        (createdStore.shopUrl ||
+                          (createdStore.storeId &&
+                            `https://${createdStore.storeId}.emprendyup.com`))) ||
+                      (createdStoreId && `https://${createdStoreId}.emprendyup.com`) ||
+                      'https://emprendyup.com';
+                    return (
+                      <a
+                        href={storeUrl}
+                        className="px-6 py-3 bg-green-500 text-white rounded-lg font-semibold hover:bg-green-600 transition-colors"
+                        target="_blank"
+                        rel="noopener noreferrer"
+                      >
+                        Ir a la tienda
+                      </a>
+                    );
+                  })()}
                 </div>
               </div>
             ) : (

@@ -17,30 +17,71 @@ const TOTAL_PRODUCTS_QUERY = gql`
   }
 `;
 
-const ACTIVE_USERS_QUERY = gql`
-  query {
-    activeUsers {
-      count
-      percentageChange
-    }
-  }
-`;
-
 const MONTHLY_SALES_QUERY = gql`
-  query {
-    monthlySales {
+  query MonthlySales($storeId: String, $month: DateTime) {
+    monthlySales(storeId: $storeId, month: $month) {
       totalSales
+      totalOrders
+      averageOrderValue
       percentageChange
+      month
     }
   }
 `;
 
 const CONVERSION_RATE_QUERY = gql`
-  query {
-    conversionRate {
-      conversionRate
+  query ConversionRate($storeId: String) {
+    conversionRate(storeId: $storeId) {
+      rate
       percentageChange
+    }
+  }
+`;
+
+const ORDERS_BY_PERIOD = gql`
+  query OrdersByPeriod($period: Period!, $storeId: String, $limit: Float) {
+    ordersByPeriod(period: $period, storeId: $storeId, limit: $limit) {
+      period
+      count
       periodLabel
+      startDate
+      endDate
+    }
+  }
+`;
+
+const CUSTOMERS_BY_PERIOD = gql`
+  query CustomersByPeriod($period: Period!, $storeId: String, $limit: Float) {
+    customersByPeriod(period: $period, storeId: $storeId, limit: $limit) {
+      period
+      count
+      periodLabel
+      startDate
+      endDate
+    }
+  }
+`;
+
+const SALES_BY_PERIOD = gql`
+  query SalesByPeriod($period: Period!, $storeId: String, $limit: Float) {
+    salesByPeriod(period: $period, storeId: $storeId, limit: $limit) {
+      period
+      totalSales
+      totalOrders
+      averageOrderValue
+      periodLabel
+      startDate
+      endDate
+    }
+  }
+`;
+
+const ACTIVE_USERS_QUERY = gql`
+  query ActiveUsers($storeId: String, $daysBack: Float) {
+    activeUsers(storeId: $storeId, daysBack: $daysBack) {
+      count
+      percentageChange
+      lastActiveDate
     }
   }
 `;
@@ -112,29 +153,59 @@ export default function InsightsPage() {
   }, []);
 
   // Get storeId from either the session store or user data
-  const storeId = currentStore?.storeId || user?.storeId;
+  const storeId = currentStore?.storeId.id || user?.storeId;
 
   // Queries para las KPI cards
   const {
     data: totalProductsData,
     loading: loadingProducts,
     error: errorProducts,
-  } = useQuery(TOTAL_PRODUCTS_QUERY);
+  } = useQuery(TOTAL_PRODUCTS_QUERY, { variables: { storeId } });
+
   const {
     data: activeUsersData,
     loading: loadingActiveUsers,
     error: errorActiveUsers,
-  } = useQuery(ACTIVE_USERS_QUERY);
+  } = useQuery(ACTIVE_USERS_QUERY, { variables: { storeId, daysBack: 30.0 } });
+
   const {
     data: monthlySalesData,
     loading: loadingMonthlySales,
     error: errorMonthlySales,
-  } = useQuery(MONTHLY_SALES_QUERY);
+  } = useQuery(MONTHLY_SALES_QUERY, { variables: { storeId } });
+
   const {
     data: conversionRateData,
     loading: loadingConversionRate,
     error: errorConversionRate,
-  } = useQuery(CONVERSION_RATE_QUERY);
+  } = useQuery(CONVERSION_RATE_QUERY, { variables: { storeId } });
+
+  const {
+    data: ordersByPeriodData,
+    loading: loadingOrdersByPeriod,
+    error: errorOrdersByPeriod,
+  } = useQuery(ORDERS_BY_PERIOD, {
+    variables: { period: 'WEEK', storeId: storeId || null, limit: 12.0 },
+    skip: !storeId,
+  });
+
+  const {
+    data: customersByPeriodData,
+    loading: loadingCustomersByPeriod,
+    error: errorCustomersByPeriod,
+  } = useQuery(CUSTOMERS_BY_PERIOD, {
+    variables: { period: 'MONTH', storeId: storeId || null, limit: 6.0 },
+    skip: !storeId,
+  });
+
+  const {
+    data: salesByPeriodData,
+    loading: loadingSalesByPeriod,
+    error: errorSalesByPeriod,
+  } = useQuery(SALES_BY_PERIOD, {
+    variables: { period: 'MONTH', storeId: storeId || null, limit: 6.0 },
+    skip: !storeId,
+  });
 
   const {
     data,
@@ -168,9 +239,53 @@ export default function InsightsPage() {
     })) || [];
 
   useEffect(() => {
-    setKpis(mockKPIs);
-    setChartData(mockChartData);
-  }, []);
+    // Build KPIs and chart data from real query results when available
+    const builtKPIs: KPI = {
+      totalCustomers: 0,
+      totalOrders: 0,
+      monthlyRevenue: monthlySalesData?.monthlySales?.totalSales || mockKPIs.monthlyRevenue,
+      conversionRate: conversionRateData?.conversionRate?.rate || mockKPIs.conversionRate,
+      averageOrderValue:
+        monthlySalesData?.monthlySales?.averageOrderValue || mockKPIs.averageOrderValue,
+    } as KPI;
+
+    setKpis(builtKPIs);
+
+    const builtChartData: ChartData = {
+      customersGrowth:
+        (customersByPeriodData?.customersByPeriod || []).map((c: any) => ({
+          date: c.periodLabel,
+          customers: c.count,
+        })) || mockChartData.customersGrowth,
+      topSources: mockChartData.topSources,
+      salesFunnel: mockChartData.salesFunnel,
+      salesByPeriod:
+        (salesByPeriodData?.salesByPeriod || []).map((s: any) => ({
+          date: s.periodLabel,
+          totalSales: s.totalSales,
+          totalOrders: s.totalOrders,
+          averageOrderValue: s.averageOrderValue,
+        })) || [],
+      ordersByPeriod:
+        (ordersByPeriodData?.ordersByPeriod && ordersByPeriodData.ordersByPeriod.length
+          ? ordersByPeriodData.ordersByPeriod.map((o: any) => ({
+              date: o.periodLabel,
+              count: o.count,
+            }))
+          : (salesByPeriodData?.salesByPeriod || []).map((s: any) => ({
+              date: s.periodLabel,
+              count: s.totalOrders || 0,
+            }))) || [],
+    } as any;
+
+    setChartData(builtChartData);
+  }, [
+    customersByPeriodData,
+    salesByPeriodData,
+    ordersByPeriodData,
+    monthlySalesData,
+    conversionRateData,
+  ]);
 
   // Determinar si hay carga en alguna de las queries
   const isLoading =
@@ -178,7 +293,10 @@ export default function InsightsPage() {
     loadingActiveUsers ||
     loadingMonthlySales ||
     loadingConversionRate ||
-    loadingLeads;
+    loadingLeads ||
+    (typeof loadingOrdersByPeriod !== 'undefined' && loadingOrdersByPeriod) ||
+    (typeof loadingCustomersByPeriod !== 'undefined' && loadingCustomersByPeriod) ||
+    (typeof loadingSalesByPeriod !== 'undefined' && loadingSalesByPeriod);
 
   // Show loading while checking user data
   if (!user) {
@@ -331,21 +449,39 @@ export default function InsightsPage() {
           loading={loadingMonthlySales}
         />
 
-        {/* Tasa de Conversión */}
+        {/* Órdenes - último periodo */}
         <KPICard
-          title="Tasa de Conversión"
-          value={
-            conversionRateData?.conversionRate
-              ? `${conversionRateData.conversionRate.conversionRate}%`
-              : '0%'
-          }
-          icon={TrendingUp}
+          title="Órdenes (último periodo)"
+          value={(() => {
+            const orders = ordersByPeriodData?.ordersByPeriod || [];
+            const latest = orders.length ? orders[orders.length - 1] : null;
+            return latest ? latest.count : 0;
+          })()}
+          icon={ShoppingCart}
           trend={{
-            value: conversionRateData?.conversionRate?.percentageChange || 0,
-            isPositive: (conversionRateData?.conversionRate?.percentageChange || 0) >= 0,
+            value: (() => {
+              const orders = ordersByPeriodData?.ordersByPeriod || [];
+              if (orders.length < 2) return 0;
+              const latest = orders[orders.length - 1];
+              const prev = orders[orders.length - 2];
+              if (!prev || !prev.count) return 0;
+              const diff = latest.count - prev.count;
+              return Math.round((diff / Math.max(prev.count, 1)) * 100 * 10) / 10; // one decimal
+            })(),
+            isPositive: (() => {
+              const orders = ordersByPeriodData?.ordersByPeriod || [];
+              if (orders.length < 2) return true;
+              const latest = orders[orders.length - 1];
+              const prev = orders[orders.length - 2];
+              return latest.count - (prev?.count || 0) >= 0;
+            })(),
           }}
-          description={conversionRateData?.conversionRate?.periodLabel || ''}
-          loading={loadingConversionRate}
+          description={(() => {
+            const orders = ordersByPeriodData?.ordersByPeriod || [];
+            const latest = orders.length ? orders[orders.length - 1] : null;
+            return latest?.periodLabel || '';
+          })()}
+          loading={loadingOrdersByPeriod}
         />
 
         {/* Órdenes Totales (mantenida como ejemplo adicional) */}
@@ -370,10 +506,10 @@ export default function InsightsPage() {
               color="#22c55e"
             />
             <BarChart
-              data={chartData.topSources}
-              xKey="source"
-              yKey="customers"
-              title="Principales Fuentes de Tráfico"
+              data={chartData.ordersByPeriod || []}
+              xKey="date"
+              yKey="count"
+              title="Órdenes por periodo"
               color="#3b82f6"
             />
           </>
