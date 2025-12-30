@@ -579,6 +579,10 @@ export default function ProductsPage() {
           setShowForm(false);
           setEditingProduct(null);
         }}
+        onSaved={async () => {
+          const storeId = userData?.storeId || '';
+          await refetchProducts({ storeId, page: currentPage, pageSize });
+        }}
         loading={creating || updating}
       />
     );

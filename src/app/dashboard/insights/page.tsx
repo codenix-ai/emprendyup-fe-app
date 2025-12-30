@@ -18,17 +18,13 @@ const TOTAL_PRODUCTS_QUERY = gql`
 `;
 
 const MONTHLY_SALES_QUERY = gql`
-  query MonthlySales($storeId: String, $month: DateTime) {
-    monthlySales(storeId: $storeId, month: $month) {
+  query {
+    monthlySales {
       totalSales
-      totalOrders
-      averageOrderValue
       percentageChange
-      month
     }
   }
 `;
-
 const CONVERSION_RATE_QUERY = gql`
   query ConversionRate($storeId: String) {
     conversionRate(storeId: $storeId) {
@@ -112,29 +108,6 @@ const mockKPIs: KPI = {
   averageOrderValue: 78.5,
 };
 
-const mockChartData: ChartData = {
-  customersGrowth: [
-    { date: '2024-01', customers: 100 },
-    { date: '2024-02', customers: 150 },
-    { date: '2024-03', customers: 200 },
-    { date: '2024-04', customers: 280 },
-    { date: '2024-05', customers: 350 },
-    { date: '2024-06', customers: 420 },
-  ],
-  topSources: [
-    { source: 'Instagram', customers: 450, percentage: 35 },
-    { source: 'WhatsApp', customers: 380, percentage: 30 },
-    { source: 'Facebook', customers: 250, percentage: 20 },
-    { source: 'Directo', customers: 154, percentage: 15 },
-  ],
-  salesFunnel: [
-    { stage: 'Visitantes', count: 10000, percentage: 100 },
-    { stage: 'Leads', count: 1500, percentage: 15 },
-    { stage: 'Prospectos', count: 500, percentage: 5 },
-    { stage: 'Clientes', count: 150, percentage: 1.5 },
-  ],
-};
-
 export default function InsightsPage() {
   const router = useRouter();
   const [kpis, setKpis] = useState<KPI | null>(null);
@@ -160,20 +133,17 @@ export default function InsightsPage() {
     data: totalProductsData,
     loading: loadingProducts,
     error: errorProducts,
-  } = useQuery(TOTAL_PRODUCTS_QUERY, { variables: { storeId } });
-
+  } = useQuery(TOTAL_PRODUCTS_QUERY);
   const {
     data: activeUsersData,
     loading: loadingActiveUsers,
     error: errorActiveUsers,
-  } = useQuery(ACTIVE_USERS_QUERY, { variables: { storeId, daysBack: 30.0 } });
-
+  } = useQuery(ACTIVE_USERS_QUERY);
   const {
     data: monthlySalesData,
     loading: loadingMonthlySales,
     error: errorMonthlySales,
-  } = useQuery(MONTHLY_SALES_QUERY, { variables: { storeId } });
-
+  } = useQuery(MONTHLY_SALES_QUERY);
   const {
     data: conversionRateData,
     loading: loadingConversionRate,
@@ -256,9 +226,7 @@ export default function InsightsPage() {
         (customersByPeriodData?.customersByPeriod || []).map((c: any) => ({
           date: c.periodLabel,
           customers: c.count,
-        })) || mockChartData.customersGrowth,
-      topSources: mockChartData.topSources,
-      salesFunnel: mockChartData.salesFunnel,
+        })) || [],
       salesByPeriod:
         (salesByPeriodData?.salesByPeriod || []).map((s: any) => ({
           date: s.periodLabel,

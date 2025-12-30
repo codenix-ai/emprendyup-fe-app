@@ -43,19 +43,24 @@ export default function BarChartInternal({
       </div>
     );
   }
+  // Mostrar solo los últimos N periodos (6 por defecto)
+  const LAST_N = 6;
+  const displayedData = data.slice(Math.max(0, data.length - LAST_N));
 
-  // Compute max value to add padding to Y domain
-  const maxValue = Math.max(...data.map((d: any) => Number(d[yKey] || 0)));
+  // Compute max value to add padding to Y domain (based on displayed data)
+  const maxValue = Math.max(...displayedData.map((d: any) => Number(d[yKey] || 0)));
   const yDomainMax = maxValue > 0 ? Math.ceil(maxValue * 1.2) : 10;
 
   // Check if all values are zero
-  const allZero = data.every((d: any) => Number(d[yKey] || 0) === 0);
+  const allZero = displayedData.every((d: any) => Number(d[yKey] || 0) === 0);
 
   console.log('Chart metrics:', {
+    totalPeriods: data.length,
+    displayedPeriods: displayedData.length,
     maxValue,
     yDomainMax,
     allZero,
-    sampleData: data.slice(0, 3),
+    sampleData: displayedData.slice(0, 3),
   });
 
   return (
@@ -78,7 +83,7 @@ export default function BarChartInternal({
             }}
           >
             {(() => {
-              const items = data || [];
+              const items = displayedData || [];
               const barAreaHeight = Math.max(140, (height as number) - 80);
               return items.map((d: any, i: number) => {
                 const val = Number(d[yKey] || 0);
