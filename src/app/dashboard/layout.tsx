@@ -483,35 +483,42 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
             {!collapsed ? (
               <div className="flex items-center justify-between">
                 <div className="flex items-center gap-3 min-w-0">
-                  {/* Avatar con iniciales */}
-                  <div className="w-10 h-10 rounded-full bg-blue-600 dark:bg-blue-500 flex items-center justify-center text-white font-semibold text-sm">
+                  {/* Avatar con iniciales y badge centrada debajo (vista expandida) */}
+                  <div className="relative flex-shrink-2">
+                    <div className="w-10 h-10 rounded-full bg-blue-600 dark:bg-blue-500 flex items-center justify-center text-white font-semibold text-sm">
+                      {(() => {
+                        const name = user?.name || user?.email || 'U';
+                        const words = name.trim().split(' ');
+                        if (words.length >= 2) {
+                          return (words[0][0] + words[1][0]).toUpperCase();
+                        }
+                        return name.substring(0, 2).toUpperCase();
+                      })()}
+                    </div>
+
                     {(() => {
-                      const name = user?.name || user?.email || 'U';
-                      const words = name.trim().split(' ');
-                      if (words.length >= 2) {
-                        return (words[0][0] + words[1][0]).toUpperCase();
-                      }
-                      return name.substring(0, 2).toUpperCase();
+                      const plan = (user?.plan || user?.membershipLevel) as string | undefined;
+                      if (!plan) return null;
+                      const label = plan;
+                      const bgClass =
+                        plan === 'PRO'
+                          ? 'bg-blue-500'
+                          : plan === 'PARTNER'
+                            ? 'bg-purple-600'
+                            : plan === 'BASIC'
+                              ? 'bg-green-600'
+                              : 'bg-gray-600';
+                      return (
+                        <span
+                          className={`absolute left-1/2 -bottom-1 -translate-x-1/2 px-2 py-[1px] text-[10px] font-medium tracking-widetext-white rounded-full ${bgClass}`}
+                        >
+                          {label}
+                        </span>
+                      );
                     })()}
                   </div>
 
-                  {(user?.plan || user?.membershipLevel) === 'PRO' && (
-                    <span className="ml-2 rounded bg-blue-500 px-2 py-0.5 text-xs text-white">
-                      PRO
-                    </span>
-                  )}
-
-                  {(user?.plan || user?.membershipLevel) === 'BASIC' && (
-                    <span className="ml-2 rounded bg-green-600 px-2 py-0.5 text-xs text-white">
-                      BASIC
-                    </span>
-                  )}
-
-                  {(user?.plan || user?.membershipLevel) === 'PARTNER' && (
-                    <span className="ml-2 rounded bg-purple-600 px-2 py-0.5 text-xs text-white">
-                      PARTNER
-                    </span>
-                  )}
+                  {/* badge rendered inside avatar - inline badges removed */}
 
                   <div className="min-w-0">
                     <div className="text-sm font-medium text-gray-800 dark:text-gray-200 truncate">
@@ -531,34 +538,39 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
               </div>
             ) : (
               <div className="flex flex-col items-center gap-2">
-                {/* Avatar con iniciales (versión colapsada) */}
-                <div className="w-9 h-9 rounded-full bg-blue-600 dark:bg-blue-500 flex items-center justify-center text-white font-semibold text-xs">
+                {/* Avatar colapsado con badge superpuesto */}
+                <div className="relative">
+                  <div className="w-9 h-9 rounded-full bg-blue-600 dark:bg-blue-500 flex items-center justify-center text-white font-semibold text-xs">
+                    {(() => {
+                      const name = user?.name || user?.email || 'U';
+                      const words = name.trim().split(' ');
+                      if (words.length >= 2) {
+                        return (words[0][0] + words[1][0]).toUpperCase();
+                      }
+                      return name.substring(0, 2).toUpperCase();
+                    })()}
+                  </div>
+
                   {(() => {
-                    const name = user?.name || user?.email || 'U';
-                    const words = name.trim().split(' ');
-                    if (words.length >= 2) {
-                      return (words[0][0] + words[1][0]).toUpperCase();
-                    }
-                    return name.substring(0, 2).toUpperCase();
+                    const plan = (user?.plan || user?.membershipLevel) as string | undefined;
+                    if (!plan) return null;
+                    const bgClass =
+                      plan === 'PRO'
+                        ? 'bg-blue-500'
+                        : plan === 'PARTNER'
+                          ? 'bg-purple-600'
+                          : plan === 'BASIC'
+                            ? 'bg-green-600'
+                            : 'bg-gray-600';
+                    return (
+                      <span
+                        className={`absolute -bottom-1 left-1/2 -translate-x-1/2 inline-flex items-center px-1.5 py-0.5 text-[9px] font-bold text-white rounded-full shadow-lg ${bgClass} whitespace-nowrap`}
+                      >
+                        {plan}
+                      </span>
+                    );
                   })()}
                 </div>
-
-                {(user?.plan || user?.membershipLevel) === 'PRO' && (
-                  <span className="mt-1 rounded bg-fourth-base px-2 py-0.5 text-xs text-white">
-                    PRO
-                  </span>
-                )}
-                {(user?.plan || user?.membershipLevel) === 'BASIC' && (
-                  <span className="mt-1 rounded bg-green-600 px-2 py-0.5 text-xs text-white">
-                    BASIC
-                  </span>
-                )}
-
-                {(user?.plan || user?.membershipLevel) === 'PARTNER' && (
-                  <span className="mt-1 rounded bg-purple-600 px-2 py-0.5 text-xs text-white">
-                    PARTNER
-                  </span>
-                )}
 
                 <button
                   onClick={handleLogout}
