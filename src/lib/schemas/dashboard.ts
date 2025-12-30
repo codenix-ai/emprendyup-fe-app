@@ -163,6 +163,7 @@ export const UserProfileSchema = z.object({
   storeId: z.string().optional(),
   serviceProviderId: z.string().optional(),
   restaurantId: z.string().optional(),
+  plan: z.enum(['PRO', 'PARTNER', 'BASIC']).optional(),
 });
 
 export const UpdateProfileSchema = z.object({

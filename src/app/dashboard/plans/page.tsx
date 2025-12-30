@@ -369,6 +369,22 @@ export default function PlansPage() {
       />
 
       <div className="min-h-screen bg-slate-900">
+        {(user?.planStatus === 'ACTIVE' ||
+          (user as any)?.membershipLevel ||
+          (user as any)?.plan) && (
+          <div className="rounded-xl bg-green-500/10 p-4 text-green-400 mx-4 my-4">
+            🙌 Gracias por confiar en <b>EmprendyUp</b> y ser parte de la comunidad.
+            <br />
+            Tu plan actual es{' '}
+            <b>{(user as any)?.plan || (user as any)?.membershipLevel || 'N/A'}</b> (
+            {(user as any)?.planPeriod === 'MONTHLY'
+              ? 'Mensual'
+              : (user as any)?.planPeriod === 'ANNUAL'
+                ? 'Anual'
+                : '—'}
+            ).
+          </div>
+        )}
         {loadingProducts ? (
           <div className="flex items-center justify-center min-h-screen">
             <div className="text-center space-y-4">

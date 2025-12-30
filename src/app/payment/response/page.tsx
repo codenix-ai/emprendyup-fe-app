@@ -6,10 +6,14 @@ import { CheckCircle, XCircle, Clock, ArrowLeft } from 'lucide-react';
 import Link from 'next/link';
 import { useEPaycoPayment } from '@/lib/hooks/useEPaycoPayment';
 import { LoaderIcon } from 'react-hot-toast';
+import { useApolloClient, gql } from '@apollo/client';
+import { getUserFromLocalStorage } from '@/lib/utils/localAuth';
+import { useSessionStore } from '@/lib/store/dashboard';
 
 function PaymentResponsePage() {
   const searchParams = useSearchParams();
   const { processResponse, loading } = useEPaycoPayment();
+  const apolloClient = useApolloClient();
   const [paymentStatus, setPaymentStatus] = useState<
     'processing' | 'success' | 'error' | 'pending'
   >('processing');
@@ -126,6 +130,55 @@ function PaymentResponsePage() {
               x_franchise: info.x_franchise,
               x_customer_email: info.x_customer_email,
             });
+
+            // Después de procesar el pago, refrescar el usuario desde el backend y actualizar el estado local
+            try {
+              const localUser = getUserFromLocalStorage();
+              const userId = localUser?.id;
+              if (userId) {
+                const client = apolloClient;
+                const GET_USER = gql`
+                  query GetUser($id: ID!) {
+                    user(id: $id) {
+                      id
+                      name
+                      email
+                      role
+                      membershipLevel
+                      plan
+                      planStatus
+                      planPeriod
+                    }
+                  }
+                `;
+                try {
+                  const resp = await client.query({
+                    query: GET_USER,
+                    variables: { id: userId },
+                    fetchPolicy: 'network-only',
+                  });
+                  const updatedUser = resp?.data?.user;
+                  if (updatedUser) {
+                    // Update localStorage 'user' for other utilities
+                    try {
+                      localStorage.setItem('user', JSON.stringify(updatedUser));
+                    } catch (e) {
+                      console.warn('Could not write user to localStorage', e);
+                    }
+                    // Update zustand session store
+                    try {
+                      useSessionStore.getState().setUser(updatedUser);
+                    } catch (e) {
+                      console.warn('Could not update session store', e);
+                    }
+                  }
+                } catch (err) {
+                  console.warn('Failed to fetch updated user after payment:', err);
+                }
+              }
+            } catch (err) {
+              console.warn('Error while refreshing user after payment:', err);
+            }
           } catch (hookError) {
             console.error('Error processing with hook:', hookError);
             // No cambiar el estado, ya se validó con ePayco
