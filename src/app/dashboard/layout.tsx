@@ -495,19 +495,19 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
                     })()}
                   </div>
 
-                  {user?.plan === 'PRO' && (
+                  {(user?.plan || user?.membershipLevel) === 'PRO' && (
                     <span className="ml-2 rounded bg-blue-500 px-2 py-0.5 text-xs text-white">
                       PRO
                     </span>
                   )}
 
-                  {user?.plan === 'BASIC' && (
+                  {(user?.plan || user?.membershipLevel) === 'BASIC' && (
                     <span className="ml-2 rounded bg-green-600 px-2 py-0.5 text-xs text-white">
                       BASIC
                     </span>
                   )}
 
-                  {user?.plan === 'PARTNER' && (
+                  {(user?.plan || user?.membershipLevel) === 'PARTNER' && (
                     <span className="ml-2 rounded bg-purple-600 px-2 py-0.5 text-xs text-white">
                       PARTNER
                     </span>
@@ -543,18 +543,18 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
                   })()}
                 </div>
 
-                {user?.plan === 'PRO' && (
+                {(user?.plan || user?.membershipLevel) === 'PRO' && (
                   <span className="mt-1 rounded bg-fourth-base px-2 py-0.5 text-xs text-white">
                     PRO
                   </span>
                 )}
-                {user?.plan === 'BASIC' && (
+                {(user?.plan || user?.membershipLevel) === 'BASIC' && (
                   <span className="mt-1 rounded bg-green-600 px-2 py-0.5 text-xs text-white">
                     BASIC
                   </span>
                 )}
 
-                {user?.plan === 'PARTNER' && (
+                {(user?.plan || user?.membershipLevel) === 'PARTNER' && (
                   <span className="mt-1 rounded bg-purple-600 px-2 py-0.5 text-xs text-white">
                     PARTNER
                   </span>
