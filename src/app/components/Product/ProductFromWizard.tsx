@@ -244,6 +244,7 @@ const UPDATE_STOCK = gql`
 interface ProductFormWizardProps {
   product?: Product;
   onSave: (productData: CreateProductInput) => Promise<void>;
+  onSaved?: () => void;
   onCancel: () => void;
   loading?: boolean;
 }
@@ -281,6 +282,7 @@ interface VariantCombination {
 export function ProductFormWizard({
   product,
   onSave,
+  onSaved,
   onCancel,
   loading = false,
 }: ProductFormWizardProps) {
@@ -695,26 +697,70 @@ export function ProductFormWizard({
     return convertedCombinations;
   };
 
-  const updateVariantCombinationStocks = async (combinationsToUpdate: VariantCombination[]) => {
+  const updateVariantCombinationStocks = async (
+    combinationsToUpdate: VariantCombination[],
+    productId: string,
+    allVariants: any[]
+  ) => {
     if (combinationsToUpdate.length === 0) return;
-    try {
-      for (const combination of combinationsToUpdate) {
-        if (!combination.stockId) continue;
-        const input = {
-          price: combination.price || formData.price,
-          stock: combination.stock,
-          available: true,
-        };
+    for (const combination of combinationsToUpdate) {
+      if (!combination.stockId) continue;
+      const input = {
+        price: combination.price || formData.price,
+        stock: combination.stock,
+        available: true,
+      };
+
+      try {
         await updateStock({
           variables: {
             stockId: combination.stockId,
             input: input,
           },
         });
+      } catch (error: any) {
+        // If stock record not found, try to recreate the variant combination (which creates stock)
+        const msg = error?.message || (error?.toString && error.toString()) || '';
+        console.warn('⚠️ updateStock failed for stockId', combination.stockId, msg);
+        if (msg.toLowerCase().includes('not found') || msg.toLowerCase().includes('notfound')) {
+          // Attempt to compute variantIds from combination.variants using allVariants
+          const variantIds = (combination.variants || [])
+            .map((v: any) => {
+              const vType = (v.type || '').trim().toLowerCase();
+              const vName = (v.name || '').trim().toLowerCase();
+              const matched = allVariants.find((av: any) => {
+                const avType = (av.typeVariant || av.type || '').trim().toLowerCase();
+                const avName = (av.nameVariant || av.name || '').trim().toLowerCase();
+                return avType === vType && avName === vName;
+              });
+              return matched?.id;
+            })
+            .filter(Boolean);
+
+          if (variantIds.length === 0) {
+            console.warn('No variantIds found to recreate combination for', combination);
+            continue;
+          }
+
+          try {
+            await createVariantCombination({
+              variables: {
+                input: {
+                  productId,
+                  variantIds,
+                  price: combination.price || formData.price,
+                  stock: combination.stock,
+                },
+              },
+            });
+            console.log('✅ Recreated variant combination and stock for', variantIds);
+          } catch (createErr) {
+            console.error('❌ Failed to recreate variant combination:', createErr);
+          }
+        } else {
+          console.error('❌ Error updating variant combination stock:', error);
+        }
       }
-    } catch (error) {
-      console.error('❌ Error updating variant combination stocks:', error);
-      throw error;
     }
   };
 
@@ -753,7 +799,7 @@ export function ProductFormWizard({
       );
 
       if (combinationsToUpdate.length > 0) {
-        await updateVariantCombinationStocks(combinationsToUpdate);
+        await updateVariantCombinationStocks(combinationsToUpdate, productId, allVariants);
       }
 
       const variantsToCreate: Array<{
@@ -973,10 +1019,8 @@ export function ProductFormWizard({
 
       if (product?.id) {
         const updateInput = {
-          // Ensure storeId is present to avoid server-side errors when resolving updateProduct
-          storeId: product.storeId || undefined,
           name: formData.name,
-          title: formData.title,
+          title: formData.name,
           description: formData.description,
           price: formData.price,
           currency: formData.currency,
@@ -1021,6 +1065,7 @@ export function ProductFormWizard({
           }
 
           toast.success('¡Producto actualizado exitosamente! 🎉');
+          if (onSaved) onSaved();
           onCancel();
         } else {
           throw new Error('No se pudo actualizar el producto');
@@ -1028,7 +1073,7 @@ export function ProductFormWizard({
       } else {
         const createInput = {
           name: formData.name,
-          title: formData.title,
+          title: formData.name,
           description: formData.description,
           price: formData.price,
           currency: formData.currency,
@@ -1091,6 +1136,7 @@ export function ProductFormWizard({
           setVariantCombinations([]);
           setCompletedSteps(new Set());
           setCurrentStep('basic');
+          if (onSaved) onSaved();
           onCancel();
         } else {
           throw new Error('No se pudo crear el producto');
@@ -1107,15 +1153,19 @@ export function ProductFormWizard({
   };
 
   const handleInputChange = (field: keyof typeof formData, value: any) => {
-    setFormData((prev) => ({ ...prev, [field]: value }));
+    setFormData((prev) => ({
+      ...prev,
+      [field]: value,
+      ...(field === 'name' ? { title: value } : {}),
+    }));
     if (errors[field]) {
       setErrors((prev: any) => ({ ...prev, [field]: '' }));
     }
   };
 
   const generateAIDescription = async () => {
-    if (!formData.name || !formData.title) {
-      toast.error('Por favor completa el nombre y título del producto primero');
+    if (!formData.name) {
+      toast.error('Por favor completa el nombre del producto primero');
       return;
     }
 
@@ -1125,7 +1175,7 @@ export function ProductFormWizard({
       });
 
       const requestBody = {
-        title: formData.title,
+        title: formData.name,
         categories: categories.map((cat) => cat.name),
         colors: colors.map((color) => color.name),
         sizes: sizes.map((size) => size.name),
@@ -1234,21 +1284,7 @@ export function ProductFormWizard({
                 {errors.name && <p className="text-red-400 text-sm mt-2">{errors.name}</p>}
               </div>
 
-              <div>
-                <label className="block text-sm font-medium text-gray-300 mb-2">
-                  Título del Producto *
-                </label>
-                <input
-                  type="text"
-                  value={formData.title}
-                  onChange={(e) => handleInputChange('title', e.target.value)}
-                  className={`w-full px-4 py-3 bg-gray-800 border rounded-xl focus:ring-2 focus:ring-slate-500 focus:border-transparent transition-all text-white placeholder-gray-400 ${
-                    errors.title ? 'border-red-500' : 'border-gray-600'
-                  }`}
-                  placeholder="ej: Camiseta Polo Premium de Algodón 100%"
-                />
-                {errors.title && <p className="text-red-400 text-sm mt-2">{errors.title}</p>}
-              </div>
+              {/* Title is synced with name automatically; no separate input shown */}
             </div>
           </div>
         );
@@ -1622,7 +1658,7 @@ export function ProductFormWizard({
                   )}
                   <div className="flex-1">
                     <h4 className="text-lg font-semibold text-white">{formData.name}</h4>
-                    <p className="text-gray-400">{formData.title}</p>
+                    <p className="text-gray-400">{formData.name}</p>
                     <p className="text-2xl font-bold text-green-400 mt-2">
                       ${formData.price.toLocaleString()} {formData.currency}
                     </p>
