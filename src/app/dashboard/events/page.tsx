@@ -394,13 +394,26 @@ const EventsPage = () => {
   // Obtener eventos únicos desde asistentes
   const eventsFromAssistants = useMemo(() => {
     const eventMap = new Map();
+    // Agregar eventos desde asistentes
     assistants.forEach((assistant) => {
       if (assistant.event) {
         eventMap.set(assistant.event.id, assistant.event);
       }
     });
+    // También agregar eventos desde la lista general para asegurar que el dropdown incluya todos
+    eventsList.forEach((e) => {
+      if (e && e.id) {
+        eventMap.set(e.id, {
+          id: e.id,
+          title: e.title,
+          startDate: e.startDate,
+          endDate: e.endDate,
+        });
+      }
+    });
+
     return Array.from(eventMap.values());
-  }, [assistants]);
+  }, [assistants, eventsList]);
 
   // Filtrar asistentes
   const filteredAssistants = useMemo(() => {
@@ -412,14 +425,65 @@ const EventsPage = () => {
         assistant.company?.toLowerCase().includes(searchTerm.toLowerCase()) ||
         assistant.ticketNumber?.toLowerCase().includes(searchTerm.toLowerCase());
 
-      const matchesStatus = statusFilter === 'all' || assistant.status === statusFilter;
+      const matchesStatus =
+        statusFilter === 'all' ||
+        (assistant.status || '').toUpperCase() === statusFilter.toUpperCase();
       const matchesPaymentStatus =
-        paymentStatusFilter === 'all' || assistant.paymentStatus === paymentStatusFilter;
-      const matchesEvent = selectedEvent === 'all' || assistant.eventId === selectedEvent;
+        paymentStatusFilter === 'all' ||
+        (assistant.paymentStatus || '').toUpperCase() === paymentStatusFilter.toUpperCase();
+      const matchesEvent =
+        selectedEvent === 'all' || (assistant.eventId || '').toString() === selectedEvent;
 
       return matchesSearch && matchesStatus && matchesPaymentStatus && matchesEvent;
     });
   }, [searchTerm, statusFilter, paymentStatusFilter, selectedEvent, assistants]);
+
+  // Filtrar eventos para la pestaña 'events'
+  const filteredEvents = useMemo(() => {
+    return eventsList.filter((event) => {
+      const matchesSearch =
+        event.title.toLowerCase().includes(searchTerm.toLowerCase()) ||
+        (event.description || '').toLowerCase().includes(searchTerm.toLowerCase()) ||
+        (event.organizerName || '').toLowerCase().includes(searchTerm.toLowerCase());
+
+      const matchesStatus =
+        statusFilter === 'all' || (event.status || '').toUpperCase() === statusFilter.toUpperCase();
+
+      return matchesSearch && matchesStatus;
+    });
+  }, [eventsList, searchTerm, statusFilter]);
+
+  // Opciones dinámicas de estado y estado de pago extraídas de los datos
+  const assistantStatusOptions = useMemo(() => {
+    const s = new Set<string>();
+    assistants.forEach((a) => a.status && s.add(a.status));
+    return Array.from(s);
+  }, [assistants]);
+
+  const paymentStatusOptions = useMemo(() => {
+    const s = new Set<string>();
+    assistants.forEach((a) => a.paymentStatus && s.add(a.paymentStatus));
+    return Array.from(s);
+  }, [assistants]);
+
+  const eventStatusOptions = useMemo(() => {
+    const s = new Set<string>();
+    eventsList.forEach((e) => e && e.status && s.add(e.status));
+    return Array.from(s);
+  }, [eventsList]);
+
+  const combinedStatusOptions = useMemo(() => {
+    const s = new Set<string>([...assistantStatusOptions, ...eventStatusOptions]);
+    return Array.from(s);
+  }, [assistantStatusOptions, eventStatusOptions]);
+
+  const prettyLabel = (val: string) => {
+    if (!val) return val;
+    return val
+      .toLowerCase()
+      .replace(/_/g, ' ')
+      .replace(/\b\w/g, (c) => c.toUpperCase());
+  };
 
   const handleInputChange = (
     e: React.ChangeEvent<HTMLInputElement | HTMLSelectElement | HTMLTextAreaElement>
@@ -1167,9 +1231,19 @@ const EventsPage = () => {
                 className="px-4 py-2 border border-gray-300 dark:border-gray-600 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 bg-white dark:bg-gray-700 text-gray-900 dark:text-white"
               >
                 <option value="all">Todos los estados</option>
-                <option value="CONFIRMED">Confirmado</option>
-                <option value="PENDING">Pendiente</option>
-                <option value="CANCELLED">Cancelado</option>
+                {combinedStatusOptions.length === 0 ? (
+                  <>
+                    <option value="CONFIRMED">Confirmado</option>
+                    <option value="PENDING">Pendiente</option>
+                    <option value="CANCELLED">Cancelado</option>
+                  </>
+                ) : (
+                  combinedStatusOptions.map((s) => (
+                    <option key={s} value={s}>
+                      {prettyLabel(s)}
+                    </option>
+                  ))
+                )}
               </select>
               <select
                 value={paymentStatusFilter}
@@ -1177,9 +1251,19 @@ const EventsPage = () => {
                 className="px-4 py-2 border border-gray-300 dark:border-gray-600 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 bg-white dark:bg-gray-700 text-gray-900 dark:text-white"
               >
                 <option value="all">Estado de pago</option>
-                <option value="PAID">Pagado</option>
-                <option value="PENDING">Pendiente</option>
-                <option value="FAILED">Fallido</option>
+                {paymentStatusOptions.length === 0 ? (
+                  <>
+                    <option value="PAID">Pagado</option>
+                    <option value="PENDING">Pendiente</option>
+                    <option value="FAILED">Fallido</option>
+                  </>
+                ) : (
+                  paymentStatusOptions.map((p) => (
+                    <option key={p} value={p}>
+                      {prettyLabel(p)}
+                    </option>
+                  ))
+                )}
               </select>
             </div>
           </div>
@@ -1430,9 +1514,9 @@ const EventsPage = () => {
                 <div className="block lg:hidden">
                   <div className="space-y-3">
                     <div className="text-sm text-gray-600 dark:text-gray-400 px-1">
-                      {eventsList.length} evento{eventsList.length !== 1 ? 's' : ''}
+                      {filteredEvents.length} evento{filteredEvents.length !== 1 ? 's' : ''}
                     </div>
-                    {eventsList.map((event) => (
+                    {filteredEvents.map((event) => (
                       <div
                         key={event.id}
                         className="bg-white dark:bg-gray-800 border border-gray-200 dark:border-gray-700 rounded-lg p-4 shadow-sm hover:shadow-md transition-shadow"
@@ -1502,7 +1586,7 @@ const EventsPage = () => {
                 <div className="hidden lg:block bg-white dark:bg-gray-800 rounded-xl border border-gray-200 dark:border-gray-700 overflow-hidden shadow-sm">
                   <div className="flex grid-2 px-6 py-4 border-b border-gray-200 dark:border-gray-700">
                     <h2 className="text-xl font-semibold text-gray-900 dark:text-white">
-                      Eventos ({eventsList.length})
+                      Eventos ({filteredEvents.length})
                     </h2>
                   </div>
 
@@ -1531,7 +1615,7 @@ const EventsPage = () => {
                         </tr>
                       </thead>
                       <tbody className="divide-y divide-gray-200 dark:divide-gray-700">
-                        {eventsList.map((event) => (
+                        {filteredEvents.map((event) => (
                           <tr
                             key={event.id}
                             className="hover:bg-gray-50 dark:hover:bg-gray-700/50 transition-colors"

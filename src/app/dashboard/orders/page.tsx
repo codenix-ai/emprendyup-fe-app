@@ -122,8 +122,13 @@ export default function OrderPage() {
     loading: adminLoading,
     error: adminError,
   } = useQuery(PAGINATED_ORDERS, {
-    variables: { pagination: { page: currentPage, pageSize } },
-    skip: !isAdmin,
+    variables: {
+      pagination: { page: currentPage, pageSize },
+      // Enviar storeId de forma opcional: usar el storeId del usuario (no el slug de la URL)
+      // Si el usuario tiene asociado un storeId, lo enviamos para filtrar por esa tienda.
+      storeId: userData?.storeId || currentStore?.id || undefined,
+    },
+
     fetchPolicy: 'network-only',
   });
 
