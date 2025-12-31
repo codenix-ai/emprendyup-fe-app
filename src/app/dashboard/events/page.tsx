@@ -219,6 +219,31 @@ interface EventAssistant {
   event: SimpleEvent;
 }
 
+// Traduce estados conocidos al español y deja un fallback legible
+const translateStatusLabel = (val: string) => {
+  if (!val) return val;
+  const key = val.toString().toUpperCase();
+  const map: Record<string, string> = {
+    REGISTERED: 'Registrado',
+    DRAFT: 'Borrador',
+    CONFIRMED: 'Confirmado',
+    PENDING: 'Pendiente',
+    CANCELLED: 'Cancelado',
+    PAID: 'Pagado',
+    FAILED: 'Fallido',
+    CHECKED_IN: 'Registrado',
+    DRAFT_EVENT: 'Borrador',
+  };
+
+  if (map[key]) return map[key];
+
+  return val
+    .toString()
+    .toLowerCase()
+    .replace(/_/g, ' ')
+    .replace(/\b\w/g, (c) => c.toUpperCase());
+};
+
 // Componente de Badge para estados
 const StatusBadge = ({ status }: { status: string }) => {
   const getStatusStyle = () => {
@@ -241,7 +266,7 @@ const StatusBadge = ({ status }: { status: string }) => {
     <span
       className={`inline-flex items-center px-2 py-1 rounded-md text-xs font-medium border ${getStatusStyle()}`}
     >
-      {status}
+      {translateStatusLabel(status)}
     </span>
   );
 };
@@ -477,9 +502,27 @@ const EventsPage = () => {
     return Array.from(s);
   }, [assistantStatusOptions, eventStatusOptions]);
 
-  const prettyLabel = (val: string) => {
+  const translateStatusLabel = (val: string) => {
     if (!val) return val;
+    const key = val.toString().toUpperCase();
+    const map: Record<string, string> = {
+      REGISTERED: 'Registrado',
+      DRAFT: 'Borrador',
+      CONFIRMED: 'Confirmado',
+      PENDING: 'Pendiente',
+      CANCELLED: 'Cancelado',
+      PAID: 'Pagado',
+      FAILED: 'Fallido',
+      CHECKED_IN: 'Registrado',
+      // eventos
+      DRAFT_EVENT: 'Borrador',
+    };
+
+    if (map[key]) return map[key];
+
+    // Fallback: beautify (replace underscores, title case)
     return val
+      .toString()
       .toLowerCase()
       .replace(/_/g, ' ')
       .replace(/\b\w/g, (c) => c.toUpperCase());
@@ -1212,7 +1255,7 @@ const EventsPage = () => {
                 className="w-full pl-10 pr-4 py-2 border border-gray-300 dark:border-gray-600 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent bg-white dark:bg-gray-700 text-gray-900 dark:text-white"
               />
             </div>
-            <div className="grid grid-cols-1 sm:grid-cols-3 gap-2">
+            <div className="grid grid-cols-1 sm:grid-cols-2 gap-2">
               <select
                 value={selectedEvent}
                 onChange={(e) => setSelectedEvent(e.target.value)}
@@ -1240,27 +1283,7 @@ const EventsPage = () => {
                 ) : (
                   combinedStatusOptions.map((s) => (
                     <option key={s} value={s}>
-                      {prettyLabel(s)}
-                    </option>
-                  ))
-                )}
-              </select>
-              <select
-                value={paymentStatusFilter}
-                onChange={(e) => setPaymentStatusFilter(e.target.value)}
-                className="px-4 py-2 border border-gray-300 dark:border-gray-600 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 bg-white dark:bg-gray-700 text-gray-900 dark:text-white"
-              >
-                <option value="all">Estado de pago</option>
-                {paymentStatusOptions.length === 0 ? (
-                  <>
-                    <option value="PAID">Pagado</option>
-                    <option value="PENDING">Pendiente</option>
-                    <option value="FAILED">Fallido</option>
-                  </>
-                ) : (
-                  paymentStatusOptions.map((p) => (
-                    <option key={p} value={p}>
-                      {prettyLabel(p)}
+                      {translateStatusLabel(s)}
                     </option>
                   ))
                 )}
