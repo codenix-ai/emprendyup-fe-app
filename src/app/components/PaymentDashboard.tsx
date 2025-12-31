@@ -37,6 +37,8 @@ export default function PaymentDashboard() {
 
   const { configuration, isWompiEnabled, isMercadoPagoEnabled, isEpaycoEnabled } =
     useStorePaymentConfiguration();
+  const [showModal, setShowModal] = useState(false);
+  const [selectedPayment, setSelectedPayment] = useState<Payment | null>(null);
 
   const getStatusIcon = (status: PaymentStatus) => {
     switch (status) {
@@ -65,6 +67,23 @@ export default function PaymentDashboard() {
         return 'bg-yellow-900/30 text-yellow-300 border border-yellow-800';
       default:
         return 'bg-gray-700/50 text-gray-300 border border-gray-600';
+    }
+  };
+
+  const paymentStatusLabel = (status: PaymentStatus) => {
+    switch (status) {
+      case PaymentStatus.COMPLETED:
+        return 'Completado';
+      case PaymentStatus.FAILED:
+        return 'Fallido';
+      case PaymentStatus.CANCELLED:
+        return 'Cancelado';
+      case PaymentStatus.PENDING:
+        return 'Pendiente';
+      case PaymentStatus.PROCESSING:
+        return 'En proceso';
+      default:
+        return status;
     }
   };
 
@@ -377,7 +396,8 @@ export default function PaymentDashboard() {
                     <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-400">
                       <button
                         onClick={() => {
-                          /* TODO: Navigate to payment detail */
+                          setSelectedPayment(payment);
+                          setShowModal(true);
                         }}
                         className="text-blue-400 hover:text-blue-300 transition-colors"
                       >
@@ -389,6 +409,81 @@ export default function PaymentDashboard() {
               </tbody>
             </table>
           </div>
+
+          {/* Modal de detalle de pago */}
+          {showModal && selectedPayment && (
+            <div className="fixed inset-0 z-50 flex items-center justify-center p-4">
+              <div
+                className="absolute inset-0 bg-black/60"
+                onClick={() => {
+                  setShowModal(false);
+                  setSelectedPayment(null);
+                }}
+              />
+
+              <div className="relative bg-white dark:bg-gray-800 rounded-xl shadow-2xl max-w-2xl w-full overflow-hidden">
+                <div className="flex items-center justify-between px-6 py-4 border-b border-gray-200 dark:border-gray-700">
+                  <h3 className="text-lg font-semibold text-gray-900 dark:text-white">
+                    Detalle del Pago
+                  </h3>
+                  <button
+                    onClick={() => {
+                      setShowModal(false);
+                      setSelectedPayment(null);
+                    }}
+                    className="text-gray-500 hover:text-gray-700 dark:hover:text-gray-300"
+                  >
+                    Cerrar
+                  </button>
+                </div>
+
+                <div className="p-6 space-y-4 text-sm text-gray-700 dark:text-gray-300">
+                  <div className="grid grid-cols-2 gap-4">
+                    <div>
+                      <p className="text-xs text-gray-400">ID</p>
+                      <p className="font-medium">{selectedPayment.id}</p>
+                    </div>
+                    <div>
+                      <p className="text-xs text-gray-400">Monto</p>
+                      <p className="font-medium">
+                        {formatCurrency(selectedPayment.amount)} {selectedPayment.currency}
+                      </p>
+                    </div>
+                    <div>
+                      <p className="text-xs text-gray-400">Estado</p>
+                      <p className="font-medium">{paymentStatusLabel(selectedPayment.status)}</p>
+                    </div>
+                    <div>
+                      <p className="text-xs text-gray-400">Proveedor</p>
+                      <p className="font-medium">{selectedPayment.provider}</p>
+                    </div>
+                    <div>
+                      <p className="text-xs text-gray-400">Cliente</p>
+                      <p className="font-medium">{selectedPayment.customerEmail}</p>
+                    </div>
+                    <div>
+                      <p className="text-xs text-gray-400">Fecha</p>
+                      <p className="font-medium">
+                        {new Date(selectedPayment.createdAt).toLocaleString('es-CO')}
+                      </p>
+                    </div>
+                  </div>
+
+                  <div className="flex justify-end">
+                    <button
+                      onClick={() => {
+                        setShowModal(false);
+                        setSelectedPayment(null);
+                      }}
+                      className="px-4 py-2 bg-blue-600 text-white rounded-md hover:bg-blue-700"
+                    >
+                      Cerrar
+                    </button>
+                  </div>
+                </div>
+              </div>
+            </div>
+          )}
 
           {payments.length === 0 && (
             <div className="text-center py-12">
