@@ -48,9 +48,9 @@ export function ColorPicker({ colors, onChange }: ColorPickerProps) {
   };
 
   return (
-    <div className="space-y-4">
+    <div className="space-y-4 pt-2">
       <div className="flex items-center justify-between">
-        <label className="block text-sm font-medium text-gray-200">Colores Disponibles</label>
+        <h5 className="text-sm font-semibold text-gray-200">Colores</h5>
         <button
           type="button"
           onClick={() => setShowForm(!showForm)}
@@ -63,7 +63,7 @@ export function ColorPicker({ colors, onChange }: ColorPickerProps) {
 
       {/* Add Color Form */}
       {showForm && (
-        <div className="border border-gray-700 rounded-lg p-4 bg-gray-800/50">
+        <div className="border border-gray-700 rounded-lg p-4 bg-gray-800">
           <div className="flex items-end space-x-3">
             <div className="flex-1">
               <label className="block text-xs font-medium text-gray-300 mb-1">
@@ -73,7 +73,7 @@ export function ColorPicker({ colors, onChange }: ColorPickerProps) {
                 type="text"
                 value={newColor.name}
                 onChange={(e) => setNewColor({ ...newColor, name: e.target.value })}
-                className="w-full px-3 py-2 bg-gray-700 border border-gray-600 rounded-md text-white placeholder-gray-400 focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+                className="w-full px-3 py-2 bg-gray-800 border border-gray-600 rounded-md text-white placeholder-gray-400 focus:ring-2 focus:ring-blue-500 focus:border-transparent"
                 placeholder="ej: Rojo Ferrari"
               />
             </div>
@@ -84,13 +84,13 @@ export function ColorPicker({ colors, onChange }: ColorPickerProps) {
                   type="color"
                   value={newColor.hex}
                   onChange={(e) => setNewColor({ ...newColor, hex: e.target.value })}
-                  className="w-10 h-10 border border-gray-600 rounded cursor-pointer bg-gray-700"
+                  className="w-10 h-10 border border-gray-600 rounded cursor-pointer bg-gray-800"
                 />
                 <input
                   type="text"
                   value={newColor.hex}
                   onChange={(e) => setNewColor({ ...newColor, hex: e.target.value })}
-                  className="w-20 px-2 py-2 text-xs bg-gray-700 border border-gray-600 rounded text-white placeholder-gray-400"
+                  className="w-20 px-2 py-2 text-xs bg-gray-800 border border-gray-600 rounded text-white placeholder-gray-400"
                   placeholder="#000000"
                 />
               </div>
@@ -121,7 +121,7 @@ export function ColorPicker({ colors, onChange }: ColorPickerProps) {
           {colors.map((color, index) => (
             <div
               key={color.id}
-              className="flex items-center space-x-3 p-3 border border-gray-700 rounded-lg bg-gray-800/30"
+              className="flex items-center space-x-3 p-3 border border-gray-700 rounded-lg bg-gray-800"
             >
               <div
                 className="w-8 h-8 rounded-full border-2 border-gray-500 flex-shrink-0"
@@ -132,14 +132,14 @@ export function ColorPicker({ colors, onChange }: ColorPickerProps) {
                   type="text"
                   value={color.name}
                   onChange={(e) => updateColor(index, 'name', e.target.value)}
-                  className="px-2 py-1 bg-gray-700 border border-gray-600 rounded text-sm text-white placeholder-gray-400 focus:ring-1 focus:ring-blue-500"
+                  className="px-2 py-1 bg-gray-800 border border-gray-600 rounded text-sm text-white placeholder-gray-400 focus:ring-1 focus:ring-blue-500"
                   placeholder="Nombre del color"
                 />
                 <input
                   type="text"
                   value={color.hex}
                   onChange={(e) => updateColor(index, 'hex', e.target.value)}
-                  className="px-2 py-1 bg-gray-700 border border-gray-600 rounded text-sm text-white placeholder-gray-400 focus:ring-1 focus:ring-blue-500"
+                  className="px-2 py-1 bg-gray-800 border border-gray-600 rounded text-sm text-white placeholder-gray-400 focus:ring-1 focus:ring-blue-500"
                   placeholder="#000000"
                 />
               </div>

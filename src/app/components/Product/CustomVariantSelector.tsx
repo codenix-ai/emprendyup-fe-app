@@ -1,7 +1,10 @@
 'use client';
 
 import { useState } from 'react';
-import { Plus, X, Settings } from 'lucide-react';
+import { Plus, X, Settings, Palette, Ruler } from 'lucide-react';
+import { ColorPicker } from './ColorPicker';
+import { SizeSelector } from './SizeSelector';
+import { ProductColor, ProductSize } from '@/app/utils/types/Product';
 
 interface CustomVariant {
   id: string;
@@ -13,9 +16,20 @@ interface CustomVariant {
 interface CustomVariantSelectorProps {
   variants: CustomVariant[];
   onChange: (variants: CustomVariant[]) => void;
+  colors?: ProductColor[];
+  onChangeColors?: (colors: ProductColor[]) => void;
+  sizes?: ProductSize[];
+  onChangeSizes?: (sizes: ProductSize[]) => void;
 }
 
-export function CustomVariantSelector({ variants, onChange }: CustomVariantSelectorProps) {
+export function CustomVariantSelector({
+  variants,
+  onChange,
+  colors = [],
+  onChangeColors,
+  sizes = [],
+  onChangeSizes,
+}: CustomVariantSelectorProps) {
   const [isAdding, setIsAdding] = useState(false);
   const [newVariant, setNewVariant] = useState({
     type: '',
@@ -78,45 +92,80 @@ export function CustomVariantSelector({ variants, onChange }: CustomVariantSelec
         </button>
       </div>
 
-      {/* Existing variants */}
+      {/* Existing variants grouped by type */}
       <div className="space-y-3">
-        {variants.map((variant) => (
-          <div
-            key={variant.id}
-            className="flex items-center space-x-3 p-3 border border-gray-700 rounded-lg bg-gray-800"
-          >
-            <div className="flex-1 grid grid-cols-3 gap-3">
-              <input
-                type="text"
-                value={variant.type}
-                onChange={(e) => handleUpdateVariant(variant.id, 'type', e.target.value)}
-                placeholder="Tipo (ej: Material)"
-                className="px-2 py-1 border border-gray-600 bg-gray-800 text-white rounded text-sm focus:ring-1 focus:ring-blue-500 focus:border-blue-500 placeholder-gray-400"
-              />
-              <input
-                type="text"
-                value={variant.name}
-                onChange={(e) => handleUpdateVariant(variant.id, 'name', e.target.value)}
-                placeholder="Nombre (ej: Algodón)"
-                className="px-2 py-1 border border-gray-600 bg-gray-800 text-white rounded text-sm focus:ring-1 focus:ring-blue-500 focus:border-blue-500 placeholder-gray-400"
-              />
-              <input
-                type="text"
-                value={variant.value}
-                onChange={(e) => handleUpdateVariant(variant.id, 'value', e.target.value)}
-                placeholder="Valor (opcional)"
-                className="px-2 py-1 border border-gray-600 bg-gray-800 text-white rounded text-sm focus:ring-1 focus:ring-blue-500 focus:border-blue-500 placeholder-gray-400"
-              />
-            </div>
-            <button
-              type="button"
-              onClick={() => handleRemoveVariant(variant.id)}
-              className="p-1 text-red-400 hover:text-red-300 hover:bg-red-900 rounded transition-colors"
-            >
-              <X className="w-4 h-4" />
-            </button>
+        {(() => {
+          if (!variants || variants.length === 0) return null;
+          const groups: Record<string, { typeLabel: string; items: CustomVariant[] }> = {};
+          variants.forEach((v) => {
+            const key = (v.type || 'Otros').trim().toLowerCase() || 'otros';
+            if (!groups[key]) groups[key] = { typeLabel: v.type || key, items: [] };
+            groups[key].items.push(v);
+          });
+
+          return Object.keys(groups).map((k) => {
+            const group = groups[k];
+            const title =
+              group.typeLabel && group.typeLabel.trim()
+                ? group.typeLabel.charAt(0).toUpperCase() + group.typeLabel.slice(1)
+                : k.charAt(0).toUpperCase() + k.slice(1);
+
+            return (
+              <div key={k} className="space-y-2">
+                <h6 className="text-sm font-semibold text-gray-200">{title}</h6>
+                <div className="space-y-2">
+                  {group.items.map((variant) => (
+                    <div
+                      key={variant.id}
+                      className="flex items-center space-x-3 p-3 border border-gray-700 rounded-lg bg-gray-800"
+                    >
+                      <div className="flex-1 grid grid-cols-3 gap-3">
+                        <input
+                          type="text"
+                          value={variant.type}
+                          onChange={(e) => handleUpdateVariant(variant.id, 'type', e.target.value)}
+                          placeholder="Tipo (ej: Material)"
+                          className="px-2 py-1 border border-gray-600 bg-gray-800 text-white rounded text-sm focus:ring-1 focus:ring-blue-500 focus:border-blue-500 placeholder-gray-400"
+                        />
+                        <input
+                          type="text"
+                          value={variant.name}
+                          onChange={(e) => handleUpdateVariant(variant.id, 'name', e.target.value)}
+                          placeholder="Nombre (ej: Algodón)"
+                          className="px-2 py-1 border border-gray-600 bg-gray-800 text-white rounded text-sm focus:ring-1 focus:ring-blue-500 focus:border-blue-500 placeholder-gray-400"
+                        />
+                        <input
+                          type="text"
+                          value={variant.value}
+                          onChange={(e) => handleUpdateVariant(variant.id, 'value', e.target.value)}
+                          placeholder="Valor (opcional)"
+                          className="px-2 py-1 border border-gray-600 bg-gray-800 text-white rounded text-sm focus:ring-1 focus:ring-blue-500 focus:border-blue-500 placeholder-gray-400"
+                        />
+                      </div>
+                      <button
+                        type="button"
+                        onClick={() => handleRemoveVariant(variant.id)}
+                        className="p-1 text-red-400 hover:text-red-300 hover:bg-red-900 rounded transition-colors"
+                      >
+                        <X className="w-4 h-4" />
+                      </button>
+                    </div>
+                  ))}
+                </div>
+              </div>
+            );
+          });
+        })()}
+        {onChangeColors && colors && colors.length > 0 && (
+          <div>
+            <ColorPicker colors={colors} onChange={onChangeColors} />
           </div>
-        ))}
+        )}
+        {onChangeSizes && sizes && sizes.length > 0 && (
+          <div>
+            <SizeSelector sizes={sizes} onChange={onChangeSizes} />
+          </div>
+        )}
       </div>
 
       {/* Add new variant form */}

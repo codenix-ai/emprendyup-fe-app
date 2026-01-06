@@ -40,13 +40,48 @@ export default function PostForm({ initialData }: PostFormProps) {
   const user = getUserFromLocalStorage();
 
   const GET_ALL_POSTS = gql`
-    query GetAllPosts {
-      posts {
-        id
-        title
-        slug
-        excerpt
-        status
+    query ListPostsPaginated($categoryId: String, $page: Int, $pageSize: Int) {
+      listPostsPaginated(categoryId: $categoryId, page: $page, pageSize: $pageSize) {
+        items {
+          id
+          title
+          slug
+          excerpt
+          content
+          status
+          createdAt
+          updatedAt
+          publishedAt
+          creator {
+            id
+            name
+            email
+          }
+          blogCategory {
+            id
+            name
+            slug
+          }
+          tags {
+            tag {
+              id
+              name
+              slug
+            }
+          }
+          relatedPosts {
+            id
+            title
+            slug
+          }
+          coverImageUrl
+        }
+        total
+        page
+        pageSize
+        totalPages
+        hasNextPage
+        hasPrevPage
       }
     }
   `;
@@ -144,7 +179,7 @@ export default function PostForm({ initialData }: PostFormProps) {
         slug: initialData.slug || '',
         content: initialData.content || '',
         coverImageUrl: initialData.coverImageUrl || '',
-        blogCategoryId: initialData.blogCategory?.name || '',
+        blogCategoryId: initialData.blogCategory?.id || '',
         tagIds: initialData.tags?.map((t) => t.tag.id) || [],
         relatedPostIds: (initialData as any).relatedPosts?.map((p: any) => p.id || p) || [],
       });
@@ -468,6 +503,7 @@ export default function PostForm({ initialData }: PostFormProps) {
               <label className="block text-sm font-semibold text-gray-300">Imagen de portada</label>
               <FileUpload
                 onFile={(url) => setFormData((prev) => ({ ...prev, coverImageUrl: url }))}
+                initialImage={formData.coverImageUrl}
               />
             </div>
           </div>

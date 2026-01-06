@@ -7,13 +7,15 @@ export default function FileUpload({
   onFile,
   accept = 'image/*',
   storeId,
+  initialImage,
 }: {
   // eslint-disable-next-line @typescript-eslint/no-unused-vars
   onFile: (_arg: string) => void;
   accept?: string;
   storeId?: string;
+  initialImage?: string;
 }) {
-  const [preview, setPreview] = useState<string | null>(null);
+  const [preview, setPreview] = useState<string | null>(initialImage || null);
   const [isUploading, setIsUploading] = useState(false);
 
   const handleFileChange = async (e: React.ChangeEvent<HTMLInputElement>) => {
