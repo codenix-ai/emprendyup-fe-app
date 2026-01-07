@@ -1,7 +1,7 @@
 'use client';
 
 import { useState } from 'react';
-import { Plus, X } from 'lucide-react';
+import { Plus, Ruler, X } from 'lucide-react';
 import { ProductSize } from '@/app/utils/types/Product';
 
 interface SizeSelectorProps {
@@ -68,9 +68,9 @@ export function SizeSelector({ sizes, onChange }: SizeSelectorProps) {
   };
 
   return (
-    <div className="space-y-4">
+    <div className="space-y-4 pt-2">
       <div className="flex items-center justify-between">
-        <label className="block text-sm font-medium text-gray-200">Tallas Disponibles</label>
+        <h5 className="text-sm font-semibold text-gray-200">Tallas</h5>
         <button
           type="button"
           onClick={() => setShowCustomForm(!showCustomForm)}
@@ -118,7 +118,7 @@ export function SizeSelector({ sizes, onChange }: SizeSelectorProps) {
                 type="text"
                 value={customSize.name}
                 onChange={(e) => setCustomSize({ ...customSize, name: e.target.value })}
-                className="w-full px-3 py-2 bg-gray-700 border border-gray-600 rounded-md text-white placeholder-gray-400 focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+                className="w-full px-3 py-2 bg-gray-800 border border-gray-600 rounded-md text-white placeholder-gray-400 focus:ring-2 focus:ring-blue-500 focus:border-transparent"
                 placeholder="ej: Extra Grande"
               />
             </div>
@@ -133,7 +133,7 @@ export function SizeSelector({ sizes, onChange }: SizeSelectorProps) {
                     value: e.target.value.toUpperCase(),
                   })
                 }
-                className="w-full px-3 py-2 bg-gray-700 border border-gray-600 rounded-md text-white placeholder-gray-400 focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+                className="w-full px-3 py-2 bg-gray-800 border border-gray-600 rounded-md text-white placeholder-gray-400 focus:ring-2 focus:ring-blue-500 focus:border-transparent"
                 placeholder="ej: XG"
               />
             </div>
@@ -165,21 +165,21 @@ export function SizeSelector({ sizes, onChange }: SizeSelectorProps) {
             {sizes.map((size, index) => (
               <div
                 key={size.id}
-                className="flex items-center space-x-3 p-3 border border-gray-700 rounded-lg bg-gray-800/30"
+                className="flex items-center space-x-3 p-3 border border-gray-700 rounded-lg bg-gray-800"
               >
                 <div className="flex-1 grid grid-cols-2 gap-3">
                   <input
                     type="text"
                     value={size.name}
                     onChange={(e) => updateSize(index, 'name', e.target.value)}
-                    className="px-2 py-1 bg-gray-700 border border-gray-600 rounded text-sm text-white placeholder-gray-400 focus:ring-1 focus:ring-blue-500"
+                    className="px-2 py-1 bg-gray-800 border border-gray-600 rounded text-sm text-white placeholder-gray-400 focus:ring-1 focus:ring-blue-500"
                     placeholder="Nombre de la talla"
                   />
                   <input
                     type="text"
                     value={size.value}
                     onChange={(e) => updateSize(index, 'value', e.target.value.toUpperCase())}
-                    className="px-2 py-1 bg-gray-700 border border-gray-600 rounded text-sm text-white placeholder-gray-400 focus:ring-1 focus:ring-blue-500"
+                    className="px-2 py-1 bg-gray-800 border border-gray-600 rounded text-sm text-white placeholder-gray-400 focus:ring-1 focus:ring-blue-500"
                     placeholder="Código"
                   />
                 </div>

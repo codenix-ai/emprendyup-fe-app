@@ -664,6 +664,7 @@ const CREATE_RESTAURANT = gql`
     createRestaurantWithBranding(input: $input) {
       id
       name
+      slug
       description
       cuisineType
       city
@@ -1783,16 +1784,76 @@ export default function InteractiveChatStore() {
                 </p>
                 <div className="flex items-center justify-center gap-4">
                   {(() => {
-                    const storeUrl =
-                      (createdStore &&
-                        (createdStore.shopUrl ||
-                          (createdStore.storeId &&
-                            `https://${createdStore.storeId}.emprendyup.com`))) ||
-                      (createdStoreId && `https://${createdStoreId}.emprendyup.com`) ||
-                      'https://emprendyup.com';
+                    // Build a friendly URL depending on the created resource type.
+                    // - For stores (products), prefer `shopUrl` or subdomain: `https://{storeId}.emprendyup.com`.
+                    // - For restaurants/services/tourism_services, prefer a path using `slug`: `https://emprendyup.com/{slug}`.
+                    const category =
+                      (createdStore && createdStore.businessCategory) || storeData.businessCategory;
+
+                    // If the created resource is a restaurant or service, prefer slug paths
+                    if (
+                      category === 'restaurant' ||
+                      category === 'services' ||
+                      category === 'tourism_services'
+                    ) {
+                      const slug = createdStore?.slug || createdStoreId;
+                      if (slug)
+                        return (
+                          <a
+                            href={`https://${slug}.emprendyup.com`}
+                            className="px-6 py-3 bg-green-500 text-white rounded-lg font-semibold hover:bg-green-600 transition-colors"
+                            target="_blank"
+                            rel="noopener noreferrer"
+                          >
+                            Ir a la tienda
+                          </a>
+                        );
+                    }
+
+                    // Default/store behavior: prefer explicit shopUrl, then storeId subdomain, then createdStoreId as subdomain
+                    if (createdStore?.shopUrl) {
+                      return (
+                        <a
+                          href={createdStore.shopUrl}
+                          className="px-6 py-3 bg-green-500 text-white rounded-lg font-semibold hover:bg-green-600 transition-colors"
+                          target="_blank"
+                          rel="noopener noreferrer"
+                        >
+                          Ir a la tienda
+                        </a>
+                      );
+                    }
+
+                    if (createdStore?.storeId) {
+                      return (
+                        <a
+                          href={`https://${createdStore.storeId}.emprendyup.com`}
+                          className="px-6 py-3 bg-green-500 text-white rounded-lg font-semibold hover:bg-green-600 transition-colors"
+                          target="_blank"
+                          rel="noopener noreferrer"
+                        >
+                          Ir a la tienda
+                        </a>
+                      );
+                    }
+
+                    if (createdStoreId) {
+                      return (
+                        <a
+                          href={`https://${createdStoreId}.emprendyup.com`}
+                          className="px-6 py-3 bg-green-500 text-white rounded-lg font-semibold hover:bg-green-600 transition-colors"
+                          target="_blank"
+                          rel="noopener noreferrer"
+                        >
+                          Ir a la tienda
+                        </a>
+                      );
+                    }
+
+                    // Fallback
                     return (
                       <a
-                        href={storeUrl}
+                        href="https://emprendyup.com"
                         className="px-6 py-3 bg-green-500 text-white rounded-lg font-semibold hover:bg-green-600 transition-colors"
                         target="_blank"
                         rel="noopener noreferrer"

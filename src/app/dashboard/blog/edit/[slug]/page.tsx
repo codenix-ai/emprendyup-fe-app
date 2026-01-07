@@ -7,7 +7,7 @@ interface EditBlogPageProps {
 export default async function EditBlogPage({ params }: EditBlogPageProps) {
   const { slug } = await params;
 
-  const query = `query GetPost($idOrSlug: String!) { getPost(idOrSlug: $idOrSlug) { id title slug excerpt content status createdAt updatedAt publishedAt creator { id name email } blogCategory { id name slug } tags { tag { id name slug } } relatedPosts { id title slug } } }`;
+  const query = `query GetPost($idOrSlug: String!) { getPost(idOrSlug: $idOrSlug) { id title slug excerpt content coverImageUrl status createdAt updatedAt publishedAt creator { id name email } blogCategory { id name slug } tags { tag { id name slug } } relatedPosts { id title slug } } }`;
   const endpoint = process.env.NEXT_PUBLIC_GRAPHQL_ENDPOINT || 'http://localhost:4000/graphql';
 
   const resp = await fetch(endpoint, {

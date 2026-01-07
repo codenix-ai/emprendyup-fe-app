@@ -1569,27 +1569,21 @@ export function ProductFormWizard({
                         Talla
                       </button>
 
-                      {['material', 'aroma', 'sabor', 'peso'].map((t) => (
+                      {['material', 'aroma', 'sabor', 'peso', 'decoracion'].map((t) => (
                         <button
                           key={t}
                           type="button"
                           onClick={() => {
-                            const exists = customVariants.some(
-                              (v) =>
-                                v.type.trim().toLowerCase() === t ||
-                                v.name.trim().toLowerCase() === t
-                            );
-                            if (!exists) {
-                              setCustomVariants([
-                                ...customVariants,
-                                {
-                                  id: `custom-${t}-${Date.now()}`,
-                                  type: t,
-                                  name: t.charAt(0).toUpperCase() + t.slice(1),
-                                  value: '',
-                                },
-                              ]);
-                            }
+                            // Allow duplicating the same custom variant when pressing again
+                            setCustomVariants([
+                              ...customVariants,
+                              {
+                                id: `custom-${t}-${Date.now()}-${Math.random()}`,
+                                type: t,
+                                name: t.charAt(0).toUpperCase() + t.slice(1),
+                                value: '',
+                              },
+                            ]);
                           }}
                           className="px-3 py-1 rounded-full border bg-gray-800 border-gray-600 text-sm text-gray-300 hover:border-blue-500 hover:text-blue-400"
                         >
@@ -1598,28 +1592,16 @@ export function ProductFormWizard({
                       ))}
                     </div>
                   </div>
-                  {colors.length > 0 && (
-                    <div>
-                      <h5 className="text-md font-medium text-gray-300 mb-4 flex items-center">
-                        <Palette className="w-4 h-4 mr-2" />
-                        Colores
-                      </h5>
-                      <ColorPicker colors={colors} onChange={setColors} />
-                    </div>
-                  )}
-
-                  {sizes.length > 0 && (
-                    <div>
-                      <h5 className="text-md font-medium text-gray-300 mb-4 flex items-center">
-                        <Ruler className="w-4 h-4 mr-2" />
-                        Tallas
-                      </h5>
-                      <SizeSelector sizes={sizes} onChange={setSizes} />
-                    </div>
-                  )}
 
                   <div>
-                    <CustomVariantSelector variants={customVariants} onChange={setCustomVariants} />
+                    <CustomVariantSelector
+                      variants={customVariants}
+                      onChange={setCustomVariants}
+                      colors={colors}
+                      onChangeColors={setColors}
+                      sizes={sizes}
+                      onChangeSizes={setSizes}
+                    />
                   </div>
 
                   <div className="mt-8 pt-8 border-t border-gray-700">
