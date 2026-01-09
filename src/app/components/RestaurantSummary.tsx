@@ -1,8 +1,10 @@
 'use client';
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useRef } from 'react';
 import FileUpload from './FileUpload';
 import Image from 'next/image';
 import { useSessionStore } from '@/lib/store/dashboard';
+import AdressAutocomplete from './AdressAutocomplete';
+import { setOptions, importLibrary } from '@googlemaps/js-api-loader';
 
 interface RestaurantSummaryProps {
   open: boolean;
@@ -43,6 +45,49 @@ export default function RestaurantSummary({
       });
     }
   }, [data, user.user?.email]);
+
+  // Google Maps refs and init
+  const mapContainerRef = useRef<HTMLDivElement | null>(null);
+  const mapRef = useRef<google.maps.Map | null>(null);
+  const markerRef = useRef<google.maps.marker.AdvancedMarkerElement | null>(null);
+
+  const initGoogleMaps = () => {
+    const apiKey = process.env.NEXT_PUBLIC_GOOGLE_MAPS_API_KEY;
+    if (!apiKey) {
+      // eslint-disable-next-line no-console
+      console.warn('NEXT_PUBLIC_GOOGLE_MAPS_API_KEY no está configurada');
+      return;
+    }
+    try {
+      setOptions({ key: apiKey });
+    } catch (e) {
+      // noop
+    }
+  };
+
+  useEffect(() => {
+    initGoogleMaps();
+  }, []);
+
+  const setMapRef = (node: HTMLDivElement | null) => {
+    if (!node) return;
+    mapContainerRef.current = node;
+
+    if (!mapRef.current) {
+      importLibrary('maps')
+        .then((maps: any) => {
+          mapRef.current = new maps.Map(node, {
+            center: { lat: 4.60971, lng: -74.08175 },
+            zoom: 14,
+            mapId: process.env.NEXT_PUBLIC_GOOGLE_MAP_ID,
+          });
+        })
+        .catch((err: any) => {
+          // eslint-disable-next-line no-console
+          console.error('Error loading Google Maps:', err);
+        });
+    }
+  };
 
   if (!open) return null;
 
@@ -200,15 +245,61 @@ export default function RestaurantSummary({
               <label className="text-sm font-medium text-gray-300 mb-1 block">
                 Dirección completa
               </label>
-              <input
-                type="text"
-                name="address"
-                value={formData.address || ''}
-                onChange={handleChange}
-                placeholder="Dirección completa"
-                className={inputClassName}
-                disabled={isSubmitting}
+              <AdressAutocomplete
+                onPlaceSelected={async (place) => {
+                  if (!place || !place.geometry || !place.geometry.location) return;
+                  const lat = place.geometry.location.lat();
+                  const lng = place.geometry.location.lng();
+
+                  setFormData((prev: any) => ({
+                    ...prev,
+                    address: place.formatted_address || '',
+                    lat,
+                    lng,
+                    googleLocation: place.url || prev.googleLocation,
+                  }));
+
+                  // center map and add marker
+                  if (!mapRef.current) {
+                    try {
+                      const maps = (await importLibrary('maps')) as any;
+                      mapRef.current = new maps.Map(mapContainerRef.current, {
+                        center: { lat, lng },
+                        zoom: 16,
+                        mapId: process.env.NEXT_PUBLIC_GOOGLE_MAP_ID,
+                      });
+                    } catch (err) {
+                      // eslint-disable-next-line no-console
+                      console.error('Error inicializando mapa:', err);
+                    }
+                  }
+
+                  if (mapRef.current) {
+                    mapRef.current.setCenter({ lat, lng });
+                    mapRef.current.setZoom(16);
+                    try {
+                      const markerLib = (await importLibrary(
+                        'marker'
+                      )) as google.maps.MarkerLibrary;
+                      if (!markerRef.current) {
+                        markerRef.current = new markerLib.AdvancedMarkerElement({
+                          map: mapRef.current,
+                          position: { lat, lng },
+                        });
+                      } else {
+                        markerRef.current.position = { lat, lng };
+                      }
+                    } catch (err) {
+                      // eslint-disable-next-line no-console
+                      console.warn('Marker library not available or error creating marker', err);
+                    }
+                  }
+                }}
               />
+
+              <div className="mt-3 rounded-md overflow-hidden">
+                <div ref={setMapRef} style={{ height: 300 }} />
+              </div>
             </div>
             <div>
               <label className="text-sm font-medium text-gray-300 mb-1 block">
