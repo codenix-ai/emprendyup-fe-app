@@ -96,6 +96,7 @@ import ApolloWrapper from './components/ApolloWrapper';
 import Script from 'next/script';
 import CookieWrapper from './components/CookieWrapper';
 import { ThemeProvider } from 'next-themes';
+import GoogleOAuthProvider from './components/GoogleOAuthProvider';
 import { Toaster } from 'react-hot-toast';
 export default function RootLayout({ children }: { children: ReactNode }) {
   return (
@@ -344,13 +345,15 @@ export default function RootLayout({ children }: { children: ReactNode }) {
       </head>
       <body className={`${dm_sans.variable} dark:bg-slate-900`}>
         <ThemeProvider attribute="class" defaultTheme="dark" enableSystem>
-          <ApolloWrapper>
-            {/* <ConditionalLayout> */}
-            {children}
-            <Toaster position="top-right" />
-            {/* </ConditionalLayout> */}
-          </ApolloWrapper>
-          <CookieWrapper />
+          <GoogleOAuthProvider>
+            <ApolloWrapper>
+              {/* <ConditionalLayout> */}
+              {children}
+              <Toaster position="top-right" />
+              {/* </ConditionalLayout> */}
+            </ApolloWrapper>
+            <CookieWrapper />
+          </GoogleOAuthProvider>
         </ThemeProvider>
       </body>
     </html>
