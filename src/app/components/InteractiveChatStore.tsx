@@ -23,6 +23,8 @@ import StoreSummary from './StoreSummary';
 import RestaurantSummary from './RestaurantSummary';
 import ServicesSummary from './ServicesSummary';
 import Image from 'next/image';
+import AdressAutocomplete from './AdressAutocomplete';
+import { setOptions, importLibrary } from '@googlemaps/js-api-loader';
 // router not used in this component
 
 interface Message {
@@ -73,6 +75,8 @@ interface StoreData {
   businessCategory?: 'products' | 'restaurant' | 'services' | 'tourism_services';
   coverImage?: string;
   googleLocation?: string;
+  lat?: number;
+  lng?: number;
   cuisineType?: string;
 }
 
@@ -668,6 +672,8 @@ const CREATE_RESTAURANT = gql`
       description
       cuisineType
       city
+      lat
+      lng
       address
       phone
       brandingId
@@ -799,6 +805,113 @@ export default function InteractiveChatStore() {
     })();
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
+
+  // Google Maps for inline address question
+  const mapRef = useRef<google.maps.Map | null>(null);
+  const marker = useRef<google.maps.marker.AdvancedMarkerElement | null>(null);
+  const mapContainerRef = useRef<HTMLDivElement | null>(null);
+
+  const initGoogleMaps = () => {
+    const apiKey = process.env.NEXT_PUBLIC_GOOGLE_MAPS_API_KEY;
+    if (!apiKey) {
+      // eslint-disable-next-line no-console
+      console.warn('NEXT_PUBLIC_GOOGLE_MAPS_API_KEY no está configurada');
+      return;
+    }
+    try {
+      setOptions({ key: apiKey });
+    } catch (e) {
+      // noop
+    }
+  };
+
+  useEffect(() => {
+    initGoogleMaps();
+  }, []);
+
+  const setMapRef = (node: HTMLDivElement | null) => {
+    if (!node) return;
+    mapContainerRef.current = node;
+
+    if (!mapRef.current) {
+      importLibrary('maps')
+        .then((maps: any) => {
+          mapRef.current = new maps.Map(node, {
+            center: { lat: 4.60971, lng: -74.08175 },
+            zoom: 14,
+            mapId: process.env.NEXT_PUBLIC_GOOGLE_MAP_ID,
+          });
+        })
+        .catch((err: any) => {
+          // eslint-disable-next-line no-console
+          console.error('Error loading Google Maps:', err);
+        });
+    }
+  };
+
+  const handlePlaceSelected = async (place: google.maps.places.PlaceResult) => {
+    if (!place || !place.geometry?.location) return;
+
+    const lat = place.geometry.location.lat();
+    const lng = place.geometry.location.lng();
+
+    // Guardar en el storeData
+    setStoreData((prev) => ({
+      ...prev,
+      address: place.formatted_address || '',
+      lat,
+      lng,
+      googleLocation: place.url || prev.googleLocation,
+    }));
+
+    // Mostrar mensaje del usuario con la dirección seleccionada
+    setMessages((prev) => [
+      ...prev,
+      { from: 'user', text: place.formatted_address || '', type: 'text' },
+    ]);
+
+    // Center map and show marker
+    if (!mapRef.current && mapContainerRef.current) {
+      try {
+        const maps = (await importLibrary('maps')) as any;
+        mapRef.current = new maps.Map(mapContainerRef.current, {
+          center: { lat, lng },
+          zoom: 16,
+          mapId: process.env.NEXT_PUBLIC_GOOGLE_MAP_ID,
+        });
+      } catch (err) {
+        // eslint-disable-next-line no-console
+        console.error('Error inicializando mapa:', err);
+      }
+    }
+
+    if (mapRef.current) {
+      mapRef.current.setCenter({ lat, lng });
+      mapRef.current.setZoom(16);
+      try {
+        const markerLib = (await importLibrary('marker')) as google.maps.MarkerLibrary;
+        if (!marker.current) {
+          marker.current = new markerLib.AdvancedMarkerElement({
+            map: mapRef.current,
+            position: { lat, lng },
+          });
+        } else {
+          marker.current.position = { lat, lng };
+        }
+      } catch (err) {
+        // eslint-disable-next-line no-console
+        console.warn('Marker library not available or error creating marker', err);
+      }
+    }
+
+    // Avanzar al siguiente paso
+    if (currentStep + 1 < questions.length) {
+      setCurrentStep((prev) => prev + 1);
+      addBotMessage(currentStep + 1);
+    } else {
+      setCurrentStep(questions.length);
+    }
+  };
 
   // Obtener especialidades según el tipo de negocio
   const getSpecialtiesForType = (type: string, category: string): string[] => {
@@ -1359,6 +1472,20 @@ export default function InteractiveChatStore() {
         );
 
       default:
+        if (msg.field === 'address' && storeData.businessCategory === 'restaurant') {
+          return (
+            <div>
+              <span>{msg.text}</span>
+              <div className="mt-3">
+                <AdressAutocomplete onPlaceSelected={handlePlaceSelected} />
+                <div className="mt-2 rounded-md overflow-hidden">
+                  <div ref={setMapRef} style={{ height: 200 }} />
+                </div>
+              </div>
+            </div>
+          );
+        }
+
         return <span>{msg.text}</span>;
     }
   };
@@ -1689,6 +1816,12 @@ export default function InteractiveChatStore() {
             (questions.length === 0 && !selectedBusinessType)) &&
           messages.length > 0 &&
           messages[messages.length - 1]?.from === 'bot' &&
+          // hide standard text input when address question for restaurants (we render autocomplete inline)
+          !(
+            questions.length > 0 &&
+            questions[currentStep]?.field === 'address' &&
+            storeData.businessCategory === 'restaurant'
+          ) &&
           !['image', 'color', 'select'].includes(
             questions.length > 0
               ? questions[currentStep]?.type
@@ -1902,6 +2035,8 @@ export default function InteractiveChatStore() {
                           cuisineType: updatedData.cuisineType,
                           city: updatedData.city,
                           address: updatedData.address,
+                          lat: (updatedData.lat ?? storeData.lat) || null,
+                          lng: (updatedData.lng ?? storeData.lng) || null,
                           phone: updatedData.phone,
                           googleLocation: updatedData.googleLocation || '',
                           branding: {
