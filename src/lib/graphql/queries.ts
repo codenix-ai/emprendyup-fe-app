@@ -196,6 +196,7 @@ export const GET_PAYMENT_CONFIGURATIONS = gql`
     paymentConfigurations(storeId: $storeId) {
       id
       storeId
+      cashEnabled
       wompiEnabled
       wompiPublicKey
       wompiTestMode
@@ -224,6 +225,7 @@ export const CREATE_PAYMENT_CONFIGURATION = gql`
     createPaymentConfiguration(storeId: $storeId, input: $input) {
       id
       storeId
+      cashEnabled
       wompiEnabled
       wompiPublicKey
       wompiTestMode
@@ -252,6 +254,7 @@ export const UPDATE_PAYMENT_CONFIGURATION = gql`
     updatePaymentConfiguration(id: $id, storeId: $storeId, input: $input) {
       id
       storeId
+      cashEnabled
       wompiEnabled
       wompiPublicKey
       wompiTestMode

@@ -170,6 +170,7 @@ export interface PaymentSummary {
 export interface PaymentConfiguration {
   id: string;
   storeId: string;
+  cashEnabled?: boolean;
   wompiEnabled: boolean;
   wompiPublicKey?: string;
   wompiTestMode: boolean;
@@ -192,6 +193,7 @@ export interface PaymentConfiguration {
 }
 
 export interface CreatePaymentConfigurationInput {
+  cashEnabled?: boolean;
   wompiEnabled?: boolean;
   wompiApiKey?: string;
   wompiPublicKey?: string;
@@ -215,6 +217,7 @@ export interface CreatePaymentConfigurationInput {
 }
 
 export interface UpdatePaymentConfigurationInput {
+  cashEnabled?: boolean;
   wompiEnabled?: boolean;
   wompiApiKey?: string;
   wompiPublicKey?: string;

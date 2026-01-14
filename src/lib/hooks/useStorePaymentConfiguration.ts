@@ -121,8 +121,10 @@ export const useStorePaymentConfiguration = (storeId?: string) => {
     webhookUrl: string;
     successUrl: string;
     cancelUrl: string;
+    cashEnabled?: boolean;
   }) => {
     const input: CreatePaymentConfigurationInput = {
+      cashEnabled: config.cashEnabled ?? currentConfiguration?.cashEnabled ?? false,
       wompiEnabled: true,
       wompiPublicKey: config.publicKey,
       wompiApiKey: config.apiKey,
@@ -146,8 +148,10 @@ export const useStorePaymentConfiguration = (storeId?: string) => {
     publicKey: string;
     apiKey: string;
     testMode: boolean;
+    cashEnabled?: boolean;
   }) => {
     const input: CreatePaymentConfigurationInput = {
+      cashEnabled: config.cashEnabled ?? currentConfiguration?.cashEnabled ?? false,
       mercadoPagoEnabled: true,
       mercadoPagoPublicKey: config.publicKey,
       mercadoPagoApiKey: config.apiKey,
@@ -167,8 +171,10 @@ export const useStorePaymentConfiguration = (storeId?: string) => {
     publicKey: string;
     apiKey: string;
     testMode: boolean;
+    cashEnabled?: boolean;
   }) => {
     const input: CreatePaymentConfigurationInput = {
+      cashEnabled: config.cashEnabled ?? currentConfiguration?.cashEnabled ?? false,
       epaycoEnabled: true,
       epaycoPublicKey: config.publicKey,
       epaycoApiKey: config.apiKey,
@@ -184,10 +190,24 @@ export const useStorePaymentConfiguration = (storeId?: string) => {
     }
   };
 
+  const setCashEnabled = async (enabled: boolean) => {
+    const input: CreatePaymentConfigurationInput = {
+      cashEnabled: enabled,
+      defaultCurrency: 'COP',
+      autoCapture: true,
+    };
+
+    if (currentConfiguration) {
+      return updateConfiguration(currentConfiguration.id, input);
+    }
+    return createConfiguration(input);
+  };
+
   return {
     configuration: currentConfiguration,
     loading,
     error,
+    setCashEnabled,
     setupWompiConfiguration,
     setupMercadoPagoConfiguration,
     setupEpaycoConfiguration,
@@ -196,6 +216,7 @@ export const useStorePaymentConfiguration = (storeId?: string) => {
     isWompiEnabled: currentConfiguration?.wompiEnabled || false,
     isMercadoPagoEnabled: currentConfiguration?.mercadoPagoEnabled || false,
     isEpaycoEnabled: currentConfiguration?.epaycoEnabled || false,
+    isCashEnabled: currentConfiguration?.cashEnabled || false,
     getWompiPublicKey: () => currentConfiguration?.wompiPublicKey,
     getMercadoPagoPublicKey: () => currentConfiguration?.mercadoPagoPublicKey,
     getEpaycoPublicKey: () => currentConfiguration?.epaycoPublicKey,
