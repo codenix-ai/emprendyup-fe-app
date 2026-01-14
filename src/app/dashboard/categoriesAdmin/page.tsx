@@ -146,6 +146,17 @@ const REORDER_CATEGORIES = gql`
   }
 `;
 
+const GET_ALL_STORES_FOR_ADMIN_MIN = gql`
+  query GetAllStoresForAdminMin {
+    getAllStoresForAdmin {
+      id
+      storeId
+      name
+      isActive
+    }
+  }
+`;
+
 // Types
 interface Category {
   id: string;
@@ -171,6 +182,13 @@ interface Category {
 interface Store {
   id: string;
   name: string;
+}
+
+interface AdminStoreRow {
+  id: string;
+  storeId?: string;
+  name: string;
+  isActive?: boolean;
 }
 
 const CategoryFormModal = ({
@@ -398,6 +416,44 @@ const CategoryFormModal = ({
     return Array.from(storeMap.values());
   }, [availableCategories]);
 
+  const creatingMainCategory = !category && !preselectedParent;
+
+  // For the creation form we want to show ALL stores (including those without categories).
+  const {
+    data: allStoresData,
+    loading: allStoresLoading,
+    error: allStoresError,
+  } = useQuery(GET_ALL_STORES_FOR_ADMIN_MIN, {
+    skip: !isOpen || !creatingMainCategory,
+    fetchPolicy: 'network-only',
+  });
+
+  const allStores: Store[] = useMemo(() => {
+    const rows: AdminStoreRow[] = allStoresData?.getAllStoresForAdmin || [];
+    if (!rows.length) return [];
+
+    const dedup = new Map<string, Store>();
+    for (const r of rows) {
+      if (!r?.id) continue;
+      dedup.set(r.id, { id: r.id, name: r.name });
+    }
+
+    return Array.from(dedup.values()).sort((a, b) => a.name.localeCompare(b.name));
+  }, [allStoresData]);
+
+  const modalStores: Store[] = useMemo(() => {
+    if (!creatingMainCategory) return stores;
+
+    // Merge the stores derived from categories with the full store list.
+    // This prevents showing only category-backed stores while still rendering fast.
+    const merged = new Map<string, Store>();
+    for (const s of stores) merged.set(s.id, s);
+    for (const s of allStores) merged.set(s.id, s);
+    return Array.from(merged.values()).sort((a, b) => a.name.localeCompare(b.name));
+  }, [creatingMainCategory, stores, allStores]);
+
+  const noStoresAvailable = creatingMainCategory && !allStoresLoading && modalStores.length === 0;
+
   if (!isOpen) return null;
 
   return (
@@ -454,6 +510,17 @@ const CategoryFormModal = ({
                 <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">
                   Tienda *
                 </label>
+                {allStoresError && (
+                  <div className="mb-3 p-3 rounded-lg bg-red-50 dark:bg-red-900/20 border border-red-200 dark:border-red-800 text-sm">
+                    Error cargando tiendas. Revisa tu sesión/permisos y refresca la página.
+                  </div>
+                )}
+                {noStoresAvailable && (
+                  <div className="mb-3 p-3 rounded-lg bg-yellow-50 dark:bg-yellow-900/20 border border-yellow-200 dark:border-yellow-800 text-sm">
+                    No hay tiendas disponibles para asignar. Por favor crea una tienda antes de
+                    crear categorías.
+                  </div>
+                )}
                 <select
                   value={formData.storeId}
                   onChange={(e) => setFormData({ ...formData, storeId: e.target.value })}
@@ -464,8 +531,10 @@ const CategoryFormModal = ({
                   } text-gray-900 dark:text-white`}
                   disabled={isLoading}
                 >
-                  <option value="">Seleccionar tienda</option>
-                  {stores.map((store) => (
+                  <option value="">
+                    {allStoresLoading ? 'Cargando tiendas...' : 'Seleccionar tienda'}
+                  </option>
+                  {modalStores.map((store) => (
                     <option key={store.id} value={store.id}>
                       {store.name}
                     </option>
@@ -544,7 +613,7 @@ const CategoryFormModal = ({
               <button
                 type="submit"
                 className="px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors disabled:opacity-50"
-                disabled={isLoading}
+                disabled={isLoading || noStoresAvailable}
               >
                 {isLoading ? 'Guardando...' : category ? 'Actualizar' : 'Crear'}
               </button>
