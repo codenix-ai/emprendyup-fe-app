@@ -1,6 +1,6 @@
 'use client';
 import React, { useState, useEffect } from 'react';
-import { Shield, Save, AlertCircle, CheckCircle, Key, Globe } from 'lucide-react';
+import { Shield, Save, AlertCircle, CheckCircle, Key, Globe, DollarSign } from 'lucide-react';
 import { useStorePaymentConfiguration } from '@/lib/hooks/useStorePaymentConfiguration';
 import toast from 'react-hot-toast';
 
@@ -31,10 +31,13 @@ export default function PaymentConfiguration({ storeId }: PaymentConfigurationPr
     isWompiEnabled,
     isMercadoPagoEnabled,
     isEpaycoEnabled,
+    isCashEnabled,
   } = useStorePaymentConfiguration(fallbackStoreId);
 
   const [activeTab, setActiveTab] = useState('wompi');
   const [saving, setSaving] = useState(false);
+
+  const [cashEnabled, setCashEnabledState] = useState(false);
 
   // Wompi configuration state - inicializado vacío
   const [wompiConfig, setWompiConfig] = useState({
@@ -63,6 +66,8 @@ export default function PaymentConfiguration({ storeId }: PaymentConfigurationPr
   // Actualizar los estados solo cuando hay datos guardados en la base de datos
   useEffect(() => {
     if (configuration) {
+      setCashEnabledState(configuration.cashEnabled ?? false);
+
       // Solo actualizar Wompi si hay datos guardados
       if (configuration.wompiPublicKey || configuration.wompiEnabled) {
         setWompiConfig({
@@ -104,7 +109,7 @@ export default function PaymentConfiguration({ storeId }: PaymentConfigurationPr
     setSaving(true);
     try {
       console.log('Saving Wompi config with storeId:', fallbackStoreId);
-      await setupWompiConfiguration(wompiConfig);
+      await setupWompiConfiguration({ ...wompiConfig, cashEnabled });
       toast.success('Configuración de Wompi guardada exitosamente');
     } catch (error) {
       console.error('Error saving Wompi config:', error);
@@ -125,7 +130,7 @@ export default function PaymentConfiguration({ storeId }: PaymentConfigurationPr
     setSaving(true);
     try {
       console.log('Saving MercadoPago config with storeId:', fallbackStoreId);
-      await setupMercadoPagoConfiguration(mercadoPagoConfig);
+      await setupMercadoPagoConfiguration({ ...mercadoPagoConfig, cashEnabled });
       toast.success('Configuración de MercadoPago guardada exitosamente');
     } catch (error) {
       console.error('Error saving MercadoPago config:', error);
@@ -146,7 +151,7 @@ export default function PaymentConfiguration({ storeId }: PaymentConfigurationPr
     setSaving(true);
     try {
       console.log('Saving ePayco config with storeId:', fallbackStoreId);
-      await setupEpaycoConfiguration(epaycoConfig);
+      await setupEpaycoConfiguration({ ...epaycoConfig, cashEnabled });
       toast.success('Configuración de ePayco guardada exitosamente');
     } catch (error) {
       console.error('Error saving ePayco config:', error);
@@ -178,7 +183,7 @@ export default function PaymentConfiguration({ storeId }: PaymentConfigurationPr
         </div>
 
         {/* Status Cards */}
-        <div className="grid grid-cols-1 md:grid-cols-3 gap-4 mb-8">
+        <div className="grid grid-cols-1 md:grid-cols-4 gap-4 mb-8">
           <div
             className={`p-4 rounded-lg border shadow-lg ${
               isWompiEnabled
@@ -244,6 +249,57 @@ export default function PaymentConfiguration({ storeId }: PaymentConfigurationPr
               ) : (
                 <AlertCircle className="w-6 h-6 text-gray-500" />
               )}
+            </div>
+          </div>
+
+          <div
+            className={`p-4 rounded-lg border shadow-lg ${
+              isCashEnabled
+                ? 'bg-amber-900/20 border-amber-700 shadow-amber-900/20'
+                : 'bg-gray-800 border-gray-700'
+            }`}
+          >
+            <div className="flex items-center justify-between">
+              <div>
+                <h3 className="font-medium text-white">Efectivo</h3>
+                <p className={`text-sm ${isCashEnabled ? 'text-amber-300' : 'text-gray-500'}`}>
+                  {isCashEnabled ? 'Habilitado' : 'Deshabilitado'}
+                </p>
+              </div>
+              <DollarSign
+                className={`w-6 h-6 ${isCashEnabled ? 'text-amber-300' : 'text-gray-500'}`}
+              />
+            </div>
+          </div>
+        </div>
+
+        {/* Cash Configuration */}
+        <div className="bg-gray-800 border border-gray-700 rounded-lg shadow-lg p-6 mb-8">
+          <div className="flex items-start justify-between gap-6 flex-col sm:flex-row">
+            <div>
+              <h3 className="text-lg font-medium text-white">Pago en efectivo</h3>
+              <p className="text-sm text-gray-400 mt-1">
+                Habilita o deshabilita la opción de recibir pagos en efectivo en tu tienda.
+              </p>
+              <p className="text-xs text-gray-500 mt-2">
+                Se guarda cuando presionas “Guardar Configuración”.
+              </p>
+            </div>
+
+            <div className="flex items-center gap-4">
+              <label className="inline-flex items-center cursor-pointer select-none">
+                <input
+                  type="checkbox"
+                  className="sr-only peer"
+                  checked={cashEnabled}
+                  onChange={(e) => setCashEnabledState(e.target.checked)}
+                  disabled={saving}
+                />
+                <div className="relative w-11 h-6 bg-gray-600 rounded-full peer peer-focus:outline-none peer-checked:bg-emerald-600 after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:border after:border-gray-300 after:rounded-full after:h-5 after:w-5 after:transition-all peer-checked:after:translate-x-full" />
+                <span className="ml-3 text-sm text-gray-300">
+                  {cashEnabled ? 'Habilitado' : 'Deshabilitado'}
+                </span>
+              </label>
             </div>
           </div>
         </div>
