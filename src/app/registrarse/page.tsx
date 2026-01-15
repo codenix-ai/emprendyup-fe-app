@@ -31,6 +31,7 @@ function SignupForm() {
   const [name, setName] = useState('');
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
+  const [confirmPassword, setConfirmPassword] = useState('');
   const [storeId, setStoreId] = useState('');
   const [acceptTerms, setAcceptTerms] = useState(false);
   const [showPassword, setShowPassword] = useState(false);
@@ -111,6 +112,11 @@ function SignupForm() {
       return;
     }
 
+    if (password !== confirmPassword) {
+      setError('Las contraseñas no coinciden.');
+      return;
+    }
+
     // Enforce password policy: min 8 chars, uppercase, lowercase, number, special char
     const passwordRegex = /^(?=.*[a-z])(?=.*[A-Z])(?=.*\d)(?=.*[\W_]).{8,}$/;
     if (!passwordRegex.test(password)) {
@@ -146,6 +152,7 @@ function SignupForm() {
         setName('');
         setEmail('');
         setPassword('');
+        setConfirmPassword('');
         setStoreId('');
         setAcceptTerms(false);
         router.push(`/otp-confirmation?email=${encodeURIComponent(email)}`);
@@ -267,6 +274,7 @@ function SignupForm() {
                         value={name}
                         onChange={(e) => setName(e.target.value)}
                         className="mt-3 w-full py-2 px-3 h-10 bg-transparent border rounded text-white placeholder-gray-400"
+                        placeholder="Nombre completo"
                         required
                       />
                     </div>
@@ -281,6 +289,7 @@ function SignupForm() {
                         value={email}
                         onChange={(e) => setEmail(e.target.value)}
                         className="mt-3 w-full py-2 px-3 h-10 bg-transparent border rounded text-white placeholder-gray-400"
+                        placeholder="ejemplo@correo.com"
                         required
                       />
                     </div>
@@ -305,6 +314,7 @@ function SignupForm() {
                             }
                           }}
                           className="w-full py-2 px-3 h-10 pr-10 bg-transparent border rounded text-white placeholder-gray-400"
+                          placeholder="********"
                           required
                         />
                         <button
@@ -366,6 +376,61 @@ function SignupForm() {
                           </li>
                         </ul>
                       )}
+                    </div>
+
+                    <div className="mb-4">
+                      <label className="font-semibold text-white" htmlFor="RegisterConfirmPassword">
+                        Confirmar contraseña:
+                      </label>
+                      <div className="mt-3 relative">
+                        <input
+                          id="RegisterConfirmPassword"
+                          type={showPassword ? 'text' : 'password'}
+                          value={confirmPassword}
+                          onChange={(e) => setConfirmPassword(e.target.value)}
+                          className="w-full py-2 px-3 h-10 pr-10 bg-transparent border rounded text-white placeholder-gray-400"
+                          placeholder="********"
+                          required
+                        />
+                        <button
+                          type="button"
+                          onClick={() => setShowPassword((s) => !s)}
+                          aria-label={showPassword ? 'Ocultar contraseña' : 'Mostrar contraseña'}
+                          className="absolute right-2 top-1/2 -translate-y-1/2 text-white opacity-80 hover:opacity-100"
+                        >
+                          {showPassword ? (
+                            <svg
+                              xmlns="http://www.w3.org/2000/svg"
+                              width="18"
+                              height="18"
+                              viewBox="0 0 24 24"
+                              fill="none"
+                              stroke="currentColor"
+                              strokeWidth="2"
+                              strokeLinecap="round"
+                              strokeLinejoin="round"
+                            >
+                              <path d="M17.94 17.94A10.94 10.94 0 0 1 12 20c-9 0-11-8-11-8a17.38 17.38 0 0 1 5-5" />
+                              <path d="M1 1l22 22" />
+                            </svg>
+                          ) : (
+                            <svg
+                              xmlns="http://www.w3.org/2000/svg"
+                              width="18"
+                              height="18"
+                              viewBox="0 0 24 24"
+                              fill="none"
+                              stroke="currentColor"
+                              strokeWidth="2"
+                              strokeLinecap="round"
+                              strokeLinejoin="round"
+                            >
+                              <path d="M1 12s2-7 11-7 11 7 11 7-2 7-11 7S1 12 1 12z" />
+                              <circle cx="12" cy="12" r="3" />
+                            </svg>
+                          )}
+                        </button>
+                      </div>
                     </div>
 
                     <div className="mb-4">
