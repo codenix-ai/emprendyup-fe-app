@@ -77,10 +77,29 @@ export default function RestaurantSummary({
       importLibrary('maps')
         .then((maps: any) => {
           mapRef.current = new maps.Map(node, {
-            center: { lat: 4.60971, lng: -74.08175 },
+            center: {
+              lat: typeof formData.lat === 'number' ? formData.lat : 4.60971,
+              lng: typeof formData.lng === 'number' ? formData.lng : -74.08175,
+            },
             zoom: 14,
             mapId: process.env.NEXT_PUBLIC_GOOGLE_MAP_ID,
           });
+          // If initial coordinates are present, add marker
+          (async () => {
+            try {
+              if (typeof formData.lat === 'number' && typeof formData.lng === 'number') {
+                const markerLib = (await importLibrary('marker')) as google.maps.MarkerLibrary;
+                if (!markerRef.current) {
+                  markerRef.current = new markerLib.AdvancedMarkerElement({
+                    map: mapRef.current,
+                    position: { lat: formData.lat, lng: formData.lng },
+                  });
+                }
+              }
+            } catch (e) {
+              // ignore marker init errors
+            }
+          })();
         })
         .catch((err: any) => {
           // eslint-disable-next-line no-console
@@ -246,6 +265,7 @@ export default function RestaurantSummary({
                 Dirección completa
               </label>
               <AdressAutocomplete
+                value={formData.address}
                 onPlaceSelected={async (place) => {
                   if (!place || !place.geometry || !place.geometry.location) return;
                   const lat = place.geometry.location.lat();
@@ -286,8 +306,9 @@ export default function RestaurantSummary({
                           map: mapRef.current,
                           position: { lat, lng },
                         });
-                      } else {
-                        markerRef.current.position = { lat, lng };
+                      } else if ((markerRef.current as any).position) {
+                        // Update position
+                        (markerRef.current as any).position = { lat, lng };
                       }
                     } catch (err) {
                       // eslint-disable-next-line no-console
@@ -300,20 +321,6 @@ export default function RestaurantSummary({
               <div className="mt-3 rounded-md overflow-hidden">
                 <div ref={setMapRef} style={{ height: 300 }} />
               </div>
-            </div>
-            <div>
-              <label className="text-sm font-medium text-gray-300 mb-1 block">
-                Departamento (opcional)
-              </label>
-              <input
-                type="text"
-                name="department"
-                value={formData.department || ''}
-                onChange={handleChange}
-                placeholder="Departamento"
-                className={inputClassName}
-                disabled={isSubmitting}
-              />
             </div>
             <div>
               <label className="text-sm font-medium text-gray-300 mb-1 block">
@@ -336,11 +343,8 @@ export default function RestaurantSummary({
             <h3 className="text-lg font-semibold text-white border-b border-gray-700 pb-1">
               Imágenes
             </h3>
-            <div className="grid grid-cols-2 gap-4">
+            <div className="grid grid-cols-1 gap-4">
               <ImageUploadSection field="logoUrl" label="Logo" />
-              <ImageUploadSection field="faviconUrl" label="Favicon" />
-              <ImageUploadSection field="bannerUrl" label="Banner" />
-              <ImageUploadSection field="coverImage" label="Portada" />
             </div>
           </div>
 

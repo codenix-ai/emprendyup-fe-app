@@ -341,13 +341,21 @@ export default function DetailsStore({ storeId, storeData }: DetailsStoreProps) 
           </div>
         </div>
         <div className="flex items-center gap-3">
-          <a
-            href={`https://${store.name}.emprendyup.com`}
-            className="inline-flex items-center px-4 py-2 bg-gray-100 dark:bg-gray-800 text-gray-700 dark:text-gray-300 rounded-lg hover:bg-gray-200 dark:hover:bg-gray-700 transition-colors"
-          >
-            <ExternalLink className="h-4 w-4 mr-2" />
-            Ver tienda
-          </a>
+          {(() => {
+            const domain = store.customDomain || `${store.subdomain}.emprendyup.com`;
+            const href = `https://${domain}`;
+            return (
+              <a
+                href={href}
+                className="inline-flex items-center px-4 py-2 bg-gray-100 dark:bg-gray-800 text-gray-700 dark:text-gray-300 rounded-lg hover:bg-gray-200 dark:hover:bg-gray-700 transition-colors"
+                target="_blank"
+                rel="noopener noreferrer"
+              >
+                <ExternalLink className="h-4 w-4 mr-2" />
+                Ver tienda
+              </a>
+            );
+          })()}
         </div>
       </div>
 
@@ -472,7 +480,7 @@ export default function DetailsStore({ storeId, storeData }: DetailsStoreProps) 
       {/* Recent Activity and Store Features */}
       <div className="grid grid-cols-1 lg:grid-cols-2 gap-8">
         {/* Recent Activity */}
-        <div className="bg-white dark:bg-gray-800 rounded-lg shadow-sm border border-gray-200 dark:border-gray-700">
+        {/* <div className="bg-white dark:bg-gray-800 rounded-lg shadow-sm border border-gray-200 dark:border-gray-700">
           <div className="p-6 border-b border-gray-200 dark:border-gray-700">
             <h3 className="text-lg font-semibold text-gray-900 dark:text-white">
               Actividad Reciente
@@ -501,10 +509,10 @@ export default function DetailsStore({ storeId, storeData }: DetailsStoreProps) 
               </Link>
             </div>
           </div>
-        </div>
+        </div> */}
 
         {/* Store Features */}
-        <div className="bg-white dark:bg-gray-800 rounded-lg shadow-sm border border-gray-200 dark:border-gray-700">
+        {/* <div className="bg-white dark:bg-gray-800 rounded-lg shadow-sm border border-gray-200 dark:border-gray-700">
           <div className="p-6 border-b border-gray-200 dark:border-gray-700">
             <h3 className="text-lg font-semibold text-gray-900 dark:text-white">
               Funciones habilitadas
@@ -528,11 +536,11 @@ export default function DetailsStore({ storeId, storeData }: DetailsStoreProps) 
               </Link>
             </div>
           </div>
-        </div>
+        </div> */}
       </div>
 
       {/* Performance Metrics */}
-      <div className="bg-white dark:bg-gray-800 rounded-lg shadow-sm border border-gray-200 dark:border-gray-700">
+      {/* <div className="bg-white dark:bg-gray-800 rounded-lg shadow-sm border border-gray-200 dark:border-gray-700">
         <div className="p-6 border-b border-gray-200 dark:border-gray-700">
           <h3 className="text-lg font-semibold text-gray-900 dark:text-white">
             Métricas de rendimiento
@@ -580,7 +588,7 @@ export default function DetailsStore({ storeId, storeData }: DetailsStoreProps) 
             </div>
           </div>
         </div>
-      </div>
+      </div> */}
 
       {/* Store Address */}
       {store.address && (
