@@ -2069,7 +2069,6 @@ export default function InteractiveChatStore() {
                             businessType: updatedData.businessType || 'Restaurante',
                           },
                         };
-                        console.log('DEBUG createRestaurant input:', input);
                         const { data } = await createRestaurantMutation({ variables: { input } });
                         created = data?.createRestaurantWithBranding;
                         if (created) {
@@ -2151,7 +2150,6 @@ export default function InteractiveChatStore() {
                             businessType: updatedData.businessType || 'Servicios',
                           },
                         };
-                        console.log('DEBUG createServiceProvider input:', input);
                         const { data } = await createServiceProviderMutation({
                           variables: { input },
                         });
@@ -2190,7 +2188,6 @@ export default function InteractiveChatStore() {
                           status: 'active',
                           userId: session?.user?.id || 'anonymous',
                         };
-                        console.log('DEBUG createStore input:', input);
                         const { data } = await createStoreMutation({ variables: { input } });
                         created = data?.createStore;
                         if (created) {

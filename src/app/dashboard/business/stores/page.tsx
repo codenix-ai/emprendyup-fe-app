@@ -107,6 +107,20 @@ export default function StoresPage() {
 
   const { data, loading: queryLoading, error } = useQuery(GET_ALL_STORES_FOR_ADMIN);
 
+  const resolveImageUrl = (value?: string) => {
+    if (!value) return '';
+    if (
+      value.startsWith('http') ||
+      value.startsWith('https') ||
+      value.startsWith('blob:') ||
+      value.startsWith('data:') ||
+      value.startsWith('/')
+    ) {
+      return value;
+    }
+    return `https://emprendyup-images.s3.us-east-1.amazonaws.com/${value}`;
+  };
+
   useEffect(() => {
     if (data?.getAllStoresForAdmin) {
       setStores(data.getAllStoresForAdmin);
@@ -340,7 +354,7 @@ export default function StoresPage() {
                             {store.logoUrl && (
                               <Image
                                 className="h-10 w-10 rounded-full mr-3"
-                                src={store.logoUrl}
+                                src={resolveImageUrl(store.logoUrl)}
                                 alt={`${safe(store.name)} logo`}
                                 width={40}
                                 height={40}
@@ -409,7 +423,7 @@ export default function StoresPage() {
                         {store.logoUrl && (
                           <img
                             className="h-12 w-12 rounded-full mr-3"
-                            src={store.logoUrl}
+                            src={resolveImageUrl(store.logoUrl)}
                             alt={`${safe(store.name)} logo`}
                           />
                         )}

@@ -5,8 +5,10 @@ import { setOptions, importLibrary } from '@googlemaps/js-api-loader';
 
 export default function AdressAutocomplete({
   onPlaceSelected,
+  value,
 }: {
   onPlaceSelected?: (place: google.maps.places.PlaceResult) => void;
+  value?: string;
 }) {
   const inputRef = useRef<HTMLInputElement | null>(null);
 
@@ -69,10 +71,17 @@ export default function AdressAutocomplete({
     };
   }, [onPlaceSelected]);
 
+  useEffect(() => {
+    if (inputRef.current && typeof value === 'string') {
+      inputRef.current.value = value;
+    }
+  }, [value]);
+
   return (
     <input
       ref={inputRef}
       type="text"
+      defaultValue={value}
       placeholder="Escribe tu dirección"
       className="w-full px-3 py-2 border border-gray-600 bg-gray-700 text-white rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent"
     />
