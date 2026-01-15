@@ -123,7 +123,7 @@ const quickActions = [
   {
     title: 'Agregar producto',
     description: 'Añade nuevos productos a tu tienda',
-    href: '/dashboard/store/products/new',
+    href: '/dashboard/products',
     icon: Package,
     color: 'bg-blue-500',
   },
@@ -247,6 +247,19 @@ export default function DetailsStore({ storeId, storeData }: DetailsStoreProps) 
 
   const [store] = useState<StoreData>(transformStoreData(storeData));
 
+  // Construir acciones calculando el href de "Ver tienda" con el dominio real
+  const actions = quickActions.map((action) => {
+    if (action.title === 'Ver tienda') {
+      const domain = store.customDomain || `${store.subdomain}.emprendyup.com`;
+      return {
+        ...action,
+        href: `https://${domain}`,
+        external: true,
+      };
+    }
+    return action;
+  });
+
   // Helper para resolver URLs de imágenes
   const resolveImageUrl = (value?: string) => {
     if (!value) return '';
@@ -329,7 +342,7 @@ export default function DetailsStore({ storeId, storeData }: DetailsStoreProps) 
         </div>
         <div className="flex items-center gap-3">
           <a
-            href={`https://${store.name}.com.co`}
+            href={`https://${store.name}.emprendyup.com`}
             className="inline-flex items-center px-4 py-2 bg-gray-100 dark:bg-gray-800 text-gray-700 dark:text-gray-300 rounded-lg hover:bg-gray-200 dark:hover:bg-gray-700 transition-colors"
           >
             <ExternalLink className="h-4 w-4 mr-2" />
@@ -346,7 +359,7 @@ export default function DetailsStore({ storeId, storeData }: DetailsStoreProps) 
             <Globe className="h-5 w-5 text-fourth-base" />
           </div>
           <p className="text-sm font-medium text-gray-900 dark:text-white">
-            {store.customDomain || `${store.subdomain}.com`}
+            {store.customDomain || `${store.subdomain}.emprendyup.com`}
           </p>
           <p className="text-xs text-gray-500 dark:text-gray-400 mt-1">
             {store.customDomain ? 'Dominio personalizado' : 'Subdominio'}
@@ -428,7 +441,7 @@ export default function DetailsStore({ storeId, storeData }: DetailsStoreProps) 
           Acciones Rapidas
         </h2>
         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
-          {quickActions.map((action) => (
+          {actions.map((action) => (
             <Link
               key={action.title}
               href={action.href}
