@@ -222,14 +222,12 @@ export default function ServicesSummary({ open, onClose, data, onConfirm }: Serv
           </div>
 
           {/* Imágenes */}
-          <div className="space-y-3">
+          <div className="space-y-1">
             <h3 className="text-lg font-semibold text-white border-b border-gray-700 pb-1">
               Imágenes
             </h3>
-            <div className="grid grid-cols-2 gap-4">
+            <div className="grid grid-cols-1 gap-4">
               <ImageUploadSection field="logoUrl" label="Logo" />
-              <ImageUploadSection field="faviconUrl" label="Favicon" />
-              <ImageUploadSection field="bannerUrl" label="Banner" />
             </div>
           </div>
 
@@ -256,28 +254,6 @@ export default function ServicesSummary({ open, onClose, data, onConfirm }: Serv
                   type="color"
                   name="secondaryColor"
                   value={formData.secondaryColor || '#1F2937'}
-                  onChange={handleChange}
-                  className="w-12 h-12 border border-gray-600 rounded cursor-pointer bg-gray-800"
-                  disabled={isSubmitting}
-                />
-              </div>
-              <div className="flex flex-col items-center">
-                <label className="text-sm font-medium text-gray-300 mb-1">Acento</label>
-                <input
-                  type="color"
-                  name="accentColor"
-                  value={formData.accentColor || '#10B981'}
-                  onChange={handleChange}
-                  className="w-12 h-12 border border-gray-600 rounded cursor-pointer bg-gray-800"
-                  disabled={isSubmitting}
-                />
-              </div>
-              <div className="flex flex-col items-center">
-                <label className="text-sm font-medium text-gray-300 mb-1">Texto</label>
-                <input
-                  type="color"
-                  name="textColor"
-                  value={formData.textColor || '#111827'}
                   onChange={handleChange}
                   className="w-12 h-12 border border-gray-600 rounded cursor-pointer bg-gray-800"
                   disabled={isSubmitting}

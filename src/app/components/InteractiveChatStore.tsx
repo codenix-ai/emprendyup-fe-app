@@ -163,28 +163,28 @@ const productsQuestions = [
     ],
     validation: { type: 'text' as const, required: true, message: 'La ciudad es requerida' },
   },
-  {
-    text: '🏢 Información legal: ¿Qué tipo de negocio es?',
-    field: 'businessType',
-    type: 'select' as const,
-    options: ['Persona Natural', 'SAS', 'LTDA', 'SA', 'Fundación', 'Cooperativa'],
-    validation: { type: 'text' as const, required: true },
-  },
+  // {
+  //   text: '🏢 Información legal: ¿Qué tipo de negocio es?',
+  //   field: 'businessType',
+  //   type: 'select' as const,
+  //   options: ['Persona Natural', 'SAS', 'LTDA', 'SA', 'Fundación', 'Cooperativa'],
+  //   validation: { type: 'text' as const, required: true },
+  // },
 
-  {
-    text: '¿Cuál es tu número de identificación tributaria (NIT/RUT)?',
-    field: 'taxId',
-    type: 'text' as const,
-    validation: { type: 'taxId' as const, required: false, message: 'Formato: 123456789-1' },
-    optional: true,
-  },
-  {
-    text: '¿Cuál es la razón social de tu empresa? (Si aplica)',
-    field: 'businessName',
-    type: 'text' as const,
-    validation: { type: 'text' as const, required: false },
-    optional: true,
-  },
+  // {
+  //   text: '¿Cuál es tu número de identificación tributaria (NIT/RUT)?',
+  //   field: 'taxId',
+  //   type: 'text' as const,
+  //   validation: { type: 'taxId' as const, required: false, message: 'Formato: 123456789-1' },
+  //   optional: true,
+  // },
+  // {
+  //   text: '¿Cuál es la razón social de tu empresa? (Si aplica)',
+  //   field: 'businessName',
+  //   type: 'text' as const,
+  //   validation: { type: 'text' as const, required: false },
+  //   optional: true,
+  // },
   {
     text: '📱 Redes sociales (opcional): ¿Tienes Facebook? Comparte tu URL:',
     field: 'facebookUrl',
@@ -330,13 +330,6 @@ const restaurantQuestions = [
     optional: true,
   },
   {
-    text: '🎨 Elige tu color de acento:',
-    field: 'accentColor',
-    type: 'color' as const,
-    validation: { type: 'text' as const, required: false },
-    optional: true,
-  },
-  {
     text: '📱 ¿Cuál es el teléfono de contacto?',
     field: 'phone',
     type: 'text' as const,
@@ -369,35 +362,35 @@ const restaurantQuestions = [
     validation: { type: 'url' as const, required: false },
     optional: true,
   },
-  {
-    text: '🗺️ ¿Tienes un enlace de Google Maps?',
-    field: 'googleLocation',
-    type: 'text' as const,
-    validation: { type: 'url' as const, required: false },
-    optional: true,
-  },
-  {
-    text: '🏢 ¿Cuál es el NIT/RUT de tu negocio?',
-    field: 'taxId',
-    type: 'text' as const,
-    validation: { type: 'taxId' as const, required: false },
-    optional: true,
-  },
-  {
-    text: '🏢 ¿Cuál es la razón social?',
-    field: 'businessName',
-    type: 'text' as const,
-    validation: { type: 'text' as const, required: false },
-    optional: true,
-  },
-  {
-    text: '🏢 Tipo de negocio:',
-    field: 'businessType',
-    type: 'select' as const,
-    options: ['Persona Natural', 'SAS', 'LTDA', 'SA', 'Fundación', 'Cooperativa'],
-    validation: { type: 'text' as const, required: false },
-    optional: true,
-  },
+  // {
+  //   text: '🗺️ ¿Tienes un enlace de Google Maps?',
+  //   field: 'googleLocation',
+  //   type: 'text' as const,
+  //   validation: { type: 'url' as const, required: false },
+  //   optional: true,
+  // },
+  // {
+  //   text: '🏢 ¿Cuál es el NIT/RUT de tu negocio?',
+  //   field: 'taxId',
+  //   type: 'text' as const,
+  //   validation: { type: 'taxId' as const, required: false },
+  //   optional: true,
+  // },
+  // {
+  //   text: '🏢 ¿Cuál es la razón social?',
+  //   field: 'businessName',
+  //   type: 'text' as const,
+  //   validation: { type: 'text' as const, required: false },
+  //   optional: true,
+  // },
+  // {
+  //   text: '🏢 Tipo de negocio:',
+  //   field: 'businessType',
+  //   type: 'select' as const,
+  //   options: ['Persona Natural', 'SAS', 'LTDA', 'SA', 'Fundación', 'Cooperativa'],
+  //   validation: { type: 'text' as const, required: false },
+  //   optional: true,
+  // },
 ];
 
 const servicesQuestions = [
@@ -487,13 +480,6 @@ const servicesQuestions = [
     optional: true,
   },
   {
-    text: '🎨 Elige tu color de acento:',
-    field: 'accentColor',
-    type: 'color' as const,
-    validation: { type: 'text' as const, required: false },
-    optional: true,
-  },
-  {
     text: '📱 ¿Cuál es el teléfono de contacto?',
     field: 'phone',
     type: 'text' as const,
@@ -526,20 +512,20 @@ const servicesQuestions = [
     validation: { type: 'url' as const, required: false },
     optional: true,
   },
-  {
-    text: '🏢 ¿Cuál es el NIT/RUT de tu negocio?',
-    field: 'taxId',
-    type: 'text' as const,
-    validation: { type: 'taxId' as const, required: false },
-    optional: true,
-  },
-  {
-    text: '🏢 ¿Cuál es la razón social?',
-    field: 'businessName',
-    type: 'text' as const,
-    validation: { type: 'text' as const, required: false },
-    optional: true,
-  },
+  // {
+  //   text: '🏢 ¿Cuál es el NIT/RUT de tu negocio?',
+  //   field: 'taxId',
+  //   type: 'text' as const,
+  //   validation: { type: 'taxId' as const, required: false },
+  //   optional: true,
+  // },
+  // {
+  //   text: '🏢 ¿Cuál es la razón social?',
+  //   field: 'businessName',
+  //   type: 'text' as const,
+  //   validation: { type: 'text' as const, required: false },
+  //   optional: true,
+  // },
 ];
 
 const defaultStoreData: StoreData = {
@@ -672,6 +658,9 @@ const CREATE_RESTAURANT = gql`
       description
       cuisineType
       city
+      logoUrl
+      primaryColor
+      secondaryColor
       lat
       lng
       address
@@ -711,6 +700,9 @@ const CREATE_SERVICE_PROVIDER = gql`
       phone
       email
       description
+      logoUrl
+      primaryColor
+      secondaryColor
       location
       address
       whatsappNumber
@@ -1938,7 +1930,7 @@ export default function InteractiveChatStore() {
                             target="_blank"
                             rel="noopener noreferrer"
                           >
-                            Ir a la tienda
+                            Ir a website
                           </a>
                         );
                     }
@@ -2034,6 +2026,9 @@ export default function InteractiveChatStore() {
                           description: updatedData.description || '',
                           cuisineType: updatedData.cuisineType,
                           city: updatedData.city,
+                          logoUrl: updatedData.logoUrl || '',
+                          primaryColor: updatedData.primaryColor || '#3B82F6',
+                          secondaryColor: updatedData.secondaryColor || '#1F2937',
                           address: updatedData.address,
                           lat: (updatedData.lat ?? storeData.lat) || null,
                           lng: (updatedData.lng ?? storeData.lng) || null,
@@ -2074,6 +2069,7 @@ export default function InteractiveChatStore() {
                             businessType: updatedData.businessType || 'Restaurante',
                           },
                         };
+                        console.log('DEBUG createRestaurant input:', input);
                         const { data } = await createRestaurantMutation({ variables: { input } });
                         created = data?.createRestaurantWithBranding;
                         if (created) {
@@ -2110,6 +2106,9 @@ export default function InteractiveChatStore() {
                           businessName: updatedData.name,
                           type: updatedData.businessType || 'OTHER',
                           description: updatedData.description || '',
+                          logoUrl: updatedData.logoUrl || '',
+                          primaryColor: updatedData.primaryColor || '#7C3AED',
+                          secondaryColor: updatedData.secondaryColor || '#1F2937',
                           location: `${updatedData.city}, ${updatedData.department || 'Colombia'}`,
                           address: updatedData.address,
                           phone: updatedData.phone,
@@ -2152,6 +2151,7 @@ export default function InteractiveChatStore() {
                             businessType: updatedData.businessType || 'Servicios',
                           },
                         };
+                        console.log('DEBUG createServiceProvider input:', input);
                         const { data } = await createServiceProviderMutation({
                           variables: { input },
                         });
@@ -2190,6 +2190,7 @@ export default function InteractiveChatStore() {
                           status: 'active',
                           userId: session?.user?.id || 'anonymous',
                         };
+                        console.log('DEBUG createStore input:', input);
                         const { data } = await createStoreMutation({ variables: { input } });
                         created = data?.createStore;
                         if (created) {
