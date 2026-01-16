@@ -3,7 +3,7 @@ import { NextResponse } from 'next/server';
 export async function POST(request: Request) {
   try {
     const body = await request.json();
-    const { name, email, password, storeId, role } = body;
+    const { name, email, password, confirmPassword, storeId, role } = body;
 
     // Validate required input
     if (!name || !email || !password) {
@@ -19,6 +19,11 @@ export async function POST(request: Request) {
         { error: 'Password must be at least 6 characters long' },
         { status: 400 }
       );
+    }
+
+    // Optional confirmation check (UI may send it)
+    if (typeof confirmPassword === 'string' && confirmPassword !== password) {
+      return NextResponse.json({ error: 'Passwords do not match' }, { status: 400 });
     }
 
     // Get backend URL
