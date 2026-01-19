@@ -33,6 +33,8 @@ const GET_SERVICE_PROVIDER = gql`
       slug
       brandingId
       businessConfigId
+      customDomain
+      slug
       isActive
       createdAt
       updatedAt
@@ -187,6 +189,17 @@ export default function ServiceDetailPage() {
                   Configuración de Servicio
                 </h1>
                 <p className="text-gray-600 dark:text-gray-400 mt-1">{formData.businessName}</p>
+                {(formData.customDomain || formData.subdomain) && (
+                  <a
+                    href={`https://${formData.customDomain || `${formData.subdomain}.emprendyup.com`}`}
+                    target="_blank"
+                    rel="noopener noreferrer"
+                    className="text-sm text-fourth-base hover:underline mt-1 flex items-center gap-1"
+                  >
+                    <Globe className="h-4 w-4" />
+                    {formData.customDomain || `${formData.subdomain}.emprendyup.com`}
+                  </a>
+                )}
               </div>
               <button
                 onClick={handleSave}

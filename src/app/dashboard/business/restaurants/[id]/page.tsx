@@ -14,6 +14,7 @@ import {
   Search,
   Image as ImageIcon,
   MapPin,
+  Globe,
 } from 'lucide-react';
 import Image from 'next/image';
 import FileUpload from '@/app/components/FileUpload';
@@ -32,6 +33,8 @@ const GET_RESTAURANT = gql`
       googleLocation
       brandingId
       businessConfigId
+      customDomain
+      slug
       createdAt
       updatedAt
       menuImages {
@@ -69,6 +72,7 @@ export default function RestaurantDetailPage() {
     variables: { id: restaurantId },
     skip: !restaurantId,
   });
+  console.log('Restaurant data:', data);
 
   const [updateRestaurant] = useMutation(UPDATE_RESTAURANT);
   const [formData, setFormData] = useState<any>({});
@@ -192,6 +196,17 @@ export default function RestaurantDetailPage() {
                   Configuración de Restaurante
                 </h1>
                 <p className="text-gray-600 dark:text-gray-400 mt-1">{formData.name}</p>
+                {(formData.customDomain || formData.subdomain) && (
+                  <a
+                    href={`https://${formData.customDomain || `${formData.slug}.emprendyup.com`}`}
+                    target="_blank"
+                    rel="noopener noreferrer"
+                    className="text-sm text-fourth-base hover:underline mt-1 flex items-center gap-1"
+                  >
+                    <Globe className="h-4 w-4" />
+                    {formData.customDomain || `${formData.subdomain}.emprendyup.com`}
+                  </a>
+                )}
               </div>
               <button
                 onClick={handleSave}
