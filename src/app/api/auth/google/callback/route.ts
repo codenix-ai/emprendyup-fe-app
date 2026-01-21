@@ -139,7 +139,11 @@ export async function GET(req: Request) {
 
     // For production, we'll create a success page that handles localStorage
     // For now, let's use query parameters to pass the data
-    const redirectUrl = new URL('/auth/success', req.url);
+    // Always use app.emprendy.ai domain for redirects
+    const appDomain =
+      process.env.NEXT_PUBLIC_APP_URL ||
+      (process.env.NODE_ENV === 'production' ? 'https://app.emprendy.ai' : new URL(req.url).origin);
+    const redirectUrl = new URL('/auth/success', appDomain);
     redirectUrl.searchParams.set('token', token || '');
     redirectUrl.searchParams.set('user', JSON.stringify(userData || {}));
     redirectUrl.searchParams.set('redirectTo', finalRedirectTo);
