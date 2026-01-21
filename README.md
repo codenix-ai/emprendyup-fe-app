@@ -15,6 +15,7 @@ A modern, server-side rendered e-commerce platform built with [Next.js](https://
 
 ## Tech Stack
 
+
 - **Frontend**: Next.js, React, Tailwind CSS
 - **State Management**: React Context API / Redux
 - **API**: RESTful API / GraphQL
@@ -121,6 +122,7 @@ This project is licensed under the MIT License - see the LICENSE file for detail
 - [Next.js](https://nextjs.org) - The React framework for production
 - [Tailwind CSS](https://tailwindcss.com) - A utility-first CSS framework
 - [React](https://reactjs.org) - A JavaScript library for building user interfaces
+
 
 
 
