@@ -756,7 +756,7 @@ export default function RestaurantDetailPage() {
                                 });
                                 setIsModalOpen(true);
                               }}
-                              className="px-4 py-2 bg-[var(--fourth-base)] text-white rounded-lg"
+                              className="px-4 py-2 bg-fourth-base text-white rounded-lg"
                             >
                               Crear item
                             </button>
