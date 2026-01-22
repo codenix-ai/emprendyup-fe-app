@@ -17,6 +17,7 @@ const GET_SERVICE_PROVIDER = gql`
       email
       description
       location
+      customDomain
       address
       whatsappNumber
       coverImage
@@ -86,6 +87,7 @@ export default function ServiceDetailPage() {
         createdAt,
         updatedAt,
         slug,
+        customDomain: _customDomain,
         __typename,
         ...inputData
       } = formData;
@@ -155,6 +157,11 @@ export default function ServiceDetailPage() {
     }
     return `https://emprendyup-images.s3.us-east-1.amazonaws.com/${value}`;
   };
+  const resolveDomainUrl = (value?: string) => {
+    if (!value) return '';
+    if (value.startsWith('http') || value.startsWith('https')) return value;
+    return `https://${value}`;
+  };
   const handleRemoveImage = (field: string) => {
     setFormData((prev: any) => ({ ...prev, [field]: '' }));
   };
@@ -175,6 +182,17 @@ export default function ServiceDetailPage() {
                 Configuración de Servicio
               </h1>
               <p className="text-gray-600 dark:text-gray-400 mt-1">{formData.businessName}</p>
+              {(formData.customDomain || formData.slug) && (
+                <a
+                  href={`https://${formData.customDomain || `${formData.slug}.emprendyup.com`}`}
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  className="text-sm text-fourth-base hover:underline mt-1 flex items-center gap-1"
+                >
+                  <Globe className="h-4 w-4" />
+                  {formData.customDomain || `${formData.slug}.emprendyup.com`}
+                </a>
+              )}
             </div>
             <button
               onClick={handleSave}
