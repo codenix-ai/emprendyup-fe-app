@@ -2,7 +2,7 @@
 
 A modern, server-side rendered e-commerce platform built with [Next.js](https://nextjs.org), designed for performance, SEO optimization, and excellent user experience.
 
-## Features:
+## Features
 
 - **Server-Side Rendering (SSR)**: Fast page loads and improved SEO
 - **Responsive Design**: Works seamlessly on desktop, tablet, and mobile devices
@@ -122,6 +122,7 @@ This project is licensed under the MIT License - see the LICENSE file for detail
 - [Next.js](https://nextjs.org) - The React framework for production
 - [Tailwind CSS](https://tailwindcss.com) - A utility-first CSS framework
 - [React](https://reactjs.org) - A JavaScript library for building user interfaces
+
 
 
 
