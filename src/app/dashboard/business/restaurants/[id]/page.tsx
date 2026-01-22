@@ -18,6 +18,7 @@ import {
 } from 'lucide-react';
 import Image from 'next/image';
 import FileUpload from '@/app/components/FileUpload';
+import AdressAutocomplete from '@/app/components/AdressAutocomplete';
 
 const GET_RESTAURANT = gql`
   query GetRestaurant($id: ID!) {
@@ -27,14 +28,20 @@ const GET_RESTAURANT = gql`
       description
       cuisineType
       city
-      address
       phone
       coverImage
       googleLocation
+      lat
+      lng
+      address
       brandingId
       businessConfigId
       customDomain
       slug
+      menu {
+        id
+        name
+      }
       createdAt
       updatedAt
       menuImages {
@@ -55,10 +62,108 @@ const UPDATE_RESTAURANT = gql`
       description
       cuisineType
       city
+      lat
+      lng
       address
       phone
       coverImage
       googleLocation
+    }
+  }
+`;
+
+const CREATE_MENU_ITEM = gql`
+  mutation CreateMenuItem($input: CreateMenuItemInput!) {
+    createMenuItem(input: $input) {
+      id
+      name
+      price
+      menuId
+      description
+      imageUrl
+      isAvailable
+    }
+  }
+`;
+
+const GET_MENU_ITEMS = gql`
+  query GetMenuItems($restaurantId: ID, $category: String, $isAvailable: Boolean) {
+    menuItems(restaurantId: $restaurantId, category: $category, isAvailable: $isAvailable) {
+      id
+      name
+      description
+      category
+      price
+      currency
+      imageUrl
+      isAvailable
+      order
+      menuId
+      createdAt
+      updatedAt
+    }
+  }
+`;
+
+const GET_MENU = gql`
+  query GetMenu($restaurantId: ID!) {
+    menu(restaurantId: $restaurantId) {
+      id
+      name
+      items {
+        id
+        name
+        price
+      }
+    }
+  }
+`;
+
+const UPDATE_MENU_ITEM = gql`
+  mutation UpdateMenuItem($id: ID!, $input: UpdateMenuItemInput!) {
+    updateMenuItem(id: $id, input: $input) {
+      id
+      name
+      description
+      category
+      price
+      currency
+      imageUrl
+      isAvailable
+      order
+      updatedAt
+    }
+  }
+`;
+
+const CREATE_MENU_IMAGE = gql`
+  mutation CreateMenuImage($restaurantId: ID!, $input: CreateMenuImageInput!) {
+    createMenuImage(restaurantId: $restaurantId, input: $input) {
+      id
+      imageUrl
+      title
+      description
+      restaurantId
+      createdAt
+    }
+  }
+`;
+
+const DELETE_MENU_IMAGE = gql`
+  mutation DeleteMenuImage($id: ID!) {
+    deleteMenuImage(id: $id) {
+      id
+      imageUrl
+    }
+  }
+`;
+
+const DELETE_MENU_ITEM = gql`
+  mutation DeleteMenuItem($id: ID!) {
+    deleteMenuItem(id: $id) {
+      id
+      name
+      menuId
     }
   }
 `;
@@ -74,16 +179,62 @@ export default function RestaurantDetailPage() {
   });
   console.log('Restaurant data:', data);
 
+  const { data: menuData } = useQuery(GET_MENU_ITEMS, {
+    variables: { restaurantId },
+    skip: !restaurantId,
+  });
+  const { data: menuInfoData } = useQuery(GET_MENU, {
+    variables: { restaurantId },
+    skip: !restaurantId,
+  });
+
   const [updateRestaurant] = useMutation(UPDATE_RESTAURANT);
+  const [createMenuItem] = useMutation(CREATE_MENU_ITEM);
+  const [updateMenuItemMutation] = useMutation(UPDATE_MENU_ITEM);
+  const [deleteMenuItemMutation] = useMutation(DELETE_MENU_ITEM);
+  const [createMenuImage] = useMutation(CREATE_MENU_IMAGE);
+  const [deleteMenuImage] = useMutation(DELETE_MENU_IMAGE);
+  const [isMenuImageModalOpen, setIsMenuImageModalOpen] = useState(false);
+  const [newMenuImage, setNewMenuImage] = useState<any>({
+    imageUrl: '',
+    title: '',
+    description: '',
+  });
   const [formData, setFormData] = useState<any>({});
   const [activeTab, setActiveTab] = useState('details');
   const [saveStatus, setSaveStatus] = useState<'idle' | 'saving' | 'success' | 'error'>('idle');
+  const [newMenuItem, setNewMenuItem] = useState<any>({
+    name: '',
+    description: '',
+    category: '',
+    menuId: '',
+    price: 0,
+    currency: 'COP',
+    imageUrl: '',
+    isAvailable: true,
+    order: 0,
+  });
+  const [editingMenuItemId, setEditingMenuItemId] = useState<string | null>(null);
+  const [isModalOpen, setIsModalOpen] = useState(false);
+  const [menuOpStatus, setMenuOpStatus] = useState<'idle' | 'saving' | 'success' | 'error'>('idle');
 
   useEffect(() => {
     if (data?.restaurant) {
-      setFormData(data.restaurant);
+      const rest = data.restaurant;
+      setFormData((prev: any) => ({ ...prev, ...rest, menuId: rest.menu?.id || prev.menuId }));
     }
-  }, [data]);
+    if (menuData?.menuItems) {
+      setFormData((prev: any) => ({ ...prev, menuItems: menuData.menuItems }));
+    }
+    if (menuInfoData?.menu) {
+      const m = menuInfoData.menu;
+      setFormData((prev: any) => ({
+        ...prev,
+        menuId: m.id || prev.menuId,
+        menu: { id: m.id, name: m.name },
+      }));
+    }
+  }, [data, menuData, menuInfoData]);
 
   const handleInputChange = (
     e: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement | HTMLSelectElement>
@@ -115,6 +266,11 @@ export default function RestaurantDetailPage() {
         createdAt,
         updatedAt,
         menuImages,
+        customDomain: _customDomain,
+        slug: _slug,
+        menu: _menu,
+        menuId: _menuId,
+        menuItems: _menuItems,
         __typename,
         ...inputData
       } = formData;
@@ -138,10 +294,230 @@ export default function RestaurantDetailPage() {
     setFormData((prev: any) => ({ ...prev, [field]: '' }));
   };
 
+  const handleCreateMenuImage = async (url: string) => {
+    if (!restaurantId) return;
+    try {
+      const { data } = await createMenuImage({
+        variables: { restaurantId, input: { imageUrl: url, title: '', description: '' } },
+        refetchQueries: [{ query: GET_RESTAURANT, variables: { id: restaurantId } }],
+        awaitRefetchQueries: true,
+      });
+      const created = data?.createMenuImage;
+      if (created) {
+        setFormData((prev: any) => ({
+          ...prev,
+          menuImages: [...(prev.menuImages || []), created],
+        }));
+      }
+    } catch (err) {
+      console.error('createMenuImage error', err);
+    }
+  };
+
+  const handleDeleteMenuImage = async (id: string) => {
+    try {
+      const { data } = await deleteMenuImage({
+        variables: { id },
+        refetchQueries: [{ query: GET_RESTAURANT, variables: { id: restaurantId } }],
+        awaitRefetchQueries: true,
+      });
+      const deleted = data?.deleteMenuImage;
+      if (deleted) {
+        setFormData((prev: any) => ({
+          ...prev,
+          menuImages: (prev.menuImages || []).filter((m: any) => m.id !== deleted.id),
+        }));
+      }
+    } catch (err) {
+      console.error('deleteMenuImage error', err);
+    }
+  };
+
+  const handleAddOrUpdateMenuItem = async () => {
+    console.log('handleAddOrUpdateMenuItem', {
+      newMenuItem,
+      editingMenuItemId,
+      menuIdFromForm: formData.menuId,
+    });
+    if (!newMenuItem.name) return;
+    const menuId =
+      newMenuItem.menuId || formData.menuId || data?.restaurant?.menu?.id || menuInfoData?.menu?.id;
+    if (!menuId) {
+      console.error('menuId is required to create a menu item');
+      setMenuOpStatus('error');
+      return;
+    }
+    setMenuOpStatus('saving');
+    if (editingMenuItemId) {
+      const isTmp = editingMenuItemId.startsWith?.('tmp-');
+      if (isTmp) {
+        try {
+          const { data } = await createMenuItem({
+            variables: {
+              input: {
+                menuId: menuId,
+                name: newMenuItem.name,
+                description: newMenuItem.description,
+                category: newMenuItem.category,
+                price: parseFloat(String(newMenuItem.price)) || 0,
+                currency: newMenuItem.currency || 'COP',
+                imageUrl: newMenuItem.imageUrl || null,
+                order: parseFloat(String(newMenuItem.order)) || 0,
+              },
+            },
+          });
+          const created = data?.createMenuItem;
+          if (created) {
+            setFormData((prev: any) => ({
+              ...prev,
+              menuItems: (prev.menuItems || []).map((it: any) =>
+                it.id === editingMenuItemId ? created : it
+              ),
+            }));
+            setMenuOpStatus('success');
+          }
+        } catch (err) {
+          console.error('createMenuItem error', err);
+          setMenuOpStatus('error');
+        }
+        setEditingMenuItemId(null);
+      } else {
+        try {
+          const { data } = await updateMenuItemMutation({
+            variables: {
+              id: editingMenuItemId,
+              input: {
+                name: newMenuItem.name,
+                description: newMenuItem.description,
+                category: newMenuItem.category,
+                price: parseFloat(String(newMenuItem.price)) || 0,
+                currency: newMenuItem.currency || 'COP',
+                imageUrl: newMenuItem.imageUrl || null,
+                isAvailable: newMenuItem.isAvailable,
+                order: parseFloat(String(newMenuItem.order)) || 0,
+              },
+            },
+            refetchQueries: [{ query: GET_MENU_ITEMS, variables: { restaurantId } }],
+            awaitRefetchQueries: true,
+          });
+          const updated = data?.updateMenuItem;
+          if (updated) {
+            setFormData((prev: any) => ({
+              ...prev,
+              menuItems: (prev.menuItems || []).map((it: any) =>
+                it.id === updated.id ? { ...it, ...updated } : it
+              ),
+            }));
+            setMenuOpStatus('success');
+          }
+        } catch (err) {
+          console.error('updateMenuItem error', err);
+          setMenuOpStatus('error');
+        }
+        setEditingMenuItemId(null);
+      }
+    } else {
+      try {
+        const { data } = await createMenuItem({
+          variables: {
+            input: {
+              menuId: menuId,
+              name: newMenuItem.name,
+              description: newMenuItem.description,
+              category: newMenuItem.category,
+              price: parseFloat(String(newMenuItem.price)) || 0,
+              currency: newMenuItem.currency,
+              imageUrl: newMenuItem.imageUrl || null,
+              order: parseFloat(String(newMenuItem.order)) || 0,
+            },
+          },
+          refetchQueries: [{ query: GET_MENU_ITEMS, variables: { restaurantId } }],
+          awaitRefetchQueries: true,
+        });
+        const created = data?.createMenuItem;
+        if (created) {
+          setFormData((prev: any) => ({
+            ...prev,
+            menuItems: [...(prev.menuItems || []), created],
+          }));
+          setMenuOpStatus('success');
+        }
+      } catch (err) {
+        console.error('createMenuItem error', err);
+        setMenuOpStatus('error');
+      }
+    }
+
+    setNewMenuItem({
+      name: '',
+      description: '',
+      category: '',
+      price: 0,
+      currency: 'COP',
+      imageUrl: '',
+      isAvailable: true,
+      order: 0,
+    });
+    setTimeout(() => setMenuOpStatus('idle'), 1200);
+  };
+
+  const handleEditMenuItem = (item: any) => {
+    setEditingMenuItemId(item.id);
+    setNewMenuItem({
+      ...item,
+      menuId:
+        item.menuId ||
+        formData.menuId ||
+        data?.restaurant?.menu?.id ||
+        menuInfoData?.menu?.id ||
+        '',
+    });
+    setIsModalOpen(true);
+  };
+
+  const handleDeleteMenuItem = (id: string) => {
+    (async () => {
+      try {
+        setMenuOpStatus('saving');
+        const { data } = await deleteMenuItemMutation({
+          variables: { id },
+          refetchQueries: [{ query: GET_MENU_ITEMS, variables: { restaurantId } }],
+          awaitRefetchQueries: true,
+        });
+        const deleted = data?.deleteMenuItem;
+        if (deleted) {
+          setFormData((prev: any) => ({
+            ...prev,
+            menuItems: (prev.menuItems || []).filter((it: any) => it.id !== id),
+          }));
+          setMenuOpStatus('success');
+        } else {
+          setMenuOpStatus('error');
+        }
+      } catch (err) {
+        console.error('deleteMenuItem error', err);
+        setMenuOpStatus('error');
+      }
+      if (editingMenuItemId === id) {
+        setEditingMenuItemId(null);
+        setNewMenuItem({
+          name: '',
+          description: '',
+          category: '',
+          price: 0,
+          currency: 'COP',
+          imageUrl: '',
+          isAvailable: true,
+          order: 0,
+        });
+      }
+      setTimeout(() => setMenuOpStatus('idle'), 1200);
+    })();
+  };
+
   const tabs = [
     { id: 'details', label: 'Detalles', icon: Info },
     { id: 'location', label: 'Ubicación', icon: MapPin },
-    { id: 'images', label: 'Imágenes', icon: ImageIcon },
     { id: 'menu', label: 'Menú', icon: Building },
   ];
 
@@ -350,84 +726,45 @@ export default function RestaurantDetailPage() {
                             />
                           </div>
 
-                          <div>
-                            <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
-                              Dirección Completa
-                            </label>
-                            <textarea
-                              name="address"
-                              value={formData.address || ''}
-                              onChange={handleInputChange}
-                              rows={3}
-                              className={inputClassName}
-                              placeholder="Calle 72 #10-15, Bogotá, Colombia"
+                          <div className="mt-4">
+                            <AdressAutocomplete
+                              value={formData.address}
+                              onPlaceSelected={async (place) => {
+                                if (!place) return;
+                                const lat = place.geometry?.location?.lat?.() as number | undefined;
+                                const lng = place.geometry?.location?.lng?.() as number | undefined;
+                                setFormData((prev: any) => ({
+                                  ...prev,
+                                  address: place.formatted_address || prev.address,
+                                  lat: typeof lat === 'number' ? lat : prev.lat,
+                                  lng: typeof lng === 'number' ? lng : prev.lng,
+                                  googleLocation: (place as any).url || prev.googleLocation,
+                                }));
+                              }}
                             />
-                          </div>
 
-                          <div>
-                            <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
-                              Google Maps URL
-                            </label>
-                            <input
-                              type="url"
-                              name="googleLocation"
-                              value={formData.googleLocation || ''}
-                              onChange={handleInputChange}
-                              className={inputClassName}
-                              placeholder="https://maps.google.com/..."
-                            />
-                          </div>
-                        </div>
-                      </div>
-                    </div>
-                  </div>
-                )}
-
-                {/* Images Tab */}
-                {activeTab === 'images' && (
-                  <div className="space-y-6">
-                    <div>
-                      <h2 className="text-xl font-semibold text-gray-900 dark:text-white mb-6">
-                        Imágenes del Restaurante
-                      </h2>
-
-                      <div className="bg-white dark:bg-gray-800 rounded-lg border border-gray-200 dark:border-gray-700 p-6">
-                        <div>
-                          <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
-                            Imagen de Portada
-                          </label>
-                          <div className="border-gray-300 dark:border-gray-600 rounded-lg p-4">
-                            {formData.coverImage ? (
-                              <div className="space-y-2">
-                                <div className="relative inline-block">
-                                  <Image
-                                    src={resolveImageUrl(formData.coverImage)}
-                                    alt="Cover"
-                                    width={400}
-                                    height={200}
-                                    className="w-full h-48 rounded object-cover"
-                                    unoptimized={Boolean(
-                                      formData.coverImage?.startsWith('blob:') ||
-                                        formData.coverImage?.startsWith('data:')
-                                    )}
-                                  />
-                                  <button
-                                    type="button"
-                                    onClick={() => handleRemoveImage('coverImage')}
-                                    className="absolute top-2 right-2 w-8 h-8 bg-red-600 hover:bg-red-700 text-white rounded-full text-sm flex items-center justify-center transition-colors"
-                                  >
-                                    ✕
-                                  </button>
-                                </div>
+                            {(typeof formData.lat === 'number' &&
+                              typeof formData.lng === 'number') ||
+                            formData.googleLocation ? (
+                              <div className="rounded-md overflow-hidden border border-gray-200 dark:border-gray-700 mt-3">
+                                <iframe
+                                  src={
+                                    formData.googleLocation
+                                      ? `https://www.google.com/maps?q=${encodeURIComponent(
+                                          formData.googleLocation
+                                        )}&output=embed`
+                                      : `https://www.google.com/maps?q=${formData.lat},${formData.lng}&z=15&output=embed`
+                                  }
+                                  width="100%"
+                                  height={300}
+                                  className="w-full h-72"
+                                  loading="lazy"
+                                  referrerPolicy="no-referrer-when-downgrade"
+                                />
                               </div>
                             ) : (
-                              <div>
-                                <FileUpload
-                                  onFile={(url) =>
-                                    setFormData((prev: any) => ({ ...prev, coverImage: url }))
-                                  }
-                                  storeId={restaurantId}
-                                />
+                              <div className="text-gray-600 dark:text-gray-400 py-6 text-center">
+                                Introduce una dirección o coordenadas para ver el mapa
                               </div>
                             )}
                           </div>
@@ -446,33 +783,95 @@ export default function RestaurantDetailPage() {
                       </h2>
 
                       <div className="bg-white dark:bg-gray-800 rounded-lg border border-gray-200 dark:border-gray-700 p-6">
-                        {formData.menuImages && formData.menuImages.length > 0 ? (
-                          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
-                            {formData.menuImages.map((menuImage: any) => (
-                              <div key={menuImage.id} className="border rounded-lg overflow-hidden">
-                                <img
-                                  src={menuImage.imageUrl}
-                                  alt={menuImage.title || 'Menu'}
-                                  className="w-full h-48 object-cover"
-                                />
-                                <div className="p-3">
-                                  <p className="font-medium text-gray-900 dark:text-white">
-                                    {menuImage.title}
-                                  </p>
-                                  {menuImage.description && (
-                                    <p className="text-sm text-gray-600 dark:text-gray-400 mt-1">
-                                      {menuImage.description}
-                                    </p>
+                        <div className="space-y-4">
+                          <div className="mb-4">
+                            <button
+                              onClick={() => {
+                                setEditingMenuItemId(null);
+                                setNewMenuItem({
+                                  name: '',
+                                  description: '',
+                                  category: '',
+                                  price: 0,
+                                  currency: 'COP',
+                                  imageUrl: '',
+                                  isAvailable: true,
+                                  order: 0,
+                                  menuId:
+                                    formData.menuId ||
+                                    data?.restaurant?.menu?.id ||
+                                    menuInfoData?.menu?.id ||
+                                    '',
+                                });
+                                setIsModalOpen(true);
+                              }}
+                              className="px-4 py-2 bg-[var(--fourth-base)] text-white rounded-lg"
+                            >
+                              Crear item
+                            </button>
+                          </div>
+
+                          {formData.menuItems && formData.menuItems.length > 0 ? (
+                            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
+                              {formData.menuItems.map((item: any) => (
+                                <div
+                                  key={item.id}
+                                  className="border border-gray-200 dark:border-gray-600 rounded-lg overflow-hidden p-3"
+                                >
+                                  {item.imageUrl && (
+                                    <img
+                                      src={resolveImageUrl(item.imageUrl)}
+                                      alt={item.name}
+                                      className="w-full h-36 object-cover rounded mb-2"
+                                    />
                                   )}
+                                  <div className="flex justify-between items-start">
+                                    <div>
+                                      <h4 className="text-sm font-medium text-gray-900 dark:text-white">
+                                        {item.name}
+                                      </h4>
+                                      <p className="text-xs text-gray-500 dark:text-gray-400">
+                                        {item.category}
+                                      </p>
+                                      {item.description && (
+                                        <p className="text-xs text-gray-500 mt-2">
+                                          {item.description}
+                                        </p>
+                                      )}
+                                    </div>
+                                    <div className="text-right">
+                                      <p className="font-semibold">
+                                        {item.price} {item.currency}
+                                      </p>
+                                      <p className="text-xs text-gray-500">Orden: {item.order}</p>
+                                    </div>
+                                  </div>
+                                  <div className="flex gap-2 mt-3">
+                                    <button
+                                      onClick={() => {
+                                        handleEditMenuItem(item);
+                                        setIsModalOpen(true);
+                                      }}
+                                      className="px-3 py-1 bg-yellow-400 rounded text-sm"
+                                    >
+                                      Editar
+                                    </button>
+                                    <button
+                                      onClick={() => handleDeleteMenuItem(item.id)}
+                                      className="px-3 py-1 bg-red-600 text-white rounded text-sm"
+                                    >
+                                      Eliminar
+                                    </button>
+                                  </div>
                                 </div>
-                              </div>
-                            ))}
-                          </div>
-                        ) : (
-                          <div className="text-center text-gray-500 dark:text-gray-400 py-8">
-                            No hay imágenes de menú disponibles
-                          </div>
-                        )}
+                              ))}
+                            </div>
+                          ) : (
+                            <div className="text-center py-8 text-gray-500 dark:text-gray-400">
+                              No hay items en el menú
+                            </div>
+                          )}
+                        </div>
                       </div>
                     </div>
                   </div>
@@ -494,6 +893,191 @@ export default function RestaurantDetailPage() {
           <div className="fixed bottom-4 right-4 bg-red-500 text-white px-6 py-3 rounded-lg shadow-lg flex items-center">
             <AlertCircle className="h-5 w-5 mr-2" />
             Error al guardar los cambios
+          </div>
+        )}
+        {/* Modal para crear/editar item de menú */}
+        {isModalOpen && (
+          <div className="fixed inset-0 z-50 flex items-center justify-center">
+            <div
+              className="absolute inset-0 bg-black opacity-40"
+              onClick={() => setIsModalOpen(false)}
+            />
+            <div className="bg-white dark:bg-gray-800 rounded-lg shadow-lg z-10 w-full max-w-2xl p-6">
+              <h3 className="text-lg font-semibold text-gray-900 dark:text-white mb-4 flex items-center gap-3">
+                <span>{editingMenuItemId ? 'Editar item' : 'Crear item'}</span>
+                {formData.menu?.name && (
+                  <span className="text-sm bg-gray-100 dark:bg-gray-700 text-gray-800 dark:text-gray-200 px-2 py-1 rounded">
+                    Menú: {formData.menu.name}
+                  </span>
+                )}
+              </h3>
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-4 mb-4">
+                <div>
+                  <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
+                    Nombre
+                  </label>
+                  <input
+                    type="text"
+                    value={newMenuItem.name}
+                    onChange={(e) => setNewMenuItem((p: any) => ({ ...p, name: e.target.value }))}
+                    className={inputClassName}
+                    placeholder="Nombre del item"
+                  />
+                </div>
+                <div>
+                  <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
+                    Categoría
+                  </label>
+                  <input
+                    type="text"
+                    value={newMenuItem.category}
+                    onChange={(e) =>
+                      setNewMenuItem((p: any) => ({ ...p, category: e.target.value }))
+                    }
+                    className={inputClassName}
+                    placeholder="Ej: Entradas"
+                  />
+                </div>
+                <div>
+                  <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
+                    Precio
+                  </label>
+                  <input
+                    type="number"
+                    value={newMenuItem.price}
+                    onChange={(e) =>
+                      setNewMenuItem((p: any) => ({
+                        ...p,
+                        price: parseFloat(e.target.value || '0'),
+                      }))
+                    }
+                    className={inputClassName}
+                    placeholder="0.00"
+                  />
+                </div>
+                <div>
+                  <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
+                    Moneda
+                  </label>
+                  <input
+                    type="text"
+                    value={newMenuItem.currency}
+                    onChange={(e) =>
+                      setNewMenuItem((p: any) => ({ ...p, currency: e.target.value }))
+                    }
+                    className={inputClassName}
+                    placeholder="COP"
+                  />
+                </div>
+                <div className="md:col-span-2">
+                  <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
+                    Descripción
+                  </label>
+                  <textarea
+                    value={newMenuItem.description}
+                    onChange={(e) =>
+                      setNewMenuItem((p: any) => ({ ...p, description: e.target.value }))
+                    }
+                    className={inputClassName}
+                    rows={2}
+                    placeholder="Descripción (opcional)"
+                  />
+                </div>
+                <div>
+                  <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
+                    Imagen
+                  </label>
+                  {newMenuItem.imageUrl ? (
+                    <div className="flex items-center gap-3">
+                      <img
+                        src={resolveImageUrl(newMenuItem.imageUrl)}
+                        alt="menu"
+                        className="w-20 h-20 object-cover rounded"
+                      />
+                      <button
+                        onClick={() => setNewMenuItem((p: any) => ({ ...p, imageUrl: '' }))}
+                        className="px-3 py-1 bg-red-600 text-white rounded"
+                      >
+                        Eliminar
+                      </button>
+                    </div>
+                  ) : (
+                    <FileUpload
+                      onFile={(url) => setNewMenuItem((p: any) => ({ ...p, imageUrl: url }))}
+                      accept="image/*"
+                    />
+                  )}
+                </div>
+                <div className="flex items-center gap-3">
+                  <label className="flex items-center cursor-pointer">
+                    <input
+                      type="checkbox"
+                      checked={Boolean(newMenuItem.isAvailable)}
+                      onChange={(e) =>
+                        setNewMenuItem((p: any) => ({ ...p, isAvailable: e.target.checked }))
+                      }
+                      className="w-4 h-4 text-fourth-base focus:ring-fourth-base border-gray-300 dark:border-gray-600 rounded bg-white dark:bg-gray-700"
+                    />
+                    <span className="ml-2 text-sm">Disponible</span>
+                  </label>
+                </div>
+                <div>
+                  <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
+                    Orden
+                  </label>
+                  <input
+                    type="number"
+                    value={newMenuItem.order}
+                    onChange={(e) =>
+                      setNewMenuItem((p: any) => ({
+                        ...p,
+                        order: parseFloat(e.target.value || '0'),
+                      }))
+                    }
+                    className={inputClassName}
+                  />
+                </div>
+              </div>
+              <div className="flex justify-end gap-3">
+                <button
+                  onClick={async () => {
+                    await handleAddOrUpdateMenuItem();
+                    setIsModalOpen(false);
+                  }}
+                  className="px-4 py-2 bg-fourth-base text-black rounded-lg"
+                >
+                  {editingMenuItemId ? 'Guardar' : 'Crear'}
+                </button>
+                <button
+                  onClick={() => {
+                    setIsModalOpen(false);
+                    setEditingMenuItemId(null);
+                    setNewMenuItem({
+                      name: '',
+                      description: '',
+                      category: '',
+                      price: 0,
+                      currency: 'COP',
+                      imageUrl: '',
+                      isAvailable: true,
+                      order: 0,
+                    });
+                  }}
+                  className="px-4 py-2 bg-gray-300 text-black rounded-lg"
+                >
+                  Cancelar
+                </button>
+              </div>
+              <div className="mt-3">
+                {menuOpStatus === 'saving' && <p className="text-sm text-gray-600">Guardando...</p>}
+                {menuOpStatus === 'success' && (
+                  <p className="text-sm text-green-600">Operación completada</p>
+                )}
+                {menuOpStatus === 'error' && (
+                  <p className="text-sm text-red-600">Error al guardar. Revisa la consola.</p>
+                )}
+              </div>
+            </div>
           </div>
         )}
       </div>
