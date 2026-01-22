@@ -9,7 +9,7 @@ const businessTypes = [
     title: 'Tiendas',
     description: 'Gestiona tiendas de productos y comercio electrónico',
     icon: Store,
-    color: 'bg-[var(--fourth-base)]',
+    color: 'bg-fourth-base',
     hoverColor: 'hover:opacity-90',
   },
   {
@@ -17,7 +17,7 @@ const businessTypes = [
     title: 'Restaurantes',
     description: 'Administra restaurantes y servicios de comida',
     icon: UtensilsCrossed,
-    color: 'bg-[var(--fourth-base)]',
+    color: 'bg-fourth-base',
     hoverColor: 'hover:opacity-90',
   },
   {
@@ -25,7 +25,7 @@ const businessTypes = [
     title: 'Servicios',
     description: 'Controla proveedores de servicios profesionales',
     icon: Briefcase,
-    color: 'bg-[var(--fourth-base)]',
+    color: 'bg-fourth-base',
     hoverColor: 'hover:opacity-90',
   },
   {
@@ -33,7 +33,7 @@ const businessTypes = [
     title: 'Turismo',
     description: 'Maneja empresas y planes turísticos',
     icon: Palmtree,
-    color: 'bg-[var(--fourth-base)]',
+    color: 'bg-fourth-base',
     hoverColor: 'hover:opacity-90',
   },
 ];

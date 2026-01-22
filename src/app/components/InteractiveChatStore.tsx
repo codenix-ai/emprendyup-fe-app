@@ -250,6 +250,25 @@ const restaurantQuestions = [
     validation: { type: 'text' as const, required: true, message: 'El nombre es requerido' },
   },
   {
+    text: '📍 ¿En qué ciudad se encuentra tu restaurante?',
+    field: 'city',
+    type: 'select' as const,
+    options: [
+      'Bogotá',
+      'Medellín',
+      'Cali',
+      'Barranquilla',
+      'Cartagena',
+      'Bucaramanga',
+      'Manizales',
+      'Pereira',
+      'Cúcuta',
+      'Santa Marta',
+      'Otra',
+    ],
+    validation: { type: 'text' as const, required: true, message: 'La ciudad es requerida' },
+  },
+  {
     text: '🍕 ¿Qué tipo de cocina ofreces?',
     field: 'cuisineType',
     type: 'select' as const,
@@ -275,25 +294,7 @@ const restaurantQuestions = [
       message: 'El tipo de cocina es requerido',
     },
   },
-  {
-    text: '📍 ¿En qué ciudad se encuentra tu restaurante?',
-    field: 'city',
-    type: 'select' as const,
-    options: [
-      'Bogotá',
-      'Medellín',
-      'Cali',
-      'Barranquilla',
-      'Cartagena',
-      'Bucaramanga',
-      'Manizales',
-      'Pereira',
-      'Cúcuta',
-      'Santa Marta',
-      'Otra',
-    ],
-    validation: { type: 'text' as const, required: true, message: 'La ciudad es requerida' },
-  },
+
   {
     text: '🎨 Sube el logo de tu restaurante:',
     field: 'logoUrl',
@@ -401,6 +402,25 @@ const servicesQuestions = [
     validation: { type: 'text' as const, required: true, message: 'El nombre es requerido' },
   },
   {
+    text: '📍 ¿En qué ciudad ofreces tus servicios?',
+    field: 'city',
+    type: 'select' as const,
+    options: [
+      'Bogotá',
+      'Medellín',
+      'Cali',
+      'Barranquilla',
+      'Cartagena',
+      'Bucaramanga',
+      'Manizales',
+      'Pereira',
+      'Cúcuta',
+      'Santa Marta',
+      'Otra',
+    ],
+    validation: { type: 'text' as const, required: true, message: 'La ciudad es requerida' },
+  },
+  {
     text: '🏷️ ¿Qué tipo de servicio ofreces?',
     field: 'businessType',
     type: 'select' as const,
@@ -424,25 +444,7 @@ const servicesQuestions = [
       message: 'El tipo de servicio es requerido',
     },
   },
-  {
-    text: '📍 ¿En qué ciudad ofreces tus servicios?',
-    field: 'city',
-    type: 'select' as const,
-    options: [
-      'Bogotá',
-      'Medellín',
-      'Cali',
-      'Barranquilla',
-      'Cartagena',
-      'Bucaramanga',
-      'Manizales',
-      'Pereira',
-      'Cúcuta',
-      'Santa Marta',
-      'Otra',
-    ],
-    validation: { type: 'text' as const, required: true, message: 'La ciudad es requerida' },
-  },
+
   {
     text: '🎨 Sube el logo de tu empresa:',
     field: 'logoUrl',
@@ -1720,12 +1722,17 @@ export default function InteractiveChatStore() {
                       // Generar descripción con IA
                       const isRestaurant = storeData.businessCategory === 'restaurant';
                       try {
+                        if (!storeData.city || String(storeData.city).trim() === '') {
+                          // Require explicit city selection before sending payload
+                          alert('Por favor selecciona la ciudad antes de continuar.');
+                          return;
+                        }
                         setIsTyping(true);
                         const requestBody = {
                           name: storeData.name,
                           type: isRestaurant ? 'restaurant' : 'service',
                           category: isRestaurant ? storeData.cuisineType : storeData.businessType,
-                          city: storeData.city || 'Bogotá',
+                          city: String(storeData.city).trim(),
                           specialties: selectedSpecialties,
                           tone: isRestaurant ? 'elegant' : 'professional',
                           language: 'es',

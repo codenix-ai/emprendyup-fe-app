@@ -218,15 +218,22 @@ export default function ServiceCalendar() {
             (s: any) => s.id === apt.serviceId
           );
 
-          // Convert timestamp to ISO string for FullCalendar
-          const startDate = new Date(parseInt(apt.startDatetime));
-          const endDate = new Date(parseInt(apt.endDatetime));
+          // Parse start/end values which may be epoch ms (string) or ISO string
+          const startDate = Number(apt.startDatetime);
+          const endDate = Number(apt.endDatetime);
+          const parsedStart = Number.isFinite(startDate)
+            ? new Date(startDate)
+            : new Date(apt.startDatetime);
+          const parsedEnd = Number.isFinite(endDate)
+            ? new Date(endDate)
+            : new Date(apt.endDatetime);
 
           const event = {
             id: apt.id,
             title: `${service?.name || 'Servicio'} - ${apt.customerName}`,
-            start: startDate.toISOString(),
-            end: endDate.toISOString(),
+            // Pass ISO strings so FullCalendar correctly applies `timeZone` (America/Bogota)
+            start: parsedStart.toISOString(),
+            end: parsedEnd.toISOString(),
             backgroundColor: getStatusColor(apt.status),
             borderColor: getStatusColor(apt.status),
             extendedProps: {
@@ -482,7 +489,7 @@ export default function ServiceCalendar() {
               setSelectedEvent(null);
               setIsModalOpen(true);
             }}
-            className="inline-flex items-center justify-center px-4 py-2.5 bg-[var(--fourth-base)] text-white rounded-lg hover:opacity-90 transition-colors text-sm sm:text-base w-full sm:w-auto"
+            className="inline-flex items-center justify-center px-4 py-2.5 bg-fourth-base text-white rounded-lg hover:opacity-90 transition-colors text-sm sm:text-base w-full sm:w-auto"
           >
             <Plus className="h-4 w-4 mr-2" />
             Nueva Cita
@@ -533,7 +540,7 @@ export default function ServiceCalendar() {
                     </div>
                     <button
                       onClick={() => handleEditService(service)}
-                      className="w-full px-2 py-1.5 text-xs  text-white rounded-lg hover:opacity-90 transition-colors"
+                      className="w-full px-2 py-1.5 text-xs bg-gray-400/80 text-white rounded-lg hover:opacity-90 transition-colors"
                     >
                       Editar Servicio
                     </button>
@@ -555,12 +562,15 @@ export default function ServiceCalendar() {
             <div className="space-y-3">
               {appointmentsData?.appointmentsByProvider
                 ?.filter((apt: any) => {
-                  const startDate = new Date(parseInt(apt.startDatetime));
+                  const s = Number(apt.startDatetime);
+                  const startDate = Number.isFinite(s) ? new Date(s) : new Date(apt.startDatetime);
                   return startDate >= new Date();
                 })
                 .sort((a: any, b: any) => {
-                  const dateA = new Date(parseInt(a.startDatetime));
-                  const dateB = new Date(parseInt(b.startDatetime));
+                  const sA = Number(a.startDatetime);
+                  const sB = Number(b.startDatetime);
+                  const dateA = Number.isFinite(sA) ? new Date(sA) : new Date(a.startDatetime);
+                  const dateB = Number.isFinite(sB) ? new Date(sB) : new Date(b.startDatetime);
                   return dateA.getTime() - dateB.getTime();
                 })
                 .slice(0, 5)
@@ -593,12 +603,17 @@ export default function ServiceCalendar() {
                         {service?.name || 'Servicio'}
                       </p>
                       <p className="text-xs text-gray-500 dark:text-gray-500 mt-1">
-                        {new Date(parseInt(apt.startDatetime)).toLocaleDateString('es-ES', {
-                          day: 'numeric',
-                          month: 'short',
-                          hour: '2-digit',
-                          minute: '2-digit',
-                        })}
+                        {(() => {
+                          const s = Number(apt.startDatetime);
+                          const d = Number.isFinite(s) ? new Date(s) : new Date(apt.startDatetime);
+                          return d.toLocaleString('es-CO', {
+                            timeZone: 'America/Bogota',
+                            day: 'numeric',
+                            month: 'short',
+                            hour: '2-digit',
+                            minute: '2-digit',
+                          });
+                        })()}
                       </p>
                     </div>
                   );
@@ -652,7 +667,7 @@ export default function ServiceCalendar() {
               </h2>
               <button
                 onClick={() => setIsModalOpen(false)}
-                className="text-gray-400 hover:text-gray-600 dark:hover:text-gray-300 p-1"
+                className="text-gray-400 hover:text-gray-600 bg-fourth-base dark:hover:text-gray-300 p-1"
               >
                 <X className="h-5 w-5" />
               </button>
@@ -805,7 +820,7 @@ export default function ServiceCalendar() {
                 </button>
                 <button
                   onClick={selectedEvent ? handleUpdateAppointment : handleCreateAppointment}
-                  className="inline-flex items-center justify-center px-4 py-2.5 bg-[var(--fourth-base)] text-white rounded-lg hover:opacity-90 transition-colors text-sm sm:text-base w-full sm:w-auto"
+                  className="inline-flex items-center justify-center px-4 py-2.5 bg-fourth-base text-white rounded-lg hover:opacity-90 transition-colors text-sm sm:text-base w-full sm:w-auto"
                 >
                   <Check className="h-4 w-4 mr-2" />
                   {selectedEvent ? 'Actualizar' : 'Crear Cita'}
@@ -946,7 +961,7 @@ export default function ServiceCalendar() {
               </button>
               <button
                 onClick={handleCreateService}
-                className="inline-flex items-center justify-center px-4 py-2.5 bg-[var(--fourth-base)] text-white rounded-lg hover:opacity-90 transition-colors text-sm sm:text-base w-full sm:w-auto"
+                className="inline-flex items-center justify-center px-4 py-2.5 bg-fourth-base text-white rounded-lg hover:opacity-90 transition-colors text-sm sm:text-base w-full sm:w-auto"
               >
                 <Check className="h-4 w-4 mr-2" />
                 {selectedService ? 'Actualizar Servicio' : 'Crear Servicio'}

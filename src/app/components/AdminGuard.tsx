@@ -73,7 +73,7 @@ export default function AdminGuard({ children }: AdminGuardProps) {
           </div>
           <button
             onClick={() => router.push('/dashboard')}
-            className="px-6 py-2 bg-[var(--fourth-base)] text-white rounded-lg hover:opacity-90 transition-colors"
+            className="px-6 py-2 bg-fourth-base text-white rounded-lg hover:opacity-90 transition-colors"
           >
             Ir al Dashboard
           </button>
