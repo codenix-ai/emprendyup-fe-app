@@ -290,49 +290,6 @@ export default function RestaurantDetailPage() {
     }
   };
 
-  const handleRemoveImage = (field: string) => {
-    setFormData((prev: any) => ({ ...prev, [field]: '' }));
-  };
-
-  const handleCreateMenuImage = async (url: string) => {
-    if (!restaurantId) return;
-    try {
-      const { data } = await createMenuImage({
-        variables: { restaurantId, input: { imageUrl: url, title: '', description: '' } },
-        refetchQueries: [{ query: GET_RESTAURANT, variables: { id: restaurantId } }],
-        awaitRefetchQueries: true,
-      });
-      const created = data?.createMenuImage;
-      if (created) {
-        setFormData((prev: any) => ({
-          ...prev,
-          menuImages: [...(prev.menuImages || []), created],
-        }));
-      }
-    } catch (err) {
-      console.error('createMenuImage error', err);
-    }
-  };
-
-  const handleDeleteMenuImage = async (id: string) => {
-    try {
-      const { data } = await deleteMenuImage({
-        variables: { id },
-        refetchQueries: [{ query: GET_RESTAURANT, variables: { id: restaurantId } }],
-        awaitRefetchQueries: true,
-      });
-      const deleted = data?.deleteMenuImage;
-      if (deleted) {
-        setFormData((prev: any) => ({
-          ...prev,
-          menuImages: (prev.menuImages || []).filter((m: any) => m.id !== deleted.id),
-        }));
-      }
-    } catch (err) {
-      console.error('deleteMenuImage error', err);
-    }
-  };
-
   const handleAddOrUpdateMenuItem = async () => {
     console.log('handleAddOrUpdateMenuItem', {
       newMenuItem,
@@ -397,8 +354,6 @@ export default function RestaurantDetailPage() {
                 order: parseFloat(String(newMenuItem.order)) || 0,
               },
             },
-            refetchQueries: [{ query: GET_MENU_ITEMS, variables: { restaurantId } }],
-            awaitRefetchQueries: true,
           });
           const updated = data?.updateMenuItem;
           if (updated) {
@@ -431,8 +386,6 @@ export default function RestaurantDetailPage() {
               order: parseFloat(String(newMenuItem.order)) || 0,
             },
           },
-          refetchQueries: [{ query: GET_MENU_ITEMS, variables: { restaurantId } }],
-          awaitRefetchQueries: true,
         });
         const created = data?.createMenuItem;
         if (created) {
@@ -481,8 +434,6 @@ export default function RestaurantDetailPage() {
         setMenuOpStatus('saving');
         const { data } = await deleteMenuItemMutation({
           variables: { id },
-          refetchQueries: [{ query: GET_MENU_ITEMS, variables: { restaurantId } }],
-          awaitRefetchQueries: true,
         });
         const deleted = data?.deleteMenuItem;
         if (deleted) {
