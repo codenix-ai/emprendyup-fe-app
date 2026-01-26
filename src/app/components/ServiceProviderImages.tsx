@@ -1,6 +1,6 @@
 'use client';
 import { useQuery, useMutation, gql } from '@apollo/client';
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { Plus, Trash2, Image as ImageIcon, AlertCircle, X } from 'lucide-react';
 import { useSessionStore } from '@/lib/store/dashboard';
 import Image from 'next/image';
@@ -20,9 +20,21 @@ const GET_SERVICE_PROVIDER = gql`
   }
 `;
 
+// Deletion is executed via REST DELETE to `/store-images/:id`
+
 const DELETE_SERVICE_PROVIDER_IMAGE = gql`
   mutation DeleteServiceProviderImage($id: String!) {
     deleteServiceProviderImage(id: $id)
+  }
+`;
+
+const UPLOAD_SERVICE_PROVIDER_IMAGE = gql`
+  mutation UploadServiceProviderImage($serviceProviderId: String!, $slug: String!, $file: Upload!) {
+    uploadServiceProviderImage(serviceProviderId: $serviceProviderId, slug: $slug, file: $file) {
+      id
+      url
+      key
+    }
   }
 `;
 
@@ -39,6 +51,7 @@ export default function ServiceProviderImages() {
   const [showCreateModal, setShowCreateModal] = useState(false);
   const [imageUrl, setImageUrl] = useState('');
   const [imageFile, setImageFile] = useState<File | null>(null);
+  const [localImages, setLocalImages] = useState<ServiceProviderImage[]>([]);
 
   // Query for service provider with images
   const { data, loading, error, refetch } = useQuery(GET_SERVICE_PROVIDER, {
@@ -46,11 +59,15 @@ export default function ServiceProviderImages() {
     skip: !serviceProviderId,
   });
 
-  // Mutations
-  const [deleteServiceImage, { loading: deleting }] = useMutation(DELETE_SERVICE_PROVIDER_IMAGE, {
-    onCompleted: () => {
-      refetch();
-    },
+  // Sync local images with query result
+  useEffect(() => {
+    setLocalImages(data?.serviceProvider?.images || []);
+  }, [data]);
+
+  const [deleting, setDeleting] = useState(false);
+  // GraphQL delete mutation (preferred)
+  const [deleteServiceImageGQL] = useMutation(DELETE_SERVICE_PROVIDER_IMAGE, {
+    onCompleted: () => refetch(),
   });
 
   const [uploading, setUploading] = useState(false);
@@ -61,23 +78,25 @@ export default function ServiceProviderImages() {
 
     try {
       setUploading(true);
+
       const businessName =
         data?.serviceProvider?.businessName?.toLowerCase().replace(/\s+/g, '_') || 'business';
-      const uploadUrl = `${process.env.NEXT_PUBLIC_API_URL || 'http://localhost:4000'}/service-provider-images/${serviceProviderId}/${businessName}/upload`;
+      const apiBase = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:4000';
+      // REST endpoint: POST /service-provider-images/:serviceProviderId/gallery/upload
+      const uploadUrl = `${apiBase}/service-provider-images/${serviceProviderId}/gallery/upload`;
 
       const formData = new FormData();
-
       if (imageFile) {
-        // Si tenemos un archivo, enviarlo directamente
         formData.append('file', imageFile);
       } else if (imageUrl) {
-        // Si solo tenemos URL (por si FileUpload devuelve URL de S3), intentar convertir
-        // En este caso, necesitaríamos descargar y re-subir, o cambiar la lógica
         throw new Error('Por favor selecciona un archivo de imagen');
       }
 
+      const token = typeof window !== 'undefined' ? localStorage.getItem('accessToken') : null;
+
       const response = await fetch(uploadUrl, {
         method: 'POST',
+        headers: token ? { Authorization: `Bearer ${token}` } : undefined,
         body: formData,
       });
 
@@ -86,10 +105,29 @@ export default function ServiceProviderImages() {
         throw new Error(errorData.message || 'Error al subir la imagen');
       }
 
+      // Try to read returned image data and update localImages for immediate visibility
+      const uploaded = await response.json().catch(() => null);
+      if (uploaded && (uploaded.id || uploaded.url || uploaded.key)) {
+        const newImg: ServiceProviderImage = {
+          id: uploaded.id || uploaded.image?.id || Date.now().toString(),
+          key: uploaded.key || uploaded.image?.key || uploaded.key || '',
+          url:
+            // prefer explicit url if it's a direct S3 URL
+            uploaded.url && !uploaded.url.includes('cloudfront')
+              ? uploaded.url
+              : uploaded.key || uploaded.image?.key
+                ? `https://emprendyup-images.s3.us-east-1.amazonaws.com/${uploaded.key || uploaded.image?.key}`
+                : uploaded.url || '',
+        };
+        setLocalImages((prev) => [newImg, ...prev]);
+      } else {
+        // fallback: refresh from server
+        refetch();
+      }
+
       setShowCreateModal(false);
       setImageUrl('');
       setImageFile(null);
-      refetch();
     } catch (err) {
       console.error('Error creating service image:', err);
       alert(
@@ -101,29 +139,114 @@ export default function ServiceProviderImages() {
   };
 
   const handleDeleteImage = async (imageId: string) => {
-    if (!confirm('¿Estás seguro de que deseas eliminar esta imagen?')) {
-      return;
-    }
+    if (!confirm('¿Estás seguro de que deseas eliminar esta imagen?')) return;
+
     try {
-      await deleteServiceImage({
-        variables: { id: imageId },
-      });
+      setDeleting(true);
+
+      // Try GraphQL deletion first
+      try {
+        await deleteServiceImageGQL({ variables: { id: imageId } });
+        return;
+      } catch (gqlErr: any) {
+        // If GraphQL field not found or other error, fall back to REST candidates
+        console.debug(
+          'GraphQL delete failed, falling back to REST delete. Error:',
+          gqlErr?.message || gqlErr
+        );
+      }
+
+      const token = typeof window !== 'undefined' ? localStorage.getItem('accessToken') : null;
+      const apiBase = process.env.NEXT_PUBLIC_API_URL || '';
+
+      const build = (path: string) => (apiBase ? `${apiBase}${path}` : path);
+
+      const candidates = [
+        `/service-provider-images/${serviceProviderId}/gallery/${imageId}`,
+        `/service-provider-images/gallery/${imageId}`,
+        `/service-provider-images/${imageId}`,
+        `/store-images/${imageId}`,
+        `/service-provider-images/${serviceProviderId}/${imageId}`,
+      ].map((p) => build(p));
+
+      console.debug('Attempting DELETE on candidate URLs:', candidates);
+
+      let lastError: any = null;
+      let deleted = false;
+
+      for (const url of candidates) {
+        try {
+          const res = await fetch(url, {
+            method: 'DELETE',
+            headers: token ? { Authorization: `Bearer ${token}` } : undefined,
+          });
+
+          const body = await res.json().catch(() => ({}));
+
+          if (res.ok) {
+            deleted = true;
+            break;
+          }
+
+          if (res.status === 404) {
+            lastError = { status: res.status, body };
+            continue;
+          } else {
+            throw new Error(body.message || `Error deleting image (status ${res.status})`);
+          }
+        } catch (err) {
+          lastError = err;
+          continue;
+        }
+      }
+
+      if (!deleted) {
+        const msg = lastError?.body?.message || lastError?.message || 'Image not found';
+        throw new Error(msg);
+      }
+
+      refetch();
     } catch (err) {
       console.error('Error deleting service image:', err);
-      alert('Error al eliminar la imagen. Por favor intenta de nuevo.');
+      alert(
+        err instanceof Error
+          ? `Error al eliminar la imagen: ${err.message}`
+          : 'Error al eliminar la imagen.'
+      );
+    } finally {
+      setDeleting(false);
     }
   };
 
-  const resolveImageUrl = (url: string) => {
+  const resolveImageUrl = (url: string, key?: string) => {
+    // If we have an explicit key (S3 path), prefer constructing S3 URL.
+    if (key) {
+      return `https://emprendyup-images.s3.us-east-1.amazonaws.com/${key}`;
+    }
+
     if (!url) return '';
+
+    // If backend returns a CloudFront URL but we have no key, try to fall back to url.
     if (
       url.startsWith('http') ||
       url.startsWith('https') ||
       url.startsWith('blob:') ||
       url.startsWith('data:')
     ) {
+      // Prefer S3 domain when CloudFront is present and we can extract a key-like path
+      try {
+        const parsed = new URL(url);
+        if (parsed.hostname.includes('cloudfront') && parsed.pathname) {
+          const possibleKey = parsed.pathname.replace(/^\//, '');
+          return `https://emprendyup-images.s3.us-east-1.amazonaws.com/${possibleKey}`;
+        }
+      } catch (e) {
+        // ignore
+      }
       return url;
     }
+
+    // Otherwise assume url is a key/path
     return `https://emprendyup-images.s3.us-east-1.amazonaws.com/${url}`;
   };
 
@@ -160,7 +283,8 @@ export default function ServiceProviderImages() {
   }
 
   const images = data?.serviceProvider?.images || [];
-  const needsMoreImages = images.length < 3;
+  const displayedImages = localImages.length ? localImages : images;
+  const needsMoreImages = displayedImages.length < 3;
 
   return (
     <div className="space-y-6">
@@ -195,7 +319,7 @@ export default function ServiceProviderImages() {
           <div>
             <p className="text-sm text-gray-600 dark:text-gray-400">Total de Imágenes</p>
             <p className="text-2xl font-bold text-gray-900 dark:text-white">
-              {images.length}
+              {displayedImages.length}
               {needsMoreImages && <span className="text-orange-500"> / 3 mínimo</span>}
             </p>
           </div>
@@ -203,9 +327,9 @@ export default function ServiceProviderImages() {
       </div>
 
       {/* Images Grid */}
-      {images.length > 0 ? (
+      {displayedImages.length > 0 ? (
         <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-6">
-          {images.map((image: ServiceProviderImage) => (
+          {displayedImages.map((image: ServiceProviderImage) => (
             <div
               key={image.id}
               className="bg-white dark:bg-gray-800 rounded-lg border border-gray-200 dark:border-gray-700 overflow-hidden hover:shadow-lg transition-shadow"
