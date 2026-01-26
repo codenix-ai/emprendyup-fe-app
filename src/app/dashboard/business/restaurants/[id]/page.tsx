@@ -803,7 +803,7 @@ export default function RestaurantDetailPage() {
                                         handleEditMenuItem(item);
                                         setIsModalOpen(true);
                                       }}
-                                      className="px-3 py-1 bg-yellow-400 rounded text-sm"
+                                      className="px-3 py-1 bg-fourth-base/40 rounded text-sm"
                                     >
                                       Editar
                                     </button>
