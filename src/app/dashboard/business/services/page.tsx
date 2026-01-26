@@ -67,13 +67,6 @@ export default function ServicesListPage() {
                   Gestiona todos los servicios registrados
                 </p>
               </div>
-              <button
-                onClick={() => router.push('/dashboard/business/services/new')}
-                className="inline-flex items-center px-4 py-2 bg-fourth-base text-white rounded-lg hover:opacity-90 transition-colors"
-              >
-                <Plus className="w-5 h-5 mr-2" />
-                Nuevo Servicio
-              </button>
             </div>
 
             {/* Search Bar */}
