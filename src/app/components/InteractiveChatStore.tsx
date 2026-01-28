@@ -928,15 +928,108 @@ export default function InteractiveChatStore() {
       return specialtiesMap[type] || ['Plato 1', 'Plato 2', 'Plato 3', 'Bebidas', 'Postres'];
     } else if (category === 'services') {
       const specialtiesMap: { [key: string]: string[] } = {
-        Plomería: ['Reparaciones', 'Instalaciones', 'Destapes', 'Fugas', 'Mantenimiento'],
-        Electricidad: ['Instalación', 'Reparación', 'Iluminación', 'Cableado', 'Emergencias'],
-        Carpintería: ['Muebles', 'Reparaciones', 'Closets', 'Puertas', 'Ventanas'],
-        Pintura: ['Interior', 'Exterior', 'Comercial', 'Residencial', 'Decorativa'],
-        Limpieza: ['Residencial', 'Comercial', 'Profunda', 'Post-construcción', 'Oficinas'],
+        Terapia: [
+          'Psicología',
+          'Terapia Familiar',
+          'Terapia de Pareja',
+          'Coaching Emocional',
+          'Manejo de Estrés',
+          'Orientación Vocacional',
+        ],
+
+        'Salón de Belleza': [
+          'Corte de Cabello',
+          'Peinados',
+          'Manicure',
+          'Pedicure',
+          'Maquillaje',
+          'Coloración',
+          'Tratamientos Capilares',
+        ],
+
+        Consultor: [
+          'Consultoría Empresarial',
+          'Consultoría Financiera',
+          'Consultoría Tecnológica',
+          'Estrategia de Negocios',
+          'Optimización de Procesos',
+          'Asesoría Personalizada',
+        ],
+
+        Entrenador: [
+          'Entrenamiento Personal',
+          'Entrenamiento Funcional',
+          'Fitness',
+          'Entrenador Online',
+          'Plan de Rutinas',
+          'Acondicionamiento Físico',
+        ],
+
+        'Servicio de Limpieza': [
+          'Limpieza Residencial',
+          'Limpieza Comercial',
+          'Limpieza Profunda',
+          'Post-construcción',
+          'Oficinas',
+          'Desinfección',
+        ],
+
+        'Servicio de Reparación': [
+          'Electrodomésticos',
+          'Reparaciones del Hogar',
+          'Mantenimiento General',
+          'Plomería Básica',
+          'Electricidad Básica',
+          'Emergencias',
+        ],
+
+        Fotografía: [
+          'Fotografía de Eventos',
+          'Fotografía Profesional',
+          'Fotografía de Productos',
+          'Fotografía Corporativa',
+          'Edición de Fotos',
+          'Sesiones Personales',
+        ],
+
+        'Planificación de Eventos': [
+          'Bodas',
+          'Cumpleaños',
+          'Eventos Corporativos',
+          'Decoración',
+          'Logística',
+          'Coordinación del Evento',
+        ],
+
+        'Servicio Legal': [
+          'Asesoría Legal',
+          'Derecho Civil',
+          'Derecho Laboral',
+          'Contratos',
+          'Trámites Legales',
+          'Consultas Jurídicas',
+        ],
+
+        Contabilidad: [
+          'Contabilidad General',
+          'Declaración de Impuestos',
+          'Asesoría Tributaria',
+          'Facturación',
+          'Estados Financieros',
+          'Nómina',
+        ],
+
+        Marketing: [
+          'Marketing Digital',
+          'Redes Sociales',
+          'Publicidad Online',
+          'SEO',
+          'Branding',
+          'Estrategia de Contenidos',
+        ],
       };
-      return (
-        specialtiesMap[type] || ['Servicio 1', 'Servicio 2', 'Servicio 3', 'Consultoría', 'Soporte']
-      );
+
+      return specialtiesMap[type] || ['Consultoría', 'Soporte'];
     }
     return [];
   };
