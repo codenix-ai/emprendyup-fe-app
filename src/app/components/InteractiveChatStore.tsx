@@ -72,7 +72,7 @@ interface StoreData {
   tiktokUrl: string;
   whatsappNumber: string;
   status: string;
-  businessCategory?: 'products' | 'restaurant' | 'services' | 'tourism_services';
+  businessCategory?: 'products' | 'restaurant' | 'services';
   coverImage?: string;
   googleLocation?: string;
   lat?: number;
@@ -84,7 +84,7 @@ const businessTypeQuestion = {
   text: '¡Hola! 👋 Soy tu asistente para crear tu negocio online. ¿Qué tipo de emprendimiento tienes?',
   field: 'businessCategory',
   type: 'select' as const,
-  options: ['Productos', 'Restaurante', 'Servicios', 'Servicios Turísticos'],
+  options: ['Productos', 'Restaurante', 'Servicios'],
   validation: { type: 'text' as const, required: true, message: 'Debes seleccionar un tipo' },
 };
 
@@ -675,24 +675,6 @@ const CREATE_RESTAURANT = gql`
   }
 `;
 
-const CREATE_TOURISM_COMPANY = gql`
-  mutation CreateTourismCompany($input: CreateTourismCompanyInput!) {
-    createTourismCompany(input: $input) {
-      id
-      name
-      description
-      city
-      address
-      phone
-      logoUrl
-      coverImage
-      googleLocation
-      createdAt
-      updatedAt
-    }
-  }
-`;
-
 const CREATE_SERVICE_PROVIDER = gql`
   mutation CreateServiceProviderWithBranding($input: CreateServiceProviderWithBrandingInput!) {
     createServiceProviderWithBranding(input: $input) {
@@ -770,7 +752,6 @@ export default function InteractiveChatStore() {
 
   const [createStoreMutation] = useMutation(CREATE_STORE);
   const [createRestaurantMutation] = useMutation(CREATE_RESTAURANT);
-  const [createTourismCompanyMutation] = useMutation(CREATE_TOURISM_COMPANY);
   const [createServiceProviderMutation] = useMutation(CREATE_SERVICE_PROVIDER);
   const session = useSessionStore();
   // hydrate session from server cookie if not present
@@ -925,7 +906,15 @@ export default function InteractiveChatStore() {
         Postres: ['Tortas', 'Helados', 'Brownies', 'Cheesecake', 'Mousse'],
         Cafetería: ['Café', 'Cappuccino', 'Latte', 'Croissants', 'Muffins'],
       };
-      return specialtiesMap[type] || ['Plato 1', 'Plato 2', 'Plato 3', 'Bebidas', 'Postres'];
+      return (
+        specialtiesMap[type] || [
+          'Especialidad del Día',
+          'Menú Ejecutivo',
+          'Plato Típico',
+          'Bebidas',
+          'Postres',
+        ]
+      );
     } else if (category === 'services') {
       const specialtiesMap: { [key: string]: string[] } = {
         Terapia: [
@@ -1029,7 +1018,9 @@ export default function InteractiveChatStore() {
         ],
       };
 
-      return specialtiesMap[type] || ['Consultoría', 'Soporte'];
+      return (
+        specialtiesMap[type] || ['Consultoría General', 'Soporte Técnico', 'Asesoría Personalizada']
+      );
     }
     return [];
   };
@@ -1179,7 +1170,7 @@ export default function InteractiveChatStore() {
     // Si aún no se ha seleccionado el tipo de negocio
     if (!selectedBusinessType && questions.length === 0) {
       // Guardar el tipo de negocio seleccionado
-      let businessCategory: 'products' | 'restaurant' | 'services' | 'tourism_services';
+      let businessCategory: 'products' | 'restaurant' | 'services';
       let questionsToUse: any[];
 
       if (value === 'Productos') {
@@ -2000,7 +1991,7 @@ export default function InteractiveChatStore() {
                 <h2 className="text-xl font-bold text-white">
                   {storeData.businessCategory === 'restaurant'
                     ? '¡Tu restaurante ha sido creado!'
-                    : storeData.businessCategory === 'tourism_services'
+                    : storeData.businessCategory === 'services'
                       ? '¡Tu empresa de servicios ha sido creada!'
                       : '¡Tu tienda ha sido creada!'}
                 </h2>
@@ -2011,16 +2002,12 @@ export default function InteractiveChatStore() {
                   {(() => {
                     // Build a friendly URL depending on the created resource type.
                     // - For stores (products), prefer `shopUrl` or subdomain: `https://{storeId}.emprendyup.com`.
-                    // - For restaurants/services/tourism_services, prefer a path using `slug`: `https://emprendyup.com/{slug}`.
+                    // - For restaurants/services, prefer a path using `slug`: `https://emprendyup.com/{slug}`.
                     const category =
                       (createdStore && createdStore.businessCategory) || storeData.businessCategory;
 
                     // If the created resource is a restaurant or service, prefer slug paths
-                    if (
-                      category === 'restaurant' ||
-                      category === 'services' ||
-                      category === 'tourism_services'
-                    ) {
+                    if (category === 'restaurant' || category === 'services') {
                       const slug = createdStore?.slug || createdStoreId;
                       if (slug)
                         return (

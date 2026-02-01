@@ -27,7 +27,6 @@ import {
   BookUser,
   UtensilsCrossed,
   Briefcase,
-  Plane,
   Building2,
   ShoppingBag,
   Calendar,
@@ -48,7 +47,6 @@ const adminNavigationGroups = [
       { name: 'Tiendas', href: '/dashboard/business/stores', icon: Store },
       { name: 'Restaurantes', href: '/dashboard/business/restaurants', icon: UtensilsCrossed },
       { name: 'Servicios', href: '/dashboard/business/services', icon: Briefcase },
-      { name: 'Turismo', href: '/dashboard/business/tourism', icon: Plane },
     ],
   },
   {
@@ -205,49 +203,12 @@ const getRestaurantNavigationGroups = () => {
   ];
 };
 
-// Navegación para Turismo
-const getTourismNavigationGroups = () => {
-  return [
-    {
-      name: 'Turismo',
-      icon: Plane,
-      items: [
-        { name: 'Mi Negocio', href: '/dashboard/tourism', icon: Plane },
-        { name: 'Reservas', href: '/dashboard/orders', icon: ShoppingCart },
-        { name: 'Experiencias', href: '/dashboard/products', icon: Package },
-        { name: 'Categorias', href: '/dashboard/categories', icon: List },
-      ],
-    },
-    {
-      name: 'Usuarios',
-      icon: Users,
-      items: [{ name: 'Usuarios', href: '/dashboard/user-by-tourism', icon: Users }],
-    },
-    {
-      name: 'Otros',
-      icon: Gift,
-      items: [
-        { name: 'Bonos', href: '/dashboard/bonuses', icon: Gift },
-        { name: 'Mi suscripción', href: '/dashboard/plans', icon: Layers },
-      ],
-    },
-    {
-      name: 'Pagos',
-      icon: CreditCard,
-      href: '/dashboard/payments',
-      isSingle: true,
-    },
-  ];
-};
-
 // Función para obtener la navegación según el tipo de negocio del usuario
 const getStoreAdminNavigationGroups = (user: any) => {
   if (user?.serviceProviderId) {
     return getServiceNavigationGroups();
   } else if (user?.restaurantId) {
     return getRestaurantNavigationGroups();
-  } else if (user?.tourismId) {
-    return getTourismNavigationGroups();
   }
   // Default: tienda
   return getStoreNavigationGroups();

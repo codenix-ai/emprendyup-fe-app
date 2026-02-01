@@ -1,6 +1,6 @@
 'use client';
 import { useRouter } from 'next/navigation';
-import { Store, UtensilsCrossed, Briefcase, Palmtree } from 'lucide-react';
+import { Store, UtensilsCrossed, Briefcase } from 'lucide-react';
 import AdminGuard from '@/app/components/AdminGuard';
 
 const businessTypes = [
@@ -25,14 +25,6 @@ const businessTypes = [
     title: 'Servicios',
     description: 'Controla proveedores de servicios profesionales',
     icon: Briefcase,
-    color: 'bg-fourth-base',
-    hoverColor: 'hover:opacity-90',
-  },
-  {
-    id: 'tourism',
-    title: 'Turismo',
-    description: 'Maneja empresas y planes turísticos',
-    icon: Palmtree,
     color: 'bg-fourth-base',
     hoverColor: 'hover:opacity-90',
   },
