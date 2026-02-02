@@ -359,10 +359,10 @@ const AssistantCard = ({
   </div>
 );
 
-const EventsPage = () => {
-  // Base URL for event registration - can be moved to environment variable if needed
-  const EVENT_REGISTRATION_BASE_URL = 'https://www.emprendy.ai/registro-evento';
+// Base URL for event registration - can be moved to environment variable if needed
+const EVENT_REGISTRATION_BASE_URL = 'https://www.emprendy.ai/registro-evento';
 
+const EventsPage = () => {
   const {
     data: assistantsData,
     loading: assistantsLoading,
