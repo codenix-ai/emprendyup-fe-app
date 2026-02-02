@@ -60,3 +60,52 @@ export type CreatePostInput = {
 
 // Tipo para actualizar un post existente
 export type UpdatePostInput = Partial<CreatePostInput>;
+
+// Tipos para Shipments (Envíos)
+export type ShipmentStatus =
+  | 'PENDIENTE_RECOLECCION'
+  | 'RECOLECTADO'
+  | 'EN_TRANSITO'
+  | 'EN_CENTRO_DISTRIBUCION'
+  | 'EN_REPARTO'
+  | 'ENTREGADO'
+  | 'NO_ENTREGADO'
+  | 'DEVUELTO';
+
+export interface Shipment {
+  id: string;
+  orderId: string;
+  provider: string;
+  trackingNumber: string;
+  shippingCost: number;
+  totalWeight: number;
+  shippedAt: DateTime;
+  estimatedDeliveryAt: DateTime;
+  deliveredAt?: DateTime;
+  status: ShipmentStatus;
+  trackingUrl?: string;
+  notes?: string;
+  createdAt: DateTime;
+  updatedAt: DateTime;
+}
+
+export type CreateShipmentInput = {
+  orderId: string;
+  provider: string;
+  trackingNumber: string;
+  shippingCost: number;
+  totalWeight: number;
+  shippedAt: string;
+  estimatedDeliveryAt: string;
+  status: ShipmentStatus;
+  trackingUrl?: string;
+  notes?: string;
+};
+
+export type UpdateShipmentInput = {
+  trackingNumber?: string;
+  shippedAt?: string;
+  status?: ShipmentStatus;
+  trackingUrl?: string;
+  notes?: string;
+};

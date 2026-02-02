@@ -1,12 +1,23 @@
 'use client';
 
 import React, { useState, useEffect } from 'react';
-import { Search, Filter, Download, Eye, ChevronLeft, ChevronRight, Package } from 'lucide-react';
+import {
+  Search,
+  Filter,
+  Download,
+  Eye,
+  ChevronLeft,
+  ChevronRight,
+  Package,
+  Truck,
+} from 'lucide-react';
 import { Order } from '@/lib/schemas/dashboard';
 import { useDashboardUIStore } from '@/lib/store/dashboard';
 import { gql, useQuery } from '@apollo/client';
 import { useSessionStore } from '@/lib/store/dashboard';
 import { useParams } from 'next/navigation';
+import ShipmentFormModal from '@/app/components/ShipmentFormModal';
+import { Shipment } from '@/app/utils/types/types';
 
 const GET_ORDERS_BY_STORE = gql`
   query OrdersByStore($storeId: String!) {
@@ -85,6 +96,26 @@ const PAGINATED_ORDERS = gql`
   }
 `;
 
+const GET_ALL_SHIPMENTS = gql`
+  query GetAllShipments {
+    shipments {
+      id
+      orderId
+      provider
+      trackingNumber
+      shippingCost
+      totalWeight
+      shippedAt
+      estimatedDeliveryAt
+      status
+      trackingUrl
+      notes
+      createdAt
+      updatedAt
+    }
+  }
+`;
+
 export default function OrderPage() {
   const [pedidos, setPedidos] = useState<Order[]>([]);
   const [pedidosFiltrados, setPedidosFiltrados] = useState<Order[]>([]);
@@ -92,6 +123,9 @@ export default function OrderPage() {
   const [filtroEstado, setFiltroEstado] = useState('all');
   const [currentPage, setCurrentPage] = useState(1);
   const [expandedOrders, setExpandedOrders] = useState<Set<string>>(new Set());
+  const [shipmentModalOpen, setShipmentModalOpen] = useState(false);
+  const [selectedOrderIdForShipment, setSelectedOrderIdForShipment] = useState<string>('');
+  const [currentShipment, setCurrentShipment] = useState<Shipment | null>(null);
   const pageSize = 10;
   const params = useParams();
 
@@ -111,6 +145,7 @@ export default function OrderPage() {
     data: storeData,
     loading: storeLoading,
     error: storeError,
+    refetch: refetchStoreData,
   } = useQuery(GET_ORDERS_BY_STORE, {
     variables: { storeId: userData?.storeId || '' },
     skip: isAdmin || !storeId,
@@ -121,6 +156,7 @@ export default function OrderPage() {
     data: adminData,
     loading: adminLoading,
     error: adminError,
+    refetch: refetchAdminData,
   } = useQuery(PAGINATED_ORDERS, {
     variables: {
       pagination: { page: currentPage, pageSize },
@@ -132,9 +168,29 @@ export default function OrderPage() {
     fetchPolicy: 'network-only',
   });
 
+  const {
+    data: shipmentsData,
+    loading: shipmentsLoading,
+    refetch: refetchShipments,
+  } = useQuery(GET_ALL_SHIPMENTS, {
+    fetchPolicy: 'network-only',
+  });
+
   const data = isAdmin ? adminData : storeData;
   const loading = storeLoading || adminLoading;
   const error = storeError || adminError;
+
+  // Buscar envío existente cuando se selecciona una orden
+  useEffect(() => {
+    if (selectedOrderIdForShipment && shipmentsData?.shipments) {
+      const existingShipment = shipmentsData.shipments.find(
+        (s: Shipment) => s.orderId === selectedOrderIdForShipment
+      );
+      setCurrentShipment(existingShipment || null);
+    } else if (!selectedOrderIdForShipment) {
+      setCurrentShipment(null);
+    }
+  }, [selectedOrderIdForShipment, shipmentsData]);
 
   useEffect(() => {
     if (!isAdmin && data?.ordersByStore) {
@@ -435,8 +491,8 @@ export default function OrderPage() {
           </thead>
           <tbody className="bg-gray-900 divide-y divide-gray-800">
             {paginatedOrders.map((order) => (
-              <>
-                <tr key={order.id} className="hover:bg-gray-800 transition-colors">
+              <React.Fragment key={order.id}>
+                <tr className="hover:bg-gray-800 transition-colors">
                   <td className="px-6 py-4">
                     <div className="flex items-center space-x-3">
                       {order.items.slice(0, 2).map((item: any, index) => {
@@ -490,8 +546,19 @@ export default function OrderPage() {
                   <td className="px-6 py-4 text-right">
                     <div className="flex justify-end space-x-2">
                       <button
+                        onClick={() => {
+                          setSelectedOrderIdForShipment(order.id);
+                          setShipmentModalOpen(true);
+                        }}
+                        className="p-2 text-gray-400 hover:bg-gray-800 hover:text-fourth-base rounded-lg transition-colors"
+                        title="Gestionar envío"
+                      >
+                        <Truck className="w-4 h-4" />
+                      </button>
+                      <button
                         onClick={() => toggleOrderExpansion(order.id)}
                         className="p-2 text-gray-400 hover:bg-gray-800 hover:text-white rounded-lg transition-colors"
+                        title="Ver detalles"
                       >
                         <Eye className="w-4 h-4" />
                       </button>
@@ -560,7 +627,7 @@ export default function OrderPage() {
                     </td>
                   </tr>
                 )}
-              </>
+              </React.Fragment>
             ))}
           </tbody>
         </table>
@@ -641,7 +708,17 @@ export default function OrderPage() {
               })}
             </div>
 
-            <div className="mt-3 flex justify-end">
+            <div className="mt-3 flex justify-end gap-2">
+              <button
+                onClick={() => {
+                  setSelectedOrderIdForShipment(order.id);
+                  setShipmentModalOpen(true);
+                }}
+                className="px-3 py-2 bg-gray-700 text-white rounded-lg text-sm hover:bg-gray-600 transition-colors flex items-center gap-1"
+              >
+                <Truck className="w-4 h-4" />
+                Envío
+              </button>
               <button
                 onClick={() => verPedido(order.id)}
                 className="px-3 py-2 bg-fourth-base text-black rounded-lg text-sm hover:bg-fourth-base/90 transition-colors"
@@ -703,6 +780,28 @@ export default function OrderPage() {
           </div>
         </div>
       )}
+
+      {/* Shipment Modal */}
+      <ShipmentFormModal
+        key={selectedOrderIdForShipment || 'new'}
+        isOpen={shipmentModalOpen}
+        onClose={() => {
+          setCurrentShipment(null);
+          setSelectedOrderIdForShipment('');
+          setShipmentModalOpen(false);
+        }}
+        orderId={selectedOrderIdForShipment}
+        shipment={currentShipment}
+        onSuccess={() => {
+          // Refetch orders and shipments to get updated data
+          if (isAdmin) {
+            refetchAdminData();
+          } else {
+            refetchStoreData();
+          }
+          refetchShipments();
+        }}
+      />
     </div>
   );
 }
