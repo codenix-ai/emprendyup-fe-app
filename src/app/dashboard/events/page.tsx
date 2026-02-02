@@ -360,6 +360,9 @@ const AssistantCard = ({
 );
 
 const EventsPage = () => {
+  // Base URL for event registration - can be moved to environment variable if needed
+  const EVENT_REGISTRATION_BASE_URL = 'https://www.emprendy.ai/registro-evento';
+
   const {
     data: assistantsData,
     loading: assistantsLoading,
@@ -613,14 +616,22 @@ const EventsPage = () => {
   };
 
   const handleCopyLink = (eventId: string) => {
-    const link = `https://www.emprendy.ai/registro-evento?id=${eventId}`;
+    const link = `${EVENT_REGISTRATION_BASE_URL}?id=${eventId}`;
+
+    // Check if Clipboard API is available
+    if (!navigator.clipboard) {
+      toast.error('Tu navegador no soporta copiar al portapapeles automáticamente');
+      return;
+    }
+
     navigator.clipboard
       .writeText(link)
       .then(() => {
         toast.success('Link copiado al portapapeles');
       })
-      .catch(() => {
-        toast.error('Error al copiar el link');
+      .catch((error) => {
+        console.error('Error copying to clipboard:', error);
+        toast.error('Error al copiar el link. Por favor, intenta de nuevo.');
       });
   };
 
