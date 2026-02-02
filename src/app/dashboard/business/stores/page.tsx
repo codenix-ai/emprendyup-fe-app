@@ -162,27 +162,18 @@ export default function StoresPage() {
     setFilteredStores(filtered);
   }, [stores, searchQuery, statusFilter, platformFilter]);
 
-  const getStatusBadge = (status: string) => {
+  const getActiveBadge = (isActive: boolean | string) => {
+    const active = typeof isActive === 'string' ? isActive === 'true' : Boolean(isActive);
     const styles = {
-      active: 'bg-green-100 text-green-800 dark:bg-green-900 dark:text-green-300',
-      inactive: 'bg-red-100 text-red-800 dark:bg-red-900 dark:text-red-300',
-      maintenance: 'bg-yellow-100 text-yellow-800 dark:bg-yellow-900 dark:text-yellow-300',
-    };
-
-    const statusTranslations: { [key: string]: string } = {
-      active: 'Activo',
-      inactive: 'Inactivo',
-      maintenance: 'Mantenimiento',
-    };
-
-    const translatedStatus =
-      statusTranslations[status.toLowerCase()] || status.charAt(0).toUpperCase() + status.slice(1);
+      true: 'bg-green-100 text-green-800 dark:bg-green-900 dark:text-green-300',
+      false: 'bg-red-100 text-red-800 dark:bg-red-900 dark:text-red-300',
+    } as const;
 
     return (
       <span
-        className={`inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium ${styles[status as keyof typeof styles]}`}
+        className={`inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium ${styles[String(active) as 'true' | 'false']}`}
       >
-        {translatedStatus}
+        {active ? 'Activa' : 'Inactiva'}
       </span>
     );
   };
@@ -339,7 +330,7 @@ export default function StoresPage() {
                         Plataforma
                       </th>
                       <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wider">
-                        Estado
+                        Activo
                       </th>
                       <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wider">
                         Acciones
@@ -394,7 +385,7 @@ export default function StoresPage() {
                           {getPlatformBadge(safe(store.platform) as string)}
                         </td>
                         <td className="px-6 py-4 whitespace-nowrap">
-                          {getStatusBadge(safe(store.status) as string)}
+                          {getActiveBadge(store.isActive)}
                         </td>
                         <td className="px-6 py-4 whitespace-nowrap text-sm font-medium">
                           <button
@@ -437,7 +428,7 @@ export default function StoresPage() {
                         </div>
                       </div>
                       <div className="flex flex-col gap-1">
-                        {getStatusBadge(safe(store.status) as string)}
+                        {getActiveBadge(store.isActive)}
                         {getPlatformBadge(safe(store.platform) as string)}
                       </div>
                     </div>
