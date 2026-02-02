@@ -19,6 +19,7 @@ import {
   XCircle,
   Send,
   MessageCircle,
+  Share2,
 } from 'lucide-react';
 import { gql, useQuery, useMutation } from '@apollo/client';
 import toast from 'react-hot-toast';
@@ -609,6 +610,18 @@ const EventsPage = () => {
       hour: '2-digit',
       minute: '2-digit',
     });
+  };
+
+  const handleCopyLink = (eventId: string) => {
+    const link = `https://www.emprendy.ai/registro-evento?id=${eventId}`;
+    navigator.clipboard
+      .writeText(link)
+      .then(() => {
+        toast.success('Link copiado al portapapeles');
+      })
+      .catch(() => {
+        toast.error('Error al copiar el link');
+      });
   };
 
   const exportToCSV = () => {
@@ -1635,6 +1648,9 @@ const EventsPage = () => {
                           <th className="px-6 py-4 text-left text-xs font-semibold text-gray-500 dark:text-gray-400 uppercase tracking-wider">
                             Organizador
                           </th>
+                          <th className="px-6 py-4 text-left text-xs font-semibold text-gray-500 dark:text-gray-400 uppercase tracking-wider">
+                            Compartir
+                          </th>
                         </tr>
                       </thead>
                       <tbody className="divide-y divide-gray-200 dark:divide-gray-700">
@@ -1724,6 +1740,16 @@ const EventsPage = () => {
                                   </div>
                                 )}
                               </div>
+                            </td>
+                            <td className="px-6 py-4">
+                              <button
+                                onClick={() => handleCopyLink(event.id)}
+                                className="flex items-center gap-2 px-3 py-2 text-sm font-medium text-blue-600 dark:text-blue-400 hover:bg-blue-50 dark:hover:bg-blue-900/20 rounded-lg transition-colors"
+                                title="Copiar link de registro"
+                              >
+                                <Share2 className="h-4 w-4" />
+                                Copiar
+                              </button>
                             </td>
                           </tr>
                         ))}
