@@ -72,6 +72,7 @@ const GET_STORE_CONFIG = gql`
       wompiPublicKey
       ePaycoEnabled
       ePaycoPublicKey
+      isActive
     }
   }
 `;
@@ -123,6 +124,7 @@ const UPDATE_STORE_CONFIG = gql`
       wompiPublicKey
       ePaycoEnabled
       ePaycoPublicKey
+      isActive
       __typename
     }
   }
@@ -567,6 +569,36 @@ export default function StoreSettingsPage() {
                             <option value="America/New_York">New York</option>
                             <option value="Europe/Madrid">Madrid</option>
                           </select>
+                        </div>
+                      </div>
+
+                      <div className="mt-6 pt-6 border-t border-gray-200 dark:border-gray-700">
+                        <div className="flex items-center justify-between">
+                          <div>
+                            <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">
+                              Estado del Emprendimiento
+                            </label>
+                            <p className="text-sm text-gray-500 dark:text-gray-400">
+                              Activa o desactiva tu emprendimiento para que sea visible al público
+                            </p>
+                          </div>
+                          <label className="flex items-center cursor-pointer">
+                            <input
+                              type="checkbox"
+                              name="isActive"
+                              checked={formData.isActive || false}
+                              onChange={(e) =>
+                                setFormData((prev: any) => ({
+                                  ...prev,
+                                  isActive: e.target.checked,
+                                }))
+                              }
+                              className="w-4 h-4 text-fourth-base focus:ring-fourth-base border-gray-300 dark:border-gray-600 rounded bg-white dark:bg-gray-700"
+                            />
+                            <span className="ml-2 text-sm font-medium text-gray-700 dark:text-gray-300">
+                              {formData.isActive ? 'Activo' : 'Inactivo'}
+                            </span>
+                          </label>
                         </div>
                       </div>
                     </div>
