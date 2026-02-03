@@ -123,8 +123,12 @@ export default function ShipmentFormModal({
       if (isEditing && shipment) {
         // Update existing shipment
         const updateData: UpdateShipmentInput = {
+          provider: formData.provider,
           trackingNumber: formData.trackingNumber,
+          shippingCost: parseFloat(formData.shippingCost),
+          totalWeight: parseFloat(formData.totalWeight),
           shippedAt: `${formData.shippedAt}T00:00:00Z`,
+          estimatedDeliveryAt: `${formData.estimatedDeliveryAt}T00:00:00Z`,
           status: formData.status,
           trackingUrl: formData.trackingUrl || undefined,
           notes: formData.notes || undefined,
@@ -199,22 +203,20 @@ export default function ShipmentFormModal({
 
         {/* Form */}
         <form onSubmit={handleSubmit} className="p-6 space-y-6">
-          {/* Proveedor - Only on create */}
-          {!isEditing && (
-            <div>
-              <label className="block text-sm font-medium text-white mb-2">
-                Proveedor de Envío <span className="text-red-500">*</span>
-              </label>
-              <input
-                type="text"
-                value={formData.provider}
-                onChange={(e) => setFormData({ ...formData, provider: e.target.value })}
-                className="w-full px-4 py-2 border border-gray-600 rounded-lg bg-gray-800 text-white focus:ring-2 focus:ring-fourth-base focus:border-transparent"
-                placeholder="Servientrega, Coordinadora, etc."
-                required
-              />
-            </div>
-          )}
+          {/* Proveedor */}
+          <div>
+            <label className="block text-sm font-medium text-white mb-2">
+              Proveedor de Envío <span className="text-red-500">*</span>
+            </label>
+            <input
+              type="text"
+              value={formData.provider}
+              onChange={(e) => setFormData({ ...formData, provider: e.target.value })}
+              className="w-full px-4 py-2 border border-gray-600 rounded-lg bg-gray-800 text-white focus:ring-2 focus:ring-fourth-base focus:border-transparent"
+              placeholder="Servientrega, Coordinadora, etc."
+              required
+            />
+          </div>
 
           {/* Grid for two columns */}
           <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
@@ -254,91 +256,65 @@ export default function ShipmentFormModal({
               </select>
             </div>
 
-            {/* Costo - Only on create */}
-            {!isEditing && (
-              <div>
-                <label className="block text-sm font-medium text-white mb-2">
-                  Costo de Envío (COP) <span className="text-red-500">*</span>
-                </label>
-                <input
-                  type="number"
-                  step="0.01"
-                  value={formData.shippingCost}
-                  onChange={(e) => setFormData({ ...formData, shippingCost: e.target.value })}
-                  className="w-full px-4 py-2 border border-gray-600 rounded-lg bg-gray-800 text-white focus:ring-2 focus:ring-fourth-base focus:border-transparent"
-                  placeholder="15000"
-                  required
-                />
-              </div>
-            )}
+            {/* Costo */}
+            <div>
+              <label className="block text-sm font-medium text-white mb-2">
+                Costo de Envío (COP) <span className="text-red-500">*</span>
+              </label>
+              <input
+                type="number"
+                step="0.01"
+                value={formData.shippingCost}
+                onChange={(e) => setFormData({ ...formData, shippingCost: e.target.value })}
+                className="w-full px-4 py-2 border border-gray-600 rounded-lg bg-gray-800 text-white focus:ring-2 focus:ring-fourth-base focus:border-transparent"
+                placeholder="15000"
+                required
+              />
+            </div>
 
-            {/* Peso - Only on create */}
-            {!isEditing && (
-              <div>
-                <label className="block text-sm font-medium text-white mb-2">
-                  Peso Total (kg) <span className="text-red-500">*</span>
-                </label>
-                <input
-                  type="number"
-                  step="0.01"
-                  value={formData.totalWeight}
-                  onChange={(e) => setFormData({ ...formData, totalWeight: e.target.value })}
-                  className="w-full px-4 py-2 border border-gray-600 rounded-lg bg-gray-800 text-white focus:ring-2 focus:ring-fourth-base focus:border-transparent"
-                  placeholder="2.5"
-                  required
-                />
-              </div>
-            )}
+            {/* Peso */}
+            <div>
+              <label className="block text-sm font-medium text-white mb-2">
+                Peso Total (kg) <span className="text-red-500">*</span>
+              </label>
+              <input
+                type="number"
+                step="0.01"
+                value={formData.totalWeight}
+                onChange={(e) => setFormData({ ...formData, totalWeight: e.target.value })}
+                className="w-full px-4 py-2 border border-gray-600 rounded-lg bg-gray-800 text-white focus:ring-2 focus:ring-fourth-base focus:border-transparent"
+                placeholder="2.5"
+                required
+              />
+            </div>
 
-            {/* Fecha Despacho - Only on create */}
-            {!isEditing && (
-              <div>
-                <label className="block text-sm font-medium text-white mb-2">
-                  Fecha de Despacho <span className="text-red-500">*</span>
-                </label>
-                <input
-                  type="date"
-                  value={formData.shippedAt}
-                  onChange={(e) => setFormData({ ...formData, shippedAt: e.target.value })}
-                  className="w-full px-4 py-2 border border-gray-600 rounded-lg bg-gray-800 text-white focus:ring-2 focus:ring-fourth-base focus:border-transparent"
-                  required
-                />
-              </div>
-            )}
+            {/* Fecha Despacho */}
+            <div>
+              <label className="block text-sm font-medium text-white mb-2">
+                Fecha de Despacho <span className="text-red-500">*</span>
+              </label>
+              <input
+                type="date"
+                value={formData.shippedAt}
+                onChange={(e) => setFormData({ ...formData, shippedAt: e.target.value })}
+                className="w-full px-4 py-2 border border-gray-600 rounded-lg bg-gray-800 text-white focus:ring-2 focus:ring-fourth-base focus:border-transparent"
+                required
+              />
+            </div>
 
-            {/* Fecha Despacho - Editable when editing */}
-            {isEditing && (
-              <div>
-                <label className="block text-sm font-medium text-white mb-2">
-                  Fecha de Despacho <span className="text-red-500">*</span>
-                </label>
-                <input
-                  type="date"
-                  value={formData.shippedAt}
-                  onChange={(e) => setFormData({ ...formData, shippedAt: e.target.value })}
-                  className="w-full px-4 py-2 border border-gray-600 rounded-lg bg-gray-800 text-white focus:ring-2 focus:ring-fourth-base focus:border-transparent"
-                  required
-                />
-              </div>
-            )}
-
-            {/* Fecha Entrega Estimada - Only on create */}
-            {!isEditing && (
-              <div>
-                <label className="block text-sm font-medium text-white mb-2">
-                  Fecha Entrega Estimada <span className="text-red-500">*</span>
-                </label>
-                <input
-                  type="date"
-                  value={formData.estimatedDeliveryAt}
-                  onChange={(e) =>
-                    setFormData({ ...formData, estimatedDeliveryAt: e.target.value })
-                  }
-                  className="w-full px-4 py-2 border border-gray-600 rounded-lg bg-gray-800 text-white focus:ring-2 focus:ring-fourth-base focus:border-transparent"
-                  required
-                />
-              </div>
-            )}
+            {/* Fecha Entrega Estimada */}
+            <div>
+              <label className="block text-sm font-medium text-white mb-2">
+                Fecha Entrega Estimada <span className="text-red-500">*</span>
+              </label>
+              <input
+                type="date"
+                value={formData.estimatedDeliveryAt}
+                onChange={(e) => setFormData({ ...formData, estimatedDeliveryAt: e.target.value })}
+                className="w-full px-4 py-2 border border-gray-600 rounded-lg bg-gray-800 text-white focus:ring-2 focus:ring-fourth-base focus:border-transparent"
+                required
+              />
+            </div>
           </div>
 
           {/* URL Seguimiento */}
