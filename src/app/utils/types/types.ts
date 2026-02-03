@@ -103,9 +103,13 @@ export type CreateShipmentInput = {
 };
 
 export type UpdateShipmentInput = {
-  trackingNumber?: string;
-  shippedAt?: string;
-  status?: ShipmentStatus;
+  provider: string;
+  trackingNumber: string;
+  shippingCost: number;
+  totalWeight: number;
+  shippedAt: string;
+  estimatedDeliveryAt: string;
+  status: ShipmentStatus;
   trackingUrl?: string;
   notes?: string;
 };
