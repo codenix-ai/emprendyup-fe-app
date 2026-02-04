@@ -806,6 +806,138 @@ const EventsPage = () => {
     }
   };
 
+  // Recordatorio WhatsApp
+  const handleSendWhatsAppReminder = async () => {
+    if (selectedIds.length === 0) {
+      toast.error('Selecciona al menos un asistente para el recordatorio.');
+      return;
+    }
+
+    try {
+      const phoneNumbers: string[] = [];
+      const parameters: Record<
+        string,
+        Array<{ type: string; parameter_name: string; text: string }>
+      > = {};
+
+      selectedIds.forEach((id) => {
+        const assistant = assistants.find((a) => a.id === id);
+        if (!assistant) return;
+        let phone = assistant.phone || '';
+        if (!phone.startsWith('+')) phone = `+57${phone}`;
+        phoneNumbers.push(phone);
+        parameters[phone] = [
+          {
+            type: 'text',
+            parameter_name: '1',
+            text: `${assistant.firstName} ${assistant.lastName}`,
+          },
+        ];
+      });
+
+      const payload = {
+        phoneNumbers,
+        templateName: process.env.NEXT_PUBLIC_WS_REMINDER_TEMPLATE_ID,
+        languageCode: 'es',
+        parameters,
+      };
+
+      const res = await fetch(`${process.env.NEXT_PUBLIC_API_URL}/whatsapp/send-bulk`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(payload),
+      });
+
+      if (!res.ok) {
+        const text = await res.text();
+        throw new Error(text || 'Error al enviar recordatorio WhatsApp');
+      }
+
+      toast.success(`Recordatorio WhatsApp enviado (${selectedIds.length})`);
+      setSelectedIds([]);
+    } catch (err) {
+      console.error(err);
+      toast.error('Error al enviar recordatorio WhatsApp');
+    }
+  };
+
+  // Recordatorio Email
+  const handleSendEmailReminder = async () => {
+    if (selectedIds.length === 0) {
+      toast.error('Selecciona al menos un asistente para el recordatorio por email.');
+      return;
+    }
+    try {
+      // Agrupar asistentes por evento y enviar un POST por evento con el formato solicitado
+      const endpoint =
+        (process.env.NEXT_PUBLIC_API_URL || 'http://localhost:4000') +
+        '/mail/send-reminders-emails';
+      const groups: Record<string, { event: any; assistants: EventAssistant[] }> = {};
+
+      selectedIds.forEach((id) => {
+        const assistant = assistants.find((a) => a.id === id);
+        if (!assistant || !assistant.event) return;
+        const evId = assistant.event.id;
+        if (!groups[evId]) groups[evId] = { event: assistant.event, assistants: [] };
+        groups[evId].assistants.push(assistant);
+      });
+
+      let totalSent = 0;
+      const failedEvents: string[] = [];
+
+      for (const evId of Object.keys(groups)) {
+        const { event, assistants: evAssistants } = groups[evId];
+
+        const emails = evAssistants.map((a) => ({
+          email: a.email,
+          firstName: a.firstName,
+          lastName: a.lastName,
+        }));
+
+        const payload = {
+          emails,
+          eventDate: (event as any).startDate || '',
+          dynamicTemplateData: {
+            eventName: (event as any).title || 'Evento',
+          },
+        };
+
+        try {
+          const res = await fetch(endpoint, {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify(payload),
+          });
+
+          if (!res.ok) {
+            console.error(`Failed sending reminders for event ${evId}:`, await res.text());
+            failedEvents.push(evId);
+          } else {
+            totalSent += evAssistants.length;
+          }
+        } catch (e) {
+          console.error(`Request error for event ${evId}:`, e);
+          failedEvents.push(evId);
+        }
+
+        // pequeña pausa entre eventos
+        await new Promise((r) => setTimeout(r, 150));
+      }
+
+      if (failedEvents.length > 0) {
+        toast.error(
+          `Enviados: ${totalSent}. Fallaron eventos: ${failedEvents.length}. Revisa la consola.`
+        );
+      } else {
+        toast.success(`Recordatorio email solicitado para ${totalSent} asistente(s)`);
+        setSelectedIds([]);
+      }
+    } catch (err) {
+      console.error(err);
+      toast.error('Error al enviar recordatorio por email');
+    }
+  };
+
   if (loading) {
     return (
       <div className="min-h-screen bg-gray-50 dark:bg-gray-900 p-4 sm:p-6 flex items-center justify-center">
@@ -1246,25 +1378,43 @@ const EventsPage = () => {
               Gestiona eventos y monitorea los asistentes registrados
             </p>
           </div>
-          <div className="flex items-center gap-3">
+          <div className="flex flex-wrap items-center gap-2">
             {activeTab === 'events' && (
               <button
                 onClick={() => setShowCreateModal(true)}
-                className="bg-green-600 hover:bg-green-700 text-white px-4 py-2 rounded-lg flex items-center gap-2 transition-colors w-fit"
+                className="bg-green-600 hover:bg-green-700 text-white px-3 py-1.5 sm:px-4 sm:py-2 rounded-md flex items-center gap-2 transition-colors whitespace-nowrap text-sm sm:text-base"
               >
-                <Plus className="h-4 w-4" />
+                <Plus className="h-4 w-4 sm:h-5 sm:w-5" />
                 Crear Evento
               </button>
             )}
             {activeTab === 'assistants' && selectedIds.length > 0 && (
-              <button
-                onClick={handleSendWhatsAppCampaign}
-                disabled={isSendingCampaign}
-                className="bg-green-600 hover:bg-green-700 text-white px-4 py-2 rounded-lg flex items-center gap-2 transition-colors w-fit disabled:opacity-50 disabled:cursor-not-allowed"
-              >
-                <Send className="h-4 w-4" />
-                {isSendingCampaign ? 'Enviando...' : `Enviar WhatsApp (${selectedIds.length})`}
-              </button>
+              <>
+                <button
+                  onClick={handleSendWhatsAppReminder}
+                  className="bg-amber-600 hover:bg-amber-700 text-white px-3 py-1.5 sm:px-4 sm:py-2 rounded-md flex items-center gap-2 transition-colors whitespace-nowrap text-sm sm:text-base"
+                >
+                  <MessageCircle className="h-4 w-4 sm:h-5 sm:w-5" />
+                  {`Recordatorio WhatsApp (${selectedIds.length})`}
+                </button>
+
+                <button
+                  onClick={handleSendEmailReminder}
+                  className="bg-indigo-600 hover:bg-indigo-700 text-white px-3 py-1.5 sm:px-4 sm:py-2 rounded-md flex items-center gap-2 transition-colors whitespace-nowrap text-sm sm:text-base"
+                >
+                  <Mail className="h-4 w-4 sm:h-5 sm:w-5" />
+                  {`Recordatorio Email (${selectedIds.length})`}
+                </button>
+
+                <button
+                  onClick={handleSendWhatsAppCampaign}
+                  disabled={isSendingCampaign}
+                  className="bg-green-600 hover:bg-green-700 text-white px-3 py-1.5 sm:px-4 sm:py-2 rounded-md flex items-center gap-2 transition-colors disabled:opacity-50 disabled:cursor-not-allowed whitespace-nowrap text-sm sm:text-base"
+                >
+                  <Send className="h-4 w-4 sm:h-5 sm:w-5" />
+                  {isSendingCampaign ? 'Enviando...' : `Enviar WhatsApp (${selectedIds.length})`}
+                </button>
+              </>
             )}
             <button
               onClick={exportToCSV}
