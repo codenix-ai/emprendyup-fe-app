@@ -2,7 +2,20 @@
 
 import React, { useState, useMemo } from 'react';
 import { gql, useQuery, useMutation } from '@apollo/client';
-import { Search, Send, MessageCircle, Mail, Globe, User, MapPin, Trash2 } from 'lucide-react';
+import {
+  Search,
+  Send,
+  MessageCircle,
+  Mail,
+  Globe,
+  User,
+  MapPin,
+  Trash2,
+  ArrowUpDown,
+  ArrowUp,
+  ArrowDown,
+  Download,
+} from 'lucide-react';
 import toast from 'react-hot-toast';
 
 // 🔹 Query GraphQL
@@ -50,7 +63,12 @@ interface Entrepreneur {
   referralSource?: string;
   website?: string;
   description?: string;
+  identification?: string;
+  createdAt?: string;
 }
+
+type SortField = 'name' | 'createdAt';
+type SortOrder = 'asc' | 'desc';
 
 // 🔹 Función para obtener iniciales
 const getInitials = (name: string): string => {
@@ -68,17 +86,43 @@ const WhatsappCampaignPage = () => {
   const [deleteEntrepreneur] = useMutation(DELETE_ENTREPRENEUR);
   const [searchTerm, setSearchTerm] = useState('');
   const [selectedIds, setSelectedIds] = useState<string[]>([]);
+  const [sortField, setSortField] = useState<SortField>('createdAt');
+  const [sortOrder, setSortOrder] = useState<SortOrder>('desc');
 
   const entrepreneurs: Entrepreneur[] = data?.entrepreneurs || [];
 
-  // 🔸 Filtrado por nombre o email
+  // 🔸 Función para cambiar ordenamiento
+  const handleSort = (field: SortField) => {
+    if (sortField === field) {
+      setSortOrder(sortOrder === 'asc' ? 'desc' : 'asc');
+    } else {
+      setSortField(field);
+      setSortOrder('asc');
+    }
+  };
+
+  // 🔸 Filtrado y ordenamiento
   const filteredEntrepreneurs = useMemo(() => {
-    return entrepreneurs.filter(
+    const filtered = entrepreneurs.filter(
       (e) =>
         e.name.toLowerCase().includes(searchTerm.toLowerCase()) ||
         e.email.toLowerCase().includes(searchTerm.toLowerCase())
     );
-  }, [searchTerm, entrepreneurs]);
+
+    return filtered.sort((a, b) => {
+      let comparison = 0;
+
+      if (sortField === 'name') {
+        comparison = a.name.localeCompare(b.name);
+      } else if (sortField === 'createdAt') {
+        const dateA = a.createdAt ? new Date(a.createdAt).getTime() : 0;
+        const dateB = b.createdAt ? new Date(b.createdAt).getTime() : 0;
+        comparison = dateA - dateB;
+      }
+
+      return sortOrder === 'asc' ? comparison : -comparison;
+    });
+  }, [searchTerm, entrepreneurs, sortField, sortOrder]);
 
   // 🔸 Selección individual o múltiple
   const toggleSelect = (id: string) => {
@@ -202,6 +246,76 @@ const WhatsappCampaignPage = () => {
     }
   };
 
+  // 🔸 Exportar a CSV
+  const handleExportCSV = () => {
+    const dataToExport = filteredEntrepreneurs.length > 0 ? filteredEntrepreneurs : entrepreneurs;
+
+    if (dataToExport.length === 0) {
+      toast.error('No hay emprendedores para exportar');
+      return;
+    }
+
+    // Encabezados del CSV
+    const headers = [
+      'Nombre',
+      'Email',
+      'Teléfono',
+      'Empresa',
+      'Ciudad',
+      'País',
+      'Categoría',
+      'Fuente',
+      'Website',
+      'Descripción',
+      'Identificación',
+      'Fecha Creación',
+    ];
+
+    // Convertir datos a filas CSV (formato simple: solo email y campos opcionales)
+    const rows = dataToExport.map((e) => [
+      e.name || '',
+      e.email || '',
+      e.phone || '',
+      e.companyName || '',
+      e.city || '',
+      e.country || '',
+      e.category || '',
+      e.referralSource || '',
+      e.website || '',
+      (e.description || '').replace(/[\n\r]/g, ' '), // Eliminar saltos de línea
+      e.createdAt ? new Date(e.createdAt).toLocaleDateString('es-ES') : '',
+    ]);
+
+    // Crear contenido CSV: sanitizar comas internas y saltos de línea
+    const csvContent = rows
+      .map((row) =>
+        row
+          .map(
+            (cell) =>
+              String(cell)
+                .replace(/,/g, ' ') // 🔴 IMPORTANTE: eliminar comas internas
+                .replace(/[\n\r]/g, ' ') // eliminar saltos de línea
+          )
+          .join(',')
+      )
+      .join('\n');
+
+    // Crear Blob y descargar
+    const blob = new Blob([csvContent], { type: 'text/csv;charset=utf-8;' });
+    const link = document.createElement('a');
+    const url = URL.createObjectURL(blob);
+
+    link.setAttribute('href', url);
+    link.setAttribute('download', `emprendedores_${new Date().toISOString().split('T')[0]}.csv`);
+    link.style.visibility = 'hidden';
+
+    document.body.appendChild(link);
+    link.click();
+    document.body.removeChild(link);
+
+    toast.success(`Se exportaron ${dataToExport.length} emprendedores`);
+  };
+
   if (loading)
     return (
       <div className="p-8 text-center text-gray-500 dark:text-gray-400">
@@ -215,8 +329,8 @@ const WhatsappCampaignPage = () => {
     );
 
   return (
-    <div className="min-h-screen bg-gray-50 dark:bg-gray-900 p-6">
-      <div className="max-w-7xl mx-auto space-y-6">
+    <div className="min-h-screen bg-gray-50 dark:bg-gray-900">
+      <div className="max-w-full w-full mx-auto space-y-6">
         {/* Header */}
         <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4">
           <div>
@@ -227,13 +341,22 @@ const WhatsappCampaignPage = () => {
               Selecciona emprendedores para enviar mensajes personalizados
             </p>
           </div>
-          <button
-            onClick={handleSendCampaign}
-            className="flex items-center gap-2 bg-green-600 hover:bg-green-700 text-white px-5 py-2 rounded-lg transition-colors"
-          >
-            <Send className="w-4 h-4" />
-            Enviar campaña
-          </button>
+          <div className="flex flex-wrap gap-3">
+            <button
+              onClick={handleExportCSV}
+              className="flex items-center gap-2 bg-blue-600 hover:bg-blue-700 text-white px-5 py-2.5 rounded-lg transition-colors"
+            >
+              <Download className="w-4 h-4" />
+              Exportar CSV
+            </button>
+            <button
+              onClick={handleSendCampaign}
+              className="flex items-center gap-2 bg-green-600 hover:bg-green-700 text-white px-6 py-3 rounded-lg transition-colors"
+            >
+              <Send className="w-5 h-5" />
+              Enviar campaña
+            </button>
+          </div>
         </div>
 
         {/* Search bar */}
@@ -266,8 +389,22 @@ const WhatsappCampaignPage = () => {
                     className="accent-green-600 h-4 w-4"
                   />
                 </th>
-                <th className="px-6 py-4 text-left text-xs font-semibold text-gray-500 dark:text-gray-400 uppercase tracking-wider">
-                  Emprendedor
+                <th
+                  className="px-6 py-4 text-left text-xs font-semibold text-gray-500 dark:text-gray-400 uppercase tracking-wider cursor-pointer hover:bg-gray-200 dark:hover:bg-gray-700 transition-colors"
+                  onClick={() => handleSort('name')}
+                >
+                  <div className="flex items-center gap-2">
+                    Emprendedor
+                    {sortField === 'name' ? (
+                      sortOrder === 'asc' ? (
+                        <ArrowUp className="w-3 h-3" />
+                      ) : (
+                        <ArrowDown className="w-3 h-3" />
+                      )
+                    ) : (
+                      <ArrowUpDown className="w-3 h-3 opacity-50" />
+                    )}
+                  </div>
                 </th>
                 <th className="px-6 py-4 text-left text-xs font-semibold text-gray-500 dark:text-gray-400 uppercase tracking-wider">
                   Email
@@ -281,15 +418,29 @@ const WhatsappCampaignPage = () => {
                 <th className="px-6 py-4 text-left text-xs font-semibold text-gray-500 dark:text-gray-400 uppercase tracking-wider">
                   Ciudad
                 </th>
+                <th
+                  className="px-6 py-4 text-left text-xs font-semibold text-gray-500 dark:text-gray-400 uppercase tracking-wider cursor-pointer hover:bg-gray-200 dark:hover:bg-gray-700 transition-colors"
+                  onClick={() => handleSort('createdAt')}
+                >
+                  <div className="flex items-center gap-2">
+                    Fecha Creación
+                    {sortField === 'createdAt' ? (
+                      sortOrder === 'asc' ? (
+                        <ArrowUp className="w-3 h-3" />
+                      ) : (
+                        <ArrowDown className="w-3 h-3" />
+                      )
+                    ) : (
+                      <ArrowUpDown className="w-3 h-3 opacity-50" />
+                    )}
+                  </div>
+                </th>
                 <th className="px-6 py-4 text-left text-xs font-semibold text-gray-500 dark:text-gray-400 uppercase tracking-wider">
                   Website
                 </th>
-                <th className="px-6 py-4 text-left text-xs font-semibold text-gray-500 dark:text-gray-400 uppercase tracking-wider">
+                {/* <th className="hidden xl:table-cell px-8 py-5 text-left text-sm font-semibold text-gray-500 dark:text-gray-400 uppercase tracking-wider">
                   Descripción
-                </th>
-                <th className="px-6 py-4 text-left text-xs font-semibold text-gray-500 dark:text-gray-400 uppercase tracking-wider">
-                  Acciones
-                </th>
+                </th> */}
               </tr>
             </thead>
             <tbody className="divide-y divide-gray-200 dark:divide-gray-700">
@@ -303,12 +454,24 @@ const WhatsappCampaignPage = () => {
                   }`}
                 >
                   <td className="px-6 py-4">
-                    <input
-                      type="checkbox"
-                      checked={selectedIds.includes(e.id)}
-                      onChange={() => toggleSelect(e.id)}
-                      className="accent-green-600 h-4 w-4"
-                    />
+                    <div className="flex items-center gap-3">
+                      <input
+                        type="checkbox"
+                        checked={selectedIds.includes(e.id)}
+                        onChange={() => toggleSelect(e.id)}
+                        className="accent-green-600 h-4 w-4"
+                      />
+                      <button
+                        onClick={(ev) => {
+                          ev.stopPropagation();
+                          handleDelete(e.id, e.name);
+                        }}
+                        className="text-red-600 hover:text-red-800 dark:text-red-400 dark:hover:text-red-300 transition-colors"
+                        title="Eliminar emprendedor"
+                      >
+                        <Trash2 className="w-4 h-4" />
+                      </button>
+                    </div>
                   </td>
                   <td className="px-6 py-4">
                     <div className="flex items-center gap-3">
@@ -323,9 +486,9 @@ const WhatsappCampaignPage = () => {
                     </div>
                   </td>
                   <td className="px-6 py-4">
-                    <div className="flex items-center gap-2 text-sm text-gray-600 dark:text-gray-300">
-                      <Mail className="w-4 h-4 text-gray-400" />
-                      {e.email}
+                    <div className="flex items-center gap-2 text-sm text-gray-600 dark:text-gray-300 overflow-hidden">
+                      <Mail className="w-4 h-4 text-gray-400 flex-shrink-0" />
+                      <span className="truncate">{e.email}</span>
                     </div>
                   </td>
                   <td className="px-6 py-4">
@@ -339,6 +502,15 @@ const WhatsappCampaignPage = () => {
                   </td>
                   <td className="px-6 py-4 text-sm text-gray-600 dark:text-gray-300">
                     {e.city || 'N/A'}
+                  </td>
+                  <td className="px-6 py-4 text-sm text-gray-600 dark:text-gray-300">
+                    {e.createdAt
+                      ? new Date(e.createdAt).toLocaleDateString('es-ES', {
+                          year: 'numeric',
+                          month: 'short',
+                          day: 'numeric',
+                        })
+                      : 'N/A'}
                   </td>
                   <td className="px-6 py-4">
                     {e.website ? (
@@ -356,23 +528,11 @@ const WhatsappCampaignPage = () => {
                       <span className="text-sm text-gray-400">No disponible</span>
                     )}
                   </td>
-                  <td className="px-6 py-4 text-sm text-gray-600 dark:text-gray-300 max-w-xs">
+                  {/* <td className="hidden xl:table-cell px-6 py-4 text-sm text-gray-600 dark:text-gray-300 max-w-xs">
                     <div className="line-clamp-2" title={e.description}>
                       {e.description || 'Sin descripción'}
                     </div>
-                  </td>
-                  <td className="px-6 py-4">
-                    <button
-                      onClick={(ev) => {
-                        ev.stopPropagation();
-                        handleDelete(e.id, e.name);
-                      }}
-                      className="text-red-600 hover:text-red-800 dark:text-red-400 dark:hover:text-red-300 transition-colors"
-                      title="Eliminar emprendedor"
-                    >
-                      <Trash2 className="w-5 h-5" />
-                    </button>
-                  </td>
+                  </td> */}
                 </tr>
               ))}
             </tbody>
