@@ -318,9 +318,7 @@ export default function OrderPage() {
 
     return (
       <span
-        className={`px-3 py-1 text-xs font-semibold rounded-full border ${
-          estilos[key] || estilos.pending
-        }`}
+        className={`px-3 py-1 text-xs font-semibold rounded-full border ${estilos[key] || estilos.pending}`}
       >
         {labels[key] || estado.charAt(0).toUpperCase() + estado.slice(1)}
       </span>
@@ -402,7 +400,11 @@ export default function OrderPage() {
     );
   }
 
-  if (!storeId) {
+  if (
+    !storeId &&
+    userData.role !== 'ADMIN' &&
+    !(Array.isArray(userData?.roles) && userData.roles.includes('ADMIN'))
+  ) {
     return (
       <div className="space-y-6">
         <div className="bg-yellow-900/20 border border-yellow-700 rounded-lg p-4">
