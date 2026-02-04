@@ -705,6 +705,16 @@ const EventsPage = () => {
     setIsSendingCampaign(true);
 
     try {
+      // Obtener información del usuario logueado
+      const userStr = localStorage.getItem('user');
+      const user = userStr ? JSON.parse(userStr) : null;
+
+      if (!user || (!user.username && !user.name && !user.email)) {
+        toast.error('Error: No se pudo obtener la información del usuario');
+        setIsSendingCampaign(false);
+        return;
+      }
+
       // Construir phoneNumbers y parameters
       const phoneNumbers: string[] = [];
       const parameters: Record<
