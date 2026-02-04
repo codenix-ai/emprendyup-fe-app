@@ -1,8 +1,8 @@
 'use client';
 
 import React, { useState, useMemo } from 'react';
-import { gql, useQuery } from '@apollo/client';
-import { Search, Send, MessageCircle, Mail, Globe, User, MapPin } from 'lucide-react';
+import { gql, useQuery, useMutation } from '@apollo/client';
+import { Search, Send, MessageCircle, Mail, Globe, User, MapPin, Trash2 } from 'lucide-react';
 import toast from 'react-hot-toast';
 
 // 🔹 Query GraphQL
@@ -22,6 +22,17 @@ const GET_ENTREPRENEURS = gql`
       description
       identification
       createdAt
+    }
+  }
+`;
+
+// 🔹 Mutation para eliminar entrepreneur
+const DELETE_ENTREPRENEUR = gql`
+  mutation DeleteEntrepreneur($id: String!) {
+    deleteEntrepreneur(id: $id) {
+      id
+      name
+      email
     }
   }
 `;
@@ -53,7 +64,8 @@ const getInitials = (name: string): string => {
 
 // 🔹 Componente principal
 const WhatsappCampaignPage = () => {
-  const { data, loading, error } = useQuery(GET_ENTREPRENEURS);
+  const { data, loading, error, refetch } = useQuery(GET_ENTREPRENEURS);
+  const [deleteEntrepreneur] = useMutation(DELETE_ENTREPRENEUR);
   const [searchTerm, setSearchTerm] = useState('');
   const [selectedIds, setSelectedIds] = useState<string[]>([]);
 
@@ -169,6 +181,27 @@ const WhatsappCampaignPage = () => {
     }
   };
 
+  const handleDelete = async (id: string, name: string) => {
+    const confirmed = window.confirm(
+      `¿Estás seguro de que deseas eliminar a ${name}? Esta acción no se puede deshacer.`
+    );
+
+    if (!confirmed) return;
+
+    try {
+      await deleteEntrepreneur({
+        variables: { id },
+        refetchQueries: [{ query: GET_ENTREPRENEURS }],
+      });
+
+      toast.success(`${name} ha sido eliminado exitosamente`);
+      refetch();
+    } catch (error) {
+      console.error('Error al eliminar entrepreneur:', error);
+      toast.error('Error al eliminar el emprendedor. Por favor, intenta de nuevo.');
+    }
+  };
+
   if (loading)
     return (
       <div className="p-8 text-center text-gray-500 dark:text-gray-400">
@@ -254,6 +287,9 @@ const WhatsappCampaignPage = () => {
                 <th className="px-6 py-4 text-left text-xs font-semibold text-gray-500 dark:text-gray-400 uppercase tracking-wider">
                   Descripción
                 </th>
+                <th className="px-6 py-4 text-left text-xs font-semibold text-gray-500 dark:text-gray-400 uppercase tracking-wider">
+                  Acciones
+                </th>
               </tr>
             </thead>
             <tbody className="divide-y divide-gray-200 dark:divide-gray-700">
@@ -324,6 +360,18 @@ const WhatsappCampaignPage = () => {
                     <div className="line-clamp-2" title={e.description}>
                       {e.description || 'Sin descripción'}
                     </div>
+                  </td>
+                  <td className="px-6 py-4">
+                    <button
+                      onClick={(ev) => {
+                        ev.stopPropagation();
+                        handleDelete(e.id, e.name);
+                      }}
+                      className="text-red-600 hover:text-red-800 dark:text-red-400 dark:hover:text-red-300 transition-colors"
+                      title="Eliminar emprendedor"
+                    >
+                      <Trash2 className="w-5 h-5" />
+                    </button>
                   </td>
                 </tr>
               ))}
@@ -420,6 +468,19 @@ const WhatsappCampaignPage = () => {
                     </p>
                   </div>
                 )}
+              </div>
+
+              <div className="mt-3 pt-3 border-t border-gray-200 dark:border-gray-700">
+                <button
+                  onClick={(ev) => {
+                    ev.stopPropagation();
+                    handleDelete(e.id, e.name);
+                  }}
+                  className="flex items-center gap-2 text-red-600 hover:text-red-800 dark:text-red-400 dark:hover:text-red-300 transition-colors text-sm font-medium"
+                >
+                  <Trash2 className="w-4 h-4" />
+                  Eliminar
+                </button>
               </div>
             </div>
           ))}
