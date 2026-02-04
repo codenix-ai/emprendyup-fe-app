@@ -415,9 +415,6 @@ const WhatsappCampaignPage = () => {
                 <th className="px-6 py-4 text-left text-xs font-semibold text-gray-500 dark:text-gray-400 uppercase tracking-wider">
                   Empresa
                 </th>
-                <th className="px-6 py-4 text-left text-xs font-semibold text-gray-500 dark:text-gray-400 uppercase tracking-wider">
-                  Ciudad
-                </th>
                 <th
                   className="px-6 py-4 text-left text-xs font-semibold text-gray-500 dark:text-gray-400 uppercase tracking-wider cursor-pointer hover:bg-gray-200 dark:hover:bg-gray-700 transition-colors"
                   onClick={() => handleSort('createdAt')}
@@ -434,6 +431,9 @@ const WhatsappCampaignPage = () => {
                       <ArrowUpDown className="w-3 h-3 opacity-50" />
                     )}
                   </div>
+                </th>
+                <th className="px-6 py-4 text-left text-xs font-semibold text-gray-500 dark:text-gray-400 uppercase tracking-wider">
+                  Ciudad
                 </th>
                 <th className="px-6 py-4 text-left text-xs font-semibold text-gray-500 dark:text-gray-400 uppercase tracking-wider">
                   Website
@@ -501,9 +501,6 @@ const WhatsappCampaignPage = () => {
                     {e.companyName || 'No registrado'}
                   </td>
                   <td className="px-6 py-4 text-sm text-gray-600 dark:text-gray-300">
-                    {e.city || 'N/A'}
-                  </td>
-                  <td className="px-6 py-4 text-sm text-gray-600 dark:text-gray-300">
                     {e.createdAt
                       ? new Date(e.createdAt).toLocaleDateString('es-ES', {
                           year: 'numeric',
@@ -511,6 +508,9 @@ const WhatsappCampaignPage = () => {
                           day: 'numeric',
                         })
                       : 'N/A'}
+                  </td>
+                  <td className="px-6 py-4 text-sm text-gray-600 dark:text-gray-300">
+                    {e.city || 'N/A'}
                   </td>
                   <td className="px-6 py-4">
                     {e.website ? (
