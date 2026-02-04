@@ -374,169 +374,171 @@ const WhatsappCampaignPage = () => {
         </div>
 
         {/* Desktop: Table */}
-        <div className="hidden md:block bg-white dark:bg-gray-800 rounded-xl border border-gray-200 dark:border-gray-700 overflow-hidden">
-          <table className="w-full">
-            <thead className="bg-gray-100 dark:bg-gray-900/40 border-b border-gray-200 dark:border-gray-700">
-              <tr>
-                <th className="px-6 py-4 text-left">
-                  <input
-                    type="checkbox"
-                    checked={
-                      selectedIds.length === filteredEntrepreneurs.length &&
-                      filteredEntrepreneurs.length > 0
-                    }
-                    onChange={toggleSelectAll}
-                    className="accent-green-600 h-4 w-4"
-                  />
-                </th>
-                <th
-                  className="px-6 py-4 text-left text-xs font-semibold text-gray-500 dark:text-gray-400 uppercase tracking-wider cursor-pointer hover:bg-gray-200 dark:hover:bg-gray-700 transition-colors"
-                  onClick={() => handleSort('name')}
-                >
-                  <div className="flex items-center gap-2">
-                    Emprendedor
-                    {sortField === 'name' ? (
-                      sortOrder === 'asc' ? (
-                        <ArrowUp className="w-3 h-3" />
+        <div className="hidden md:block bg-white dark:bg-gray-800 rounded-xl border border-gray-200 dark:border-gray-700">
+          <div className="overflow-x-auto">
+            <table className="min-w-max w-full">
+              <thead className="bg-gray-100 dark:bg-gray-900/40 border-b border-gray-200 dark:border-gray-700">
+                <tr>
+                  <th className="px-6 py-4 text-left">
+                    <input
+                      type="checkbox"
+                      checked={
+                        selectedIds.length === filteredEntrepreneurs.length &&
+                        filteredEntrepreneurs.length > 0
+                      }
+                      onChange={toggleSelectAll}
+                      className="accent-green-600 h-4 w-4"
+                    />
+                  </th>
+                  <th
+                    className="px-6 py-4 text-left text-xs font-semibold text-gray-500 dark:text-gray-400 uppercase tracking-wider cursor-pointer hover:bg-gray-200 dark:hover:bg-gray-700 transition-colors"
+                    onClick={() => handleSort('name')}
+                  >
+                    <div className="flex items-center gap-2">
+                      Emprendedor
+                      {sortField === 'name' ? (
+                        sortOrder === 'asc' ? (
+                          <ArrowUp className="w-3 h-3" />
+                        ) : (
+                          <ArrowDown className="w-3 h-3" />
+                        )
                       ) : (
-                        <ArrowDown className="w-3 h-3" />
-                      )
-                    ) : (
-                      <ArrowUpDown className="w-3 h-3 opacity-50" />
-                    )}
-                  </div>
-                </th>
-                <th className="px-6 py-4 text-left text-xs font-semibold text-gray-500 dark:text-gray-400 uppercase tracking-wider">
-                  Email
-                </th>
-                <th className="px-6 py-4 text-left text-xs font-semibold text-gray-500 dark:text-gray-400 uppercase tracking-wider">
-                  Teléfono
-                </th>
-                <th className="px-6 py-4 text-left text-xs font-semibold text-gray-500 dark:text-gray-400 uppercase tracking-wider">
-                  Empresa
-                </th>
-                <th
-                  className="px-6 py-4 text-left text-xs font-semibold text-gray-500 dark:text-gray-400 uppercase tracking-wider cursor-pointer hover:bg-gray-200 dark:hover:bg-gray-700 transition-colors"
-                  onClick={() => handleSort('createdAt')}
-                >
-                  <div className="flex items-center gap-2">
-                    Fecha Creación
-                    {sortField === 'createdAt' ? (
-                      sortOrder === 'asc' ? (
-                        <ArrowUp className="w-3 h-3" />
-                      ) : (
-                        <ArrowDown className="w-3 h-3" />
-                      )
-                    ) : (
-                      <ArrowUpDown className="w-3 h-3 opacity-50" />
-                    )}
-                  </div>
-                </th>
-                <th className="px-6 py-4 text-left text-xs font-semibold text-gray-500 dark:text-gray-400 uppercase tracking-wider">
-                  Ciudad
-                </th>
-                <th className="px-6 py-4 text-left text-xs font-semibold text-gray-500 dark:text-gray-400 uppercase tracking-wider">
-                  Website
-                </th>
-                {/* <th className="hidden xl:table-cell px-8 py-5 text-left text-sm font-semibold text-gray-500 dark:text-gray-400 uppercase tracking-wider">
-                  Descripción
-                </th> */}
-              </tr>
-            </thead>
-            <tbody className="divide-y divide-gray-200 dark:divide-gray-700">
-              {filteredEntrepreneurs.map((e) => (
-                <tr
-                  key={e.id}
-                  className={`transition-colors ${
-                    selectedIds.includes(e.id)
-                      ? 'bg-green-50 dark:bg-green-900/20'
-                      : 'hover:bg-gray-50 dark:hover:bg-gray-700/30'
-                  }`}
-                >
-                  <td className="px-6 py-4">
-                    <div className="flex items-center gap-3">
-                      <input
-                        type="checkbox"
-                        checked={selectedIds.includes(e.id)}
-                        onChange={() => toggleSelect(e.id)}
-                        className="accent-green-600 h-4 w-4"
-                      />
-                      <button
-                        onClick={(ev) => {
-                          ev.stopPropagation();
-                          handleDelete(e.id, e.name);
-                        }}
-                        className="text-red-600 hover:text-red-800 dark:text-red-400 dark:hover:text-red-300 transition-colors"
-                        title="Eliminar emprendedor"
-                      >
-                        <Trash2 className="w-4 h-4" />
-                      </button>
+                        <ArrowUpDown className="w-3 h-3 opacity-50" />
+                      )}
                     </div>
-                  </td>
-                  <td className="px-6 py-4">
-                    <div className="flex items-center gap-3">
-                      <div className="flex-shrink-0 h-10 w-10 bg-blue-100 dark:bg-blue-900 rounded-full flex items-center justify-center">
-                        <span className="text-sm font-medium text-blue-800 dark:text-blue-200">
-                          {getInitials(e.name)}
+                  </th>
+                  <th className="px-6 py-4 text-left text-xs font-semibold text-gray-500 dark:text-gray-400 uppercase tracking-wider">
+                    Email
+                  </th>
+                  <th className="px-6 py-4 text-left text-xs font-semibold text-gray-500 dark:text-gray-400 uppercase tracking-wider">
+                    Teléfono
+                  </th>
+                  <th className="px-6 py-4 text-left text-xs font-semibold text-gray-500 dark:text-gray-400 uppercase tracking-wider">
+                    Empresa
+                  </th>
+                  <th
+                    className="px-6 py-4 text-left text-xs font-semibold text-gray-500 dark:text-gray-400 uppercase tracking-wider cursor-pointer hover:bg-gray-200 dark:hover:bg-gray-700 transition-colors"
+                    onClick={() => handleSort('createdAt')}
+                  >
+                    <div className="flex items-center gap-2">
+                      Fecha Creación
+                      {sortField === 'createdAt' ? (
+                        sortOrder === 'asc' ? (
+                          <ArrowUp className="w-3 h-3" />
+                        ) : (
+                          <ArrowDown className="w-3 h-3" />
+                        )
+                      ) : (
+                        <ArrowUpDown className="w-3 h-3 opacity-50" />
+                      )}
+                    </div>
+                  </th>
+                  <th className="px-6 py-4 text-left text-xs font-semibold text-gray-500 dark:text-gray-400 uppercase tracking-wider">
+                    Ciudad
+                  </th>
+                  <th className="px-6 py-4 text-left text-xs font-semibold text-gray-500 dark:text-gray-400 uppercase tracking-wider">
+                    Website
+                  </th>
+                  <th className="hidden xl:table-cell px-8 py-5 text-left text-sm font-semibold text-gray-500 dark:text-gray-400 uppercase tracking-wider">
+                    Descripción
+                  </th>
+                </tr>
+              </thead>
+              <tbody className="divide-y divide-gray-200 dark:divide-gray-700">
+                {filteredEntrepreneurs.map((e) => (
+                  <tr
+                    key={e.id}
+                    className={`transition-colors ${
+                      selectedIds.includes(e.id)
+                        ? 'bg-green-50 dark:bg-green-900/20'
+                        : 'hover:bg-gray-50 dark:hover:bg-gray-700/30'
+                    }`}
+                  >
+                    <td className="px-6 py-4">
+                      <div className="flex items-center gap-3">
+                        <input
+                          type="checkbox"
+                          checked={selectedIds.includes(e.id)}
+                          onChange={() => toggleSelect(e.id)}
+                          className="accent-green-600 h-4 w-4"
+                        />
+                        <button
+                          onClick={(ev) => {
+                            ev.stopPropagation();
+                            handleDelete(e.id, e.name);
+                          }}
+                          className="text-red-600 hover:text-red-800 dark:text-red-400 dark:hover:text-red-300 transition-colors"
+                          title="Eliminar emprendedor"
+                        >
+                          <Trash2 className="w-4 h-4" />
+                        </button>
+                      </div>
+                    </td>
+                    <td className="px-6 py-4">
+                      <div className="flex items-center gap-3">
+                        <div className="flex-shrink-0 h-10 w-10 bg-blue-100 dark:bg-blue-900 rounded-full flex items-center justify-center">
+                          <span className="text-sm font-medium text-blue-800 dark:text-blue-200">
+                            {getInitials(e.name)}
+                          </span>
+                        </div>
+                        <span className="text-sm font-medium text-gray-900 dark:text-white">
+                          {e.name}
                         </span>
                       </div>
-                      <span className="text-sm font-medium text-gray-900 dark:text-white">
-                        {e.name}
-                      </span>
-                    </div>
-                  </td>
-                  <td className="px-6 py-4">
-                    <div className="flex items-center gap-2 text-sm text-gray-600 dark:text-gray-300 overflow-hidden">
-                      <Mail className="w-4 h-4 text-gray-400 flex-shrink-0" />
-                      <span className="truncate">{e.email}</span>
-                    </div>
-                  </td>
-                  <td className="px-6 py-4">
-                    <div className="flex items-center gap-2 text-sm text-gray-600 dark:text-gray-300">
-                      <MessageCircle className="w-4 h-4 text-gray-400" />
-                      {e.phone || 'No registrado'}
-                    </div>
-                  </td>
-                  <td className="px-6 py-4 text-sm text-gray-600 dark:text-gray-300">
-                    {e.companyName || 'No registrado'}
-                  </td>
-                  <td className="px-6 py-4 text-sm text-gray-600 dark:text-gray-300">
-                    {e.createdAt
-                      ? new Date(e.createdAt).toLocaleDateString('es-ES', {
-                          year: 'numeric',
-                          month: 'short',
-                          day: 'numeric',
-                        })
-                      : 'N/A'}
-                  </td>
-                  <td className="px-6 py-4 text-sm text-gray-600 dark:text-gray-300">
-                    {e.city || 'N/A'}
-                  </td>
-                  <td className="px-6 py-4">
-                    {e.website ? (
-                      <a
-                        href={e.website}
-                        target="_blank"
-                        rel="noopener noreferrer"
-                        className="flex items-center gap-2 text-sm text-blue-600 dark:text-blue-400 hover:underline"
-                        onClick={(ev) => ev.stopPropagation()}
-                      >
-                        <Globe className="w-4 h-4" />
-                        Ver sitio
-                      </a>
-                    ) : (
-                      <span className="text-sm text-gray-400">No disponible</span>
-                    )}
-                  </td>
-                  {/* <td className="hidden xl:table-cell px-6 py-4 text-sm text-gray-600 dark:text-gray-300 max-w-xs">
-                    <div className="line-clamp-2" title={e.description}>
-                      {e.description || 'Sin descripción'}
-                    </div>
-                  </td> */}
-                </tr>
-              ))}
-            </tbody>
-          </table>
+                    </td>
+                    <td className="px-6 py-4">
+                      <div className="flex items-center gap-2 text-sm text-gray-600 dark:text-gray-300 overflow-hidden">
+                        <Mail className="w-4 h-4 text-gray-400 flex-shrink-0" />
+                        <span className="truncate">{e.email}</span>
+                      </div>
+                    </td>
+                    <td className="px-6 py-4">
+                      <div className="flex items-center gap-2 text-sm text-gray-600 dark:text-gray-300">
+                        <MessageCircle className="w-4 h-4 text-gray-400" />
+                        {e.phone || 'No registrado'}
+                      </div>
+                    </td>
+                    <td className="px-6 py-4 text-sm text-gray-600 dark:text-gray-300">
+                      {e.companyName || 'No registrado'}
+                    </td>
+                    <td className="px-6 py-4 text-sm text-gray-600 dark:text-gray-300">
+                      {e.createdAt
+                        ? new Date(e.createdAt).toLocaleDateString('es-ES', {
+                            year: 'numeric',
+                            month: 'short',
+                            day: 'numeric',
+                          })
+                        : 'N/A'}
+                    </td>
+                    <td className="px-6 py-4 text-sm text-gray-600 dark:text-gray-300">
+                      {e.city || 'N/A'}
+                    </td>
+                    <td className="px-6 py-4">
+                      {e.website ? (
+                        <a
+                          href={e.website}
+                          target="_blank"
+                          rel="noopener noreferrer"
+                          className="flex items-center gap-2 text-sm text-blue-600 dark:text-blue-400 hover:underline"
+                          onClick={(ev) => ev.stopPropagation()}
+                        >
+                          <Globe className="w-4 h-4" />
+                          Ver sitio
+                        </a>
+                      ) : (
+                        <span className="text-sm text-gray-400">No disponible</span>
+                      )}
+                    </td>
+                    <td className="hidden xl:table-cell px-6 py-4 text-sm text-gray-600 dark:text-gray-300 max-w-xs">
+                      <div className="line-clamp-2" title={e.description}>
+                        {e.description || 'Sin descripción'}
+                      </div>
+                    </td>
+                  </tr>
+                ))}
+              </tbody>
+            </table>
+          </div>
 
           {filteredEntrepreneurs.length === 0 && (
             <div className="p-8 text-center text-gray-500 dark:text-gray-400">
