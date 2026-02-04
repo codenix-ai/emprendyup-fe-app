@@ -160,12 +160,6 @@ const getServiceNavigationGroups = () => {
         { name: 'Mi suscripción', href: '/dashboard/plans', icon: Layers },
       ],
     },
-    {
-      name: 'Pagos',
-      icon: CreditCard,
-      href: '/dashboard/payments',
-      isSingle: true,
-    },
   ];
 };
 
@@ -193,12 +187,6 @@ const getRestaurantNavigationGroups = () => {
         { name: 'Bonos', href: '/dashboard/bonuses', icon: Gift },
         { name: 'Mi suscripción', href: '/dashboard/plans', icon: Layers },
       ],
-    },
-    {
-      name: 'Pagos',
-      icon: CreditCard,
-      href: '/dashboard/payments',
-      isSingle: true,
     },
   ];
 };
