@@ -390,6 +390,7 @@ const EventsPage = () => {
     message: string;
     type: 'success' | 'error';
   } | null>(null);
+  const [customParameter2, setCustomParameter2] = useState('4');
   const [formData, setFormData] = useState({
     title: '',
     description: '',
@@ -831,6 +832,11 @@ const EventsPage = () => {
             type: 'text',
             parameter_name: '1',
             text: `${assistant.firstName} ${assistant.lastName}`,
+          },
+          {
+            type: 'text',
+            parameter_name: '2',
+            text: customParameter2,
           },
         ];
       });
@@ -1390,13 +1396,15 @@ const EventsPage = () => {
             )}
             {activeTab === 'assistants' && selectedIds.length > 0 && (
               <>
-                <button
-                  onClick={handleSendWhatsAppReminder}
-                  className="bg-amber-600 hover:bg-amber-700 text-white px-3 py-1.5 sm:px-4 sm:py-2 rounded-md flex items-center gap-2 transition-colors whitespace-nowrap text-sm sm:text-base"
-                >
-                  <MessageCircle className="h-4 w-4 sm:h-5 sm:w-5" />
-                  {`Recordatorio WhatsApp (${selectedIds.length})`}
-                </button>
+                <div className="flex items-center gap-2">
+                  <button
+                    onClick={handleSendWhatsAppReminder}
+                    className="bg-amber-600 hover:bg-amber-700 text-white px-3 py-1.5 sm:px-4 sm:py-2 rounded-md flex items-center gap-2 transition-colors whitespace-nowrap text-sm sm:text-base"
+                  >
+                    <MessageCircle className="h-4 w-4 sm:h-5 sm:w-5" />
+                    {`Recordatorio WhatsApp (${selectedIds.length})`}
+                  </button>
+                </div>
 
                 <button
                   onClick={handleSendEmailReminder}

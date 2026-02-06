@@ -12,6 +12,7 @@ import {
   ChevronRight,
   MoreVertical,
   Copy,
+  Upload,
 } from 'lucide-react';
 import { gql, useMutation, useQuery } from '@apollo/client';
 import { CreateProductInput, Product } from '@/app/utils/types/Product';
@@ -596,13 +597,22 @@ export default function ProductsPage() {
           <h3 className="text-lg font-semibold text-white">Gestión de Productos</h3>
           <p className="text-sm text-gray-400">Administra el catálogo de productos de tu tienda</p>
         </div>
-        <button
-          onClick={handleCreateProduct}
-          className="text-white px-4 py-2 rounded-lg flex items-center justify-center font-medium shadow-sm hover:shadow-md transition-all duration-200 bg-slate-700 hover:bg-slate-600"
-        >
-          <Plus className="w-4 h-4 mr-2" />
-          Nuevo Producto
-        </button>
+        <div className="flex gap-3">
+          <button
+            onClick={() => (window.location.href = '/dashboard/products/import')}
+            className="text-white px-4 py-2 rounded-lg flex items-center justify-center font-medium shadow-sm hover:shadow-md transition-all duration-200 bg-purple-700 hover:bg-purple-600"
+          >
+            <Upload className="w-4 h-4 mr-2" />
+            Importar CSV
+          </button>
+          <button
+            onClick={handleCreateProduct}
+            className="text-white px-4 py-2 rounded-lg flex items-center justify-center font-medium shadow-sm hover:shadow-md transition-all duration-200 bg-slate-700 hover:bg-slate-600"
+          >
+            <Plus className="w-4 h-4 mr-2" />
+            Nuevo Producto
+          </button>
+        </div>
       </div>
 
       {/* Search and Actions */}

@@ -124,13 +124,6 @@ const productsQuestions = [
     optional: true,
   },
   {
-    text: 'Elige un color de acento (para botones y elementos destacados):',
-    field: 'accentColor',
-    type: 'color' as const,
-    validation: { type: 'text' as const, required: false },
-    optional: true,
-  },
-  {
     text: '📱 ¿Cuál es tu número de celular?',
     field: 'phone',
     type: 'text' as const,
