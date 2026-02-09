@@ -815,6 +815,15 @@ const EventsPage = () => {
     }
 
     try {
+      const getDaysUntil = (dateString: string) => {
+        if (!dateString) return 0;
+        const target = new Date(dateString);
+        if (Number.isNaN(target.getTime())) return 0;
+        const diffMs = target.getTime() - Date.now();
+        const days = Math.ceil(diffMs / (1000 * 60 * 60 * 24));
+        return Math.max(0, days);
+      };
+
       const phoneNumbers: string[] = [];
       const parameters: Record<
         string,
@@ -827,6 +836,7 @@ const EventsPage = () => {
         let phone = assistant.phone || '';
         if (!phone.startsWith('+')) phone = `+57${phone}`;
         phoneNumbers.push(phone);
+        const daysUntilEvent = getDaysUntil(assistant.event?.startDate || '');
         parameters[phone] = [
           {
             type: 'text',
@@ -836,7 +846,7 @@ const EventsPage = () => {
           {
             type: 'text',
             parameter_name: '2',
-            text: customParameter2,
+            text: `${daysUntilEvent}`,
           },
         ];
       });
