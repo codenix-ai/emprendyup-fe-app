@@ -17,6 +17,7 @@ import {
   Info,
   ShieldCheck,
   X,
+  MessageCircle,
 } from 'lucide-react';
 import Image from 'next/image';
 import DetailsStore from '@/app/components/Detalles';
@@ -24,6 +25,7 @@ import FileUpload from '@/app/components/FileUpload';
 import toast from 'react-hot-toast';
 import RichTextEditor from '@/app/components/blog/RichTextEditor';
 import PaymentConfiguration from '@/app/components/PaymentConfiguration';
+import WhatsAppSalesAgentSettings from '@/app/components/WhatsAppSalesAgentSettings';
 
 const GET_STORE_CONFIG = gql`
   query GetStore($storeId: String!) {
@@ -365,6 +367,7 @@ export default function StoreSettingsPage() {
     { id: 'general', label: 'General', icon: Settings },
     { id: 'brand', label: 'Marca', icon: Palette },
     { id: 'business', label: 'Negocio', icon: Building },
+    { id: 'whatsapp-agent', label: 'WhatsApp Agent', icon: MessageCircle },
     { id: 'payments', label: 'Pagos', icon: CreditCard },
     { id: 'shipping', label: 'Envíos', icon: Truck },
     { id: 'seo', label: 'SEO', icon: Search },
@@ -944,6 +947,26 @@ export default function StoreSettingsPage() {
                           />
                         </div>
                       </div>
+                    </div>
+                  </div>
+                </div>
+              )}
+
+              {/* WhatsApp Sales Agent Tab */}
+              {activeTab === 'whatsapp-agent' && (
+                <div className="space-y-6">
+                  <div>
+                    <h2 className="text-xl font-semibold text-gray-900 dark:text-white mb-6">
+                      WhatsApp Sales Agent
+                    </h2>
+
+                    <div className="space-y-6">
+                      <WhatsAppSalesAgentSettings
+                        storeId={urlStoreId}
+                        storeName={formData.name}
+                        currency={formData.currency}
+                        defaultWhatsappNumber={formData.whatsappNumber}
+                      />
                     </div>
                   </div>
                 </div>
