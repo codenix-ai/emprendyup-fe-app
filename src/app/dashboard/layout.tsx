@@ -86,6 +86,12 @@ const adminNavigationGroups = [
     ],
   },
   {
+    name: 'Ferias',
+    icon: Calendar,
+    href: '/dashboard/fairs',
+    isSingle: true,
+  },
+  {
     name: 'Pagos',
     icon: CreditCard,
     href: '/dashboard/payments',
@@ -126,6 +132,12 @@ const getStoreNavigationGroups = () => {
       ],
     },
     {
+      name: 'Ferias',
+      icon: Calendar,
+      href: '/dashboard/fairs',
+      isSingle: true,
+    },
+    {
       name: 'Pagos',
       icon: CreditCard,
       href: '/dashboard/payments',
@@ -160,6 +172,12 @@ const getServiceNavigationGroups = () => {
         { name: 'Mi suscripción', href: '/dashboard/plans', icon: Layers },
       ],
     },
+    {
+      name: 'Ferias',
+      icon: Calendar,
+      href: '/dashboard/fairs',
+      isSingle: true,
+    },
   ];
 };
 
@@ -187,6 +205,12 @@ const getRestaurantNavigationGroups = () => {
         { name: 'Bonos', href: '/dashboard/bonuses', icon: Gift },
         { name: 'Mi suscripción', href: '/dashboard/plans', icon: Layers },
       ],
+    },
+    {
+      name: 'Ferias',
+      icon: Calendar,
+      href: '/dashboard/fairs',
+      isSingle: true,
     },
   ];
 };
