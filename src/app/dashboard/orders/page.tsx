@@ -10,6 +10,9 @@ import {
   ChevronRight,
   Package,
   Truck,
+  CreditCard,
+  DollarSign,
+  Wallet,
 } from 'lucide-react';
 import { Order } from '@/lib/schemas/dashboard';
 import { useDashboardUIStore } from '@/lib/store/dashboard';
@@ -18,6 +21,7 @@ import { useSessionStore } from '@/lib/store/dashboard';
 import { useParams } from 'next/navigation';
 import ShipmentFormModal from '@/app/components/ShipmentFormModal';
 import { Shipment } from '@/app/utils/types/types';
+import { GET_PAYMENTS } from '@/lib/graphql/queries';
 
 const GET_ORDERS_BY_STORE = gql`
   query OrdersByStore($storeId: String!) {
@@ -121,6 +125,7 @@ export default function OrderPage() {
   const [pedidosFiltrados, setPedidosFiltrados] = useState<Order[]>([]);
   const [busqueda, setBusqueda] = useState('');
   const [filtroEstado, setFiltroEstado] = useState('all');
+  const [filtroProveedor, setFiltroProveedor] = useState('all');
   const [currentPage, setCurrentPage] = useState(1);
   const [expandedOrders, setExpandedOrders] = useState<Set<string>>(new Set());
   const [shipmentModalOpen, setShipmentModalOpen] = useState(false);
@@ -173,6 +178,19 @@ export default function OrderPage() {
     loading: shipmentsLoading,
     refetch: refetchShipments,
   } = useQuery(GET_ALL_SHIPMENTS, {
+    fetchPolicy: 'network-only',
+  });
+
+  // Fetch payments data
+  const {
+    data: paymentsData,
+    loading: paymentsLoading,
+    error: paymentsError,
+  } = useQuery(GET_PAYMENTS, {
+    variables: {
+      pagination: { skip: 0, take: 100 },
+    },
+    skip: !storeId && !isAdmin,
     fetchPolicy: 'network-only',
   });
 
@@ -252,6 +270,36 @@ export default function OrderPage() {
     }
   }, [data, storeId, isAdmin]);
 
+  // Get unique providers from payments data
+  const uniqueProviders = React.useMemo(() => {
+    if (!paymentsData?.payments) return [];
+    const methods = new Set<string>();
+    const paymentsList = paymentsData.payments.filter((p: any) =>
+      storeId ? p.store?.id === storeId : true
+    );
+    paymentsList.forEach((payment: any) => {
+      if (payment.provider) {
+        methods.add(payment.provider);
+      }
+    });
+    return Array.from(methods);
+  }, [paymentsData, storeId]);
+
+  // Create a map of orderId to provider
+  const orderProviderMap = React.useMemo(() => {
+    if (!paymentsData?.payments) return new Map<string, string>();
+    const map = new Map<string, string>();
+    const paymentsList = paymentsData.payments.filter((p: any) =>
+      storeId ? p.store?.id === storeId : true
+    );
+    paymentsList.forEach((payment: any) => {
+      if (payment.order?.id && payment.provider) {
+        map.set(payment.order.id, payment.provider);
+      }
+    });
+    return map;
+  }, [paymentsData, storeId]);
+
   useEffect(() => {
     let filtrados = pedidos;
 
@@ -268,9 +316,16 @@ export default function OrderPage() {
       filtrados = filtrados.filter((order) => order.status === filtroEstado);
     }
 
+    if (filtroProveedor !== 'all') {
+      filtrados = filtrados.filter((order) => {
+        const provider = orderProviderMap.get(order.id);
+        return provider === filtroProveedor;
+      });
+    }
+
     setPedidosFiltrados(filtrados);
     setCurrentPage(1);
-  }, [pedidos, busqueda, filtroEstado]);
+  }, [pedidos, busqueda, filtroEstado, filtroProveedor, orderProviderMap]);
 
   const totalPages =
     isAdmin && adminData?.paginatedOrders?.total
@@ -463,6 +518,61 @@ export default function OrderPage() {
             <option value="delivered">Entregado</option>
             <option value="cancelled">Cancelado</option>
           </select>
+        </div>
+      </div>
+
+      {/* Payment Method Tabs (simple, below search) */}
+      <div className="mt-4">
+        <div className="bg-transparent rounded-lg">
+          <div className="flex items-center space-x-6 overflow-auto scrollbar-hide">
+            <button
+              onClick={() => setFiltroProveedor('all')}
+              className={`relative pb-3 text-sm font-medium transition-colors whitespace-nowrap ${
+                filtroProveedor === 'all' ? 'text-fourth-base' : 'text-gray-400'
+              }`}
+            >
+              <span>Todos</span>
+              <span
+                className={`absolute left-0 right-0 mx-auto bottom-0 h-0.5 rounded-full transition-all ${
+                  filtroProveedor === 'all' ? 'bg-fourth-base w-10' : 'bg-transparent w-0'
+                }`}
+              />
+            </button>
+
+            {uniqueProviders.map((provider) => {
+              const count = pedidos.filter(
+                (order) => orderProviderMap.get(order.id) === provider
+              ).length;
+
+              const label = (p: string) => {
+                const map: Record<string, string> = {
+                  woompi: 'Wompi',
+                  mercadopago: 'MercadoPago',
+                  epayco: 'ePayco',
+                };
+                return map[p.toLowerCase()] || p;
+              };
+
+              return (
+                <button
+                  key={provider}
+                  onClick={() => setFiltroProveedor(provider)}
+                  className={`relative pb-3 text-sm font-medium transition-colors whitespace-nowrap ${
+                    filtroProveedor === provider ? 'text-fourth-base' : 'text-gray-400'
+                  }`}
+                >
+                  <span>
+                    {label(provider)} {count > 0 ? `(${count})` : ''}
+                  </span>
+                  <span
+                    className={`absolute left-0 right-0 mx-auto bottom-0 h-0.5 rounded-full transition-all ${
+                      filtroProveedor === provider ? 'bg-fourth-base w-10' : 'bg-transparent w-0'
+                    }`}
+                  />
+                </button>
+              );
+            })}
+          </div>
         </div>
       </div>
 
