@@ -274,6 +274,51 @@ export const UPDATE_PAYMENT_CONFIGURATION = gql`
   }
 `;
 
+// WhatsApp Sales Agent Config
+export const GET_WHATSAPP_SALES_AGENT_CONFIG = gql`
+  query GetWhatsAppSalesAgentConfig($entityType: EntityType!, $entityId: String!) {
+    getWhatsAppSalesAgentConfig(entityType: $entityType, entityId: $entityId) {
+      id
+      entityType
+      entityId
+      whatsappNumber
+      catalogUrl
+      systemPrompt
+      promptVersion
+      isActive
+      updatedAt
+    }
+  }
+`;
+
+export const UPSERT_WHATSAPP_SALES_AGENT_CONFIG = gql`
+  mutation UpsertWhatsAppSalesAgentConfig(
+    $entityType: EntityType!
+    $entityId: String!
+    $whatsappNumber: String!
+    $catalogUrl: String!
+    $systemPrompt: String!
+    $isActive: Boolean
+  ) {
+    upsertWhatsAppSalesAgentConfig(
+      entityType: $entityType
+      entityId: $entityId
+      whatsappNumber: $whatsappNumber
+      catalogUrl: $catalogUrl
+      systemPrompt: $systemPrompt
+      isActive: $isActive
+    ) {
+      id
+      whatsappNumber
+      catalogUrl
+      systemPrompt
+      promptVersion
+      isActive
+      updatedAt
+    }
+  }
+`;
+
 export const UPDATE_ORDER = gql`
   mutation UpdateOrder($id: ID!, $input: UpdateOrderStatusInput!) {
     updateOrder(id: $id, input: $input) {
