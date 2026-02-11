@@ -16,8 +16,10 @@ import {
 } from 'lucide-react';
 import { gql, useMutation, useQuery } from '@apollo/client';
 import { CreateProductInput, Product } from '@/app/utils/types/Product';
+import { useSearchProducts } from '@/lib/hooks/useSearchProducts';
 import toast from 'react-hot-toast';
 import { ProductFormWizard } from '@/app/components/Product/ProductFromWizard';
+import Image from 'next/image';
 
 // GraphQL Queries and Mutations
 const GET_PRODUCTS_BY_STORE = gql`
@@ -307,6 +309,16 @@ export default function ProductsPage() {
   const [deleteProducts, { loading: deletingMultiple }] = useMutation(DELETE_PRODUCTS);
   const [duplicateProduct, { loading: duplicating }] = useMutation(DUPLICATE_PRODUCT);
 
+  // Use server-side search hook when the search term has 2+ characters
+  const {
+    products: searchedProducts,
+    page: searchPage,
+    pageSize: searchPageSize,
+    total: searchTotal,
+    totalPages: searchTotalPages,
+    loading: searchLoading,
+  } = useSearchProducts(searchTerm, currentPage, pageSize);
+
   if (!productsData) {
     return null;
   }
@@ -320,10 +332,17 @@ export default function ProductsPage() {
     : productsData?.productsByStore?.total || 0;
   const totalPages = Math.ceil(totalProducts / pageSize) || 1;
 
-  const filteredProducts = products.filter(
-    (product: Product) =>
-      product.name.toLowerCase().includes(searchTerm.toLowerCase()) ||
-      product.title.toLowerCase().includes(searchTerm.toLowerCase())
+  const searchActive = (searchTerm || '').trim().length >= 2;
+
+  const displayedProducts = searchActive ? searchedProducts : products;
+  const displayedTotal = searchActive ? searchTotal : totalProducts;
+  const displayedTotalPages = searchActive ? searchTotalPages : totalPages;
+  const displayedLoading = searchActive ? searchLoading : loadingProducts;
+
+  const filteredProducts = displayedProducts.filter(
+    (product) =>
+      product.name?.toLowerCase().includes(searchTerm.toLowerCase()) ||
+      product.title?.toLowerCase().includes(searchTerm.toLowerCase())
   );
 
   // Colors from store - usando slate-900 como color principal
@@ -567,7 +586,9 @@ export default function ProductsPage() {
 
   const toggleSelectAll = () => {
     setSelectedProducts((prev) =>
-      prev.length === filteredProducts.length ? [] : filteredProducts.map((p: Product) => p.id)
+      prev.length === filteredProducts.length
+        ? []
+        : (filteredProducts as Product[]).map((p) => p.id)
     );
   };
 
@@ -673,7 +694,7 @@ export default function ProductsPage() {
       )}
 
       {/* Products Table/Cards */}
-      {loadingProducts ? (
+      {displayedLoading ? (
         <div className="text-center py-12">
           <div className="w-8 h-8 border-2 border-gray-600 border-t-slate-400 rounded-full animate-spin mx-auto mb-4" />
           <p className="text-gray-400">Cargando productos...</p>
@@ -715,7 +736,7 @@ export default function ProductsPage() {
                   </tr>
                 </thead>
                 <tbody className="bg-gray-800 divide-y divide-gray-700">
-                  {filteredProducts.map((product: Product) => (
+                  {filteredProducts.map((product) => (
                     <tr key={product.id} className="hover:bg-gray-700 transition-colors">
                       <td className="px-6 py-4">
                         <input
@@ -728,10 +749,12 @@ export default function ProductsPage() {
                       <td className="px-6 py-4">
                         <div className="flex items-center">
                           <div className="flex-shrink-0 w-12 h-12">
-                            {product.images.length > 0 ? (
-                              <img
-                                src={`https://emprendyup-images.s3.us-east-1.amazonaws.com/${product.images[0].url}`}
+                            {product.images && product.images.length > 0 ? (
+                              <Image
+                                src={`https://emprendyup-images.s3.us-east-1.amazonaws.com/${product?.images[0].url}`}
                                 alt={product.name}
+                                width={32}
+                                height={32}
                                 className="w-12 h-12 rounded-xl object-cover shadow-sm"
                                 style={{
                                   border: `2px solid ${primaryColor}40`,
@@ -812,7 +835,7 @@ export default function ProductsPage() {
 
           {/* Mobile Cards */}
           <div className="md:hidden space-y-3">
-            {filteredProducts.map((product: Product) => (
+            {filteredProducts.map((product) => (
               <div
                 key={product.id}
                 className="bg-gray-800 border border-gray-700 rounded-xl p-4 shadow-sm"
@@ -838,10 +861,12 @@ export default function ProductsPage() {
 
                     {/* Image */}
                     <div className="flex-shrink-0">
-                      {product.images.length > 0 ? (
-                        <img
+                      {product.images && product.images.length > 0 ? (
+                        <Image
                           src={`https://emprendyup-images.s3.us-east-1.amazonaws.com/${product.images[0].url}`}
                           alt={product.name}
+                          width={64}
+                          height={64}
                           className="w-16 h-16 rounded-lg object-cover shadow-sm"
                           style={{ border: `2px solid ${primaryColor}40` }}
                         />
@@ -961,7 +986,7 @@ export default function ProductsPage() {
       )}
 
       {/* Pagination */}
-      {!loadingProducts && totalProducts > 0 && (
+      {!displayedLoading && displayedTotal > 0 && (
         <div className="bg-gray-800 border border-gray-700 rounded-xl px-4 py-3 sm:px-6 shadow-sm">
           <div className="flex flex-1 justify-between sm:hidden">
             <button
@@ -972,11 +997,11 @@ export default function ProductsPage() {
               Anterior
             </button>
             <span className="text-sm text-gray-300 flex items-center">
-              Página {currentPage} de {totalPages}
+              Página {currentPage} de {displayedTotalPages}
             </span>
             <button
               onClick={() => handlePageChange(currentPage + 1)}
-              disabled={currentPage === totalPages}
+              disabled={currentPage === displayedTotalPages}
               className="relative inline-flex items-center rounded-lg border border-gray-600 bg-gray-800 px-4 py-2 text-sm font-medium text-gray-300 hover:bg-gray-700 disabled:opacity-50 disabled:cursor-not-allowed"
             >
               Siguiente
@@ -988,9 +1013,9 @@ export default function ProductsPage() {
               <p className="text-sm text-gray-300">
                 Mostrando{' '}
                 <span className="font-medium">
-                  {Math.min(currentPage * pageSize, totalProducts)}
+                  {Math.min(currentPage * pageSize, displayedTotal)}
                 </span>{' '}
-                de <span className="font-medium">{totalProducts}</span> productos
+                de <span className="font-medium">{displayedTotal}</span> productos
               </p>
             </div>
 
@@ -1010,18 +1035,18 @@ export default function ProductsPage() {
                 {(() => {
                   const maxVisiblePages = 3;
                   let startPage = 1;
-                  let endPage = totalPages;
+                  let endPage = displayedTotalPages;
 
-                  if (totalPages > maxVisiblePages) {
+                  if (displayedTotalPages > maxVisiblePages) {
                     // Calcular el rango de páginas a mostrar
                     if (currentPage <= 2) {
                       // Si estamos en las primeras páginas, mostrar 1, 2, 3
                       startPage = 1;
                       endPage = maxVisiblePages;
-                    } else if (currentPage >= totalPages - 1) {
+                    } else if (currentPage >= displayedTotalPages - 1) {
                       // Si estamos en las últimas páginas, mostrar las últimas 3
-                      startPage = totalPages - maxVisiblePages + 1;
-                      endPage = totalPages;
+                      startPage = displayedTotalPages - maxVisiblePages + 1;
+                      endPage = displayedTotalPages;
                     } else {
                       // Si estamos en el medio, mostrar página actual y vecinas
                       startPage = currentPage - 1;
@@ -1052,7 +1077,7 @@ export default function ProductsPage() {
 
                 <button
                   onClick={() => handlePageChange(currentPage + 1)}
-                  disabled={currentPage === totalPages}
+                  disabled={currentPage === displayedTotalPages}
                   className="relative inline-flex items-center rounded-r-lg px-2 py-2 text-gray-500 ring-1 ring-inset ring-gray-600 hover:bg-gray-700 focus:z-20 focus:outline-offset-0 disabled:opacity-50 disabled:cursor-not-allowed"
                 >
                   <ChevronRight className="h-5 w-5" />
