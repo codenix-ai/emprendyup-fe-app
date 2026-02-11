@@ -452,11 +452,17 @@ export function ProductFormWizard({
       setColors(
         allVariants
           .filter((v: { type: string }) => v.type?.toLowerCase() === 'color')
-          .map((v: { id: any; name: any; jsonData: { hex: any; color: any } }) => ({
-            id: v.id,
-            name: v.name,
-            hex: v.jsonData?.hex || v.jsonData?.color || '#000000',
-          }))
+          .map(
+            (v: {
+              id: any;
+              name: any;
+              jsonData?: { hex?: any; color?: any; colorHex?: any; colorName?: any };
+            }) => ({
+              id: v.id,
+              name: v.jsonData?.colorName || v.name,
+              hex: v.jsonData?.colorHex || v.jsonData?.hex || v.jsonData?.color || '#000000',
+            })
+          )
       );
 
       setSizes(
