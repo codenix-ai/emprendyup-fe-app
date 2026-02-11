@@ -23,8 +23,20 @@ import Image from 'next/image';
 
 // GraphQL Queries and Mutations
 const GET_PRODUCTS_BY_STORE = gql`
-  query GetProductsByStore($storeId: String!, $page: Int, $pageSize: Int) {
-    productsByStore(storeId: $storeId, page: $page, pageSize: $pageSize) {
+  query GetProductsByStore(
+    $storeId: String!
+    $internal: String!
+    $available: String!
+    $page: Int
+    $pageSize: Int
+  ) {
+    productsByStore(
+      storeId: $storeId
+      internal: $internal
+      available: $available
+      page: $page
+      pageSize: $pageSize
+    ) {
       items {
         id
         name
@@ -266,7 +278,13 @@ export default function ProductsPage() {
     loading: storeLoading,
     refetch: refetchStoreProducts,
   } = useQuery(GET_PRODUCTS_BY_STORE, {
-    variables: { storeId: userData?.storeId || '', page: currentPage, pageSize },
+    variables: {
+      storeId: userData?.storeId || '',
+      page: currentPage,
+      pageSize,
+      internal: 'true',
+      available: 'true',
+    },
     skip: isAdmin || !userData?.storeId,
     fetchPolicy: 'network-only',
   });
