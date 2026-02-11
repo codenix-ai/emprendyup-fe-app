@@ -25,6 +25,7 @@ import ServicesSummary from './ServicesSummary';
 import Image from 'next/image';
 import AdressAutocomplete from './AdressAutocomplete';
 import { setOptions, importLibrary } from '@googlemaps/js-api-loader';
+import Link from 'next/link';
 // router not used in this component
 
 interface Message {
@@ -2018,53 +2019,85 @@ export default function InteractiveChatStore() {
                     // Default/store behavior: prefer explicit shopUrl, then storeId subdomain, then createdStoreId as subdomain
                     if (createdStore?.shopUrl) {
                       return (
-                        <a
-                          href={createdStore.shopUrl}
-                          className="px-6 py-3 bg-green-500 text-white rounded-lg font-semibold hover:bg-green-600 transition-colors"
-                          target="_blank"
-                          rel="noopener noreferrer"
-                        >
-                          Ir a la tienda
-                        </a>
+                        <div className="flex items-center gap-3">
+                          <a
+                            href={createdStore.shopUrl}
+                            className="px-6 py-3 bg-green-500 text-white rounded-lg font-semibold hover:bg-green-600 transition-colors"
+                            target="_blank"
+                            rel="noopener noreferrer"
+                          >
+                            Ir a la tienda
+                          </a>
+                          <Link
+                            href="/"
+                            className="px-6 py-3 bg-gray-700 text-white rounded-lg font-semibold hover:bg-gray-600 transition-colors"
+                          >
+                            Ir al panel
+                          </Link>
+                        </div>
                       );
                     }
 
                     if (createdStore?.storeId) {
                       return (
-                        <a
-                          href={`https://${createdStore.storeId}.emprendyup.com`}
-                          className="px-6 py-3 bg-green-500 text-white rounded-lg font-semibold hover:bg-green-600 transition-colors"
-                          target="_blank"
-                          rel="noopener noreferrer"
-                        >
-                          Ir a la tienda
-                        </a>
+                        <div className="flex items-center gap-3">
+                          <a
+                            href={`https://${createdStore.storeId}.emprendyup.com`}
+                            className="px-6 py-3 bg-green-500 text-white rounded-lg font-semibold hover:bg-green-600 transition-colors"
+                            target="_blank"
+                            rel="noopener noreferrer"
+                          >
+                            Ir a la tienda
+                          </a>
+                          <a
+                            href="/dashboard"
+                            className="px-6 py-3 bg-gray-700 text-white rounded-lg font-semibold hover:bg-gray-600 transition-colors"
+                          >
+                            Ir al panel
+                          </a>
+                        </div>
                       );
                     }
 
                     if (createdStoreId) {
                       return (
+                        <div className="flex items-center gap-3">
+                          <a
+                            href={`https://${createdStoreId}.emprendyup.com`}
+                            className="px-6 py-3 bg-green-500 text-white rounded-lg font-semibold hover:bg-green-600 transition-colors"
+                            target="_blank"
+                            rel="noopener noreferrer"
+                          >
+                            Ir a la tienda
+                          </a>
+                          <a
+                            href="/dashboard"
+                            className="px-6 py-3 bg-gray-700 text-white rounded-lg font-semibold hover:bg-gray-600 transition-colors"
+                          >
+                            Ir al panel
+                          </a>
+                        </div>
+                      );
+                    }
+
+                    // Fallback
+                    return (
+                      <div className="flex items-center gap-3">
                         <a
-                          href={`https://${createdStoreId}.emprendyup.com`}
+                          href="https://emprendyup.com"
                           className="px-6 py-3 bg-green-500 text-white rounded-lg font-semibold hover:bg-green-600 transition-colors"
                           target="_blank"
                           rel="noopener noreferrer"
                         >
                           Ir a la tienda
                         </a>
-                      );
-                    }
-
-                    // Fallback
-                    return (
-                      <a
-                        href="https://emprendyup.com"
-                        className="px-6 py-3 bg-green-500 text-white rounded-lg font-semibold hover:bg-green-600 transition-colors"
-                        target="_blank"
-                        rel="noopener noreferrer"
-                      >
-                        Ir a la tienda
-                      </a>
+                        <a
+                          href="/dashboard"
+                          className="px-6 py-3 bg-gray-700 text-white rounded-lg font-semibold hover:bg-gray-600 transition-colors"
+                        >
+                          Ir al panel
+                        </a>
+                      </div>
                     );
                   })()}
                 </div>
