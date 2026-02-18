@@ -1036,7 +1036,7 @@ export default function SingleStoreSettingsPage() {
                             min="0"
                             max="1"
                             name="taxRate"
-                            value={formData.taxRate || 0.19}
+                            value={formData.taxRate ?? 0.19}
                             onChange={(e) =>
                               setFormData((prev: any) => ({
                                 ...prev,
