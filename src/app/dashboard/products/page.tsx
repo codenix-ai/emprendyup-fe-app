@@ -13,6 +13,7 @@ import {
   MoreVertical,
   Copy,
   Upload,
+  Layout,
 } from 'lucide-react';
 import { gql, useMutation, useQuery } from '@apollo/client';
 import { CreateProductInput, Product } from '@/app/utils/types/Product';
@@ -596,6 +597,50 @@ export default function ProductsPage() {
     setOpenDropdown(null);
   };
 
+  const handleGenerateLanding = async (product: Product) => {
+    try {
+      // Extract features from description or other fields
+      const features: string[] = [];
+
+      // Prepare the payload for the landing page configuration
+      const payload = {
+        brand: '',
+        features,
+        specifications: {},
+      };
+
+      // Make the API call to generate the landing page
+      const response = await fetch(
+        `${process.env.NEXT_PUBLIC_API_URL}/product/${product.id}/generate-landing`,
+        {
+          method: 'POST',
+          headers: {
+            'Content-Type': 'application/json',
+            Authorization: `Bearer ${localStorage.getItem('token')}`,
+          },
+          body: JSON.stringify(payload),
+        }
+      );
+
+      if (!response.ok) {
+        const errorData = await response.json();
+        console.error('Error response:', errorData);
+        throw new Error(errorData.message || 'Error al generar la landing page');
+      }
+
+      const data = await response.json();
+      toast.success('Landing page generada exitosamente');
+      console.log('Landing page data:', data);
+
+      // Optionally redirect to the landing page or show a preview
+      // window.open(`/landing/${product.id}`, '_blank');
+    } catch (error: any) {
+      console.error('Error generando landing page:', error);
+      toast.error(error.message || 'Error al generar la landing page');
+    }
+    setOpenDropdown(null);
+  };
+
   const toggleProductSelection = (productId: string) => {
     setSelectedProducts((prev) =>
       prev.includes(productId) ? prev.filter((id) => id !== productId) : [...prev, productId]
@@ -827,6 +872,13 @@ export default function ProductsPage() {
                             <Edit className="w-4 h-4" />
                           </button>
                           <button
+                            onClick={() => handleGenerateLanding(product)}
+                            className="p-2 text-slate-400 hover:bg-gray-700 hover:text-white rounded-lg transition-colors"
+                            title="Generar Landing Page"
+                          >
+                            <Layout className="w-4 h-4" />
+                          </button>
+                          <button
                             onClick={() => handleDuplicateProduct(product.id)}
                             disabled={duplicating}
                             className="p-2 text-slate-400 hover:bg-gray-700 hover:text-white rounded-lg transition-colors"
@@ -948,6 +1000,13 @@ export default function ProductsPage() {
                           >
                             <Edit className="w-4 h-4 mr-2" style={{ color: primaryColor }} />
                             Editar
+                          </button>
+                          <button
+                            onClick={() => handleGenerateLanding(product)}
+                            className="flex items-center w-full px-4 py-2 text-sm text-gray-300 hover:bg-gray-700"
+                          >
+                            <Layout className="w-4 h-4 mr-2" />
+                            Generar Landing
                           </button>
                           <button
                             onClick={() => handleDuplicateProduct(product.id)}
