@@ -17,7 +17,7 @@ import {
   EyeOff,
   Loader,
 } from 'lucide-react';
-import { gql, useMutation, useQuery } from '@apollo/client';
+import { gql, useMutation, useQuery, useApolloClient } from '@apollo/client';
 import { CreateProductInput, Product } from '@/app/utils/types/Product';
 import { useSearchProducts } from '@/lib/hooks/useSearchProducts';
 import toast from 'react-hot-toast';
@@ -276,12 +276,13 @@ const GET_STORE = gql`
 `;
 
 export default function ProductsPage() {
+  const apolloClient = useApolloClient();
   const [searchTerm, setSearchTerm] = useState('');
   const [showForm, setShowForm] = useState(false);
   const [editingProduct, setEditingProduct] = useState<Product | null>(null);
   const [selectedProducts, setSelectedProducts] = useState<string[]>([]);
   const [openDropdown, setOpenDropdown] = useState<string | null>(null);
-  const [generatingLanding, setGeneratingLanding] = useState(false);
+  const [generatingLanding, setGeneratingLanding] = useState<Set<string>>(new Set());
   const userData = JSON.parse(localStorage.getItem('user') || '{}');
   // Pagination state
   const [currentPage, setCurrentPage] = useState(1);
@@ -635,7 +636,7 @@ export default function ProductsPage() {
   };
 
   const handleGenerateLanding = async (product: Product) => {
-    setGeneratingLanding(true);
+    setGeneratingLanding((prev) => new Set(prev).add(product.id));
     try {
       // Extract features from description or other fields
       const features: string[] = [];
@@ -667,6 +668,17 @@ export default function ProductsPage() {
       }
 
       const data = await response.json();
+
+      // Update the Apollo cache to reflect the change
+      apolloClient.cache.modify({
+        id: apolloClient.cache.identify({ __typename: 'Product', id: product.id }),
+        fields: {
+          landing() {
+            return true;
+          },
+        },
+      });
+
       toast.success('Landing page generada exitosamente');
 
       // Optionally redirect to the landing page or show a preview
@@ -675,7 +687,11 @@ export default function ProductsPage() {
       console.error('Error generando landing page:', error);
       toast.error(error.message || 'Error al generar la landing page');
     } finally {
-      setGeneratingLanding(false);
+      setGeneratingLanding((prev) => {
+        const newSet = new Set(prev);
+        newSet.delete(product.id);
+        return newSet;
+      });
       setOpenDropdown(null);
     }
   };
@@ -916,13 +932,13 @@ export default function ProductsPage() {
                                 ? () => handleViewLanding(product)
                                 : () => handleGenerateLanding(product)
                             }
-                            disabled={generatingLanding}
+                            disabled={generatingLanding.has(product.id)}
                             className="p-2 text-slate-400 hover:bg-gray-700 hover:text-white rounded-lg transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
                             title={product.landing ? 'Ver landing' : 'Generar landing'}
                           >
                             {product.landing ? (
                               <Eye className="w-4 h-4" />
-                            ) : generatingLanding ? (
+                            ) : generatingLanding.has(product.id) ? (
                               <div className="w-4 h-4 border-2 border-slate-400 border-t-transparent rounded-full animate-spin" />
                             ) : (
                               <Layout className="w-4 h-4" />
@@ -1053,15 +1069,15 @@ export default function ProductsPage() {
                           </button>
                           <button
                             onClick={() => handleGenerateLanding(product)}
-                            disabled={generatingLanding}
+                            disabled={generatingLanding.has(product.id)}
                             className="flex items-center w-full px-4 py-2 text-sm text-gray-300 hover:bg-gray-700 disabled:opacity-50 disabled:cursor-not-allowed"
                           >
-                            {generatingLanding ? (
+                            {generatingLanding.has(product.id) ? (
                               <div className="w-4 h-4 mr-2 border-2 border-gray-300 border-t-transparent rounded-full animate-spin" />
                             ) : (
                               <Layout className="w-4 h-4 mr-2" />
                             )}
-                            {generatingLanding ? <Loader /> : 'Generar Landing'}
+                            {generatingLanding.has(product.id) ? <Loader /> : 'Generar Landing'}
                           </button>
                           <button
                             onClick={() => handleDuplicateProduct(product.id)}

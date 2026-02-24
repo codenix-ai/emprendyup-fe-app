@@ -72,6 +72,7 @@ const CREATE_PRODUCT_WITH_URLS = gql`
       externalId
       available
       inStock
+      externalSKU
       stock
       imageUrl
       createdAt
@@ -127,6 +128,7 @@ const UPDATE_PRODUCT = gql`
       available
       inStock
       stock
+      externalSKU
       categories {
         category {
           id
@@ -1054,7 +1056,6 @@ export function ProductFormWizard({
           colors: updateInput.colors,
           sizes: updateInput.sizes,
           variants: updateInput.variants,
-          customVariants: customVariants,
           stock: updateInput.stock,
         });
 
@@ -1064,6 +1065,8 @@ export function ProductFormWizard({
             input: updateInput,
           },
         });
+
+        console.log('📥 UPDATE Response from backend:', data);
 
         if (data.updateProduct) {
           if (variantCombinations.length > 0) {
@@ -1113,6 +1116,8 @@ export function ProductFormWizard({
         const { data } = await createProductWithUrls({
           variables: { input: createInput },
         });
+
+        console.log('📥 CREATE Response from backend:', data);
 
         if (data.createProductWithUrls) {
           const newProductId = data.createProductWithUrls.id;
