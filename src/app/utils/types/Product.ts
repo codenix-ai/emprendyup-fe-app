@@ -64,7 +64,9 @@ export interface Product {
   currency: string;
   available: boolean;
   inStock: boolean;
+  landing?: string;
   stock: number;
+  externalSKU?: string; // BACKWARD COMPATIBILITY: Still supported
   images: ProductImage[];
   colors: ProductColor[];
   sizes: ProductSize[]; // BACKWARD COMPATIBILITY: Still supported

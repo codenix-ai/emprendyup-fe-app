@@ -79,6 +79,7 @@ const GET_PRODUCTS_BY_STORE = gql`
         available
         inStock
         stock
+        landing
         images {
           id
           url

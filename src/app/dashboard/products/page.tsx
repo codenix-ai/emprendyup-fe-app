@@ -14,6 +14,7 @@ import {
   Copy,
   Upload,
   Layout,
+  EyeOff,
 } from 'lucide-react';
 import { gql, useMutation, useQuery } from '@apollo/client';
 import { CreateProductInput, Product } from '@/app/utils/types/Product';
@@ -48,6 +49,8 @@ const GET_PRODUCTS_BY_STORE = gql`
         available
         inStock
         stock
+        landing
+        externalSKU
         images {
           id
           url
@@ -88,6 +91,7 @@ const PAGINATED_PRODUCTS_QUERY = gql`
         available
         createdAt
         updatedAt
+        landing
         images {
           id
           url
@@ -259,6 +263,17 @@ const DUPLICATE_PRODUCT = gql`
   }
 `;
 
+const GET_STORE = gql`
+  query GetStore($storeId: String!) {
+    store(storeId: $storeId) {
+      id
+      storeId
+      name
+      customDomain
+    }
+  }
+`;
+
 export default function ProductsPage() {
   const [searchTerm, setSearchTerm] = useState('');
   const [showForm, setShowForm] = useState(false);
@@ -273,6 +288,12 @@ export default function ProductsPage() {
   const isAdmin =
     userData?.role === 'ADMIN' ||
     (Array.isArray(userData?.roles) && userData.roles.includes('ADMIN'));
+
+  // Fetch store data for domain information
+  const { data: storeInfo } = useQuery(GET_STORE, {
+    variables: { storeId: userData?.storeId || '' },
+    skip: !userData?.storeId,
+  });
 
   const {
     data: storeData,
@@ -363,6 +384,7 @@ export default function ProductsPage() {
       product.name?.toLowerCase().includes(searchTerm.toLowerCase()) ||
       product.title?.toLowerCase().includes(searchTerm.toLowerCase())
   );
+  console.log('Filtered products:', filteredProducts);
 
   // Colors from store - usando slate-900 como color principal
   const primaryColor = '#0F172A'; // slate-900
@@ -597,6 +619,19 @@ export default function ProductsPage() {
     setOpenDropdown(null);
   };
 
+  const handleViewLanding = (product: Product) => {
+    // Construct the landing page URL using store domain
+    const store = storeInfo?.store;
+    if (store) {
+      const domain = store.customDomain || `${store.storeId}.emprendyup.com`;
+      const url = `https://${domain}/products/landing/${product.externalSKU}`;
+      window.open(url, '_blank');
+    } else {
+      // Fallback to relative URL if store data is not available
+      window.open(`/products/landing/${product.externalSKU}`, '_blank');
+    }
+  };
+
   const handleGenerateLanding = async (product: Product) => {
     try {
       // Extract features from description or other fields
@@ -630,7 +665,6 @@ export default function ProductsPage() {
 
       const data = await response.json();
       toast.success('Landing page generada exitosamente');
-      console.log('Landing page data:', data);
 
       // Optionally redirect to the landing page or show a preview
       // window.open(`/landing/${product.id}`, '_blank');
@@ -799,7 +833,7 @@ export default function ProductsPage() {
                   </tr>
                 </thead>
                 <tbody className="bg-gray-800 divide-y divide-gray-700">
-                  {filteredProducts.map((product) => (
+                  {filteredProducts.map((product: Product) => (
                     <tr key={product.id} className="hover:bg-gray-700 transition-colors">
                       <td className="px-6 py-4">
                         <input
@@ -872,11 +906,19 @@ export default function ProductsPage() {
                             <Edit className="w-4 h-4" />
                           </button>
                           <button
-                            onClick={() => handleGenerateLanding(product)}
+                            onClick={
+                              product.landing
+                                ? () => handleViewLanding(product)
+                                : () => handleGenerateLanding(product)
+                            }
                             className="p-2 text-slate-400 hover:bg-gray-700 hover:text-white rounded-lg transition-colors"
-                            title="Generar Landing Page"
+                            title={product.landing ? 'Ver landing' : 'Generar landing'}
                           >
-                            <Layout className="w-4 h-4" />
+                            {product.landing ? (
+                              <Eye className="w-4 h-4" />
+                            ) : (
+                              <Layout className="w-4 h-4" />
+                            )}
                           </button>
                           <button
                             onClick={() => handleDuplicateProduct(product.id)}

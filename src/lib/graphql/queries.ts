@@ -445,6 +445,7 @@ export const GET_PRODUCTS_BY_STORE = gql`
         inStock
         stock
         metadata
+        landing
         images {
           id
           url

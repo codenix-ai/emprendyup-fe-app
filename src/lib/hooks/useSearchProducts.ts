@@ -14,6 +14,7 @@ const SEARCH_PRODUCTS = gql`
         price
         currency
         imageUrl
+        landing
         images {
           url
         }
