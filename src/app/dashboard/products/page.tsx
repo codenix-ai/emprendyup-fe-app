@@ -15,6 +15,7 @@ import {
   Upload,
   Layout,
   EyeOff,
+  Loader,
 } from 'lucide-react';
 import { gql, useMutation, useQuery } from '@apollo/client';
 import { CreateProductInput, Product } from '@/app/utils/types/Product';
@@ -280,6 +281,7 @@ export default function ProductsPage() {
   const [editingProduct, setEditingProduct] = useState<Product | null>(null);
   const [selectedProducts, setSelectedProducts] = useState<string[]>([]);
   const [openDropdown, setOpenDropdown] = useState<string | null>(null);
+  const [generatingLanding, setGeneratingLanding] = useState(false);
   const userData = JSON.parse(localStorage.getItem('user') || '{}');
   // Pagination state
   const [currentPage, setCurrentPage] = useState(1);
@@ -633,6 +635,7 @@ export default function ProductsPage() {
   };
 
   const handleGenerateLanding = async (product: Product) => {
+    setGeneratingLanding(true);
     try {
       // Extract features from description or other fields
       const features: string[] = [];
@@ -671,8 +674,10 @@ export default function ProductsPage() {
     } catch (error: any) {
       console.error('Error generando landing page:', error);
       toast.error(error.message || 'Error al generar la landing page');
+    } finally {
+      setGeneratingLanding(false);
+      setOpenDropdown(null);
     }
-    setOpenDropdown(null);
   };
 
   const toggleProductSelection = (productId: string) => {
@@ -911,11 +916,14 @@ export default function ProductsPage() {
                                 ? () => handleViewLanding(product)
                                 : () => handleGenerateLanding(product)
                             }
-                            className="p-2 text-slate-400 hover:bg-gray-700 hover:text-white rounded-lg transition-colors"
+                            disabled={generatingLanding}
+                            className="p-2 text-slate-400 hover:bg-gray-700 hover:text-white rounded-lg transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
                             title={product.landing ? 'Ver landing' : 'Generar landing'}
                           >
                             {product.landing ? (
                               <Eye className="w-4 h-4" />
+                            ) : generatingLanding ? (
+                              <div className="w-4 h-4 border-2 border-slate-400 border-t-transparent rounded-full animate-spin" />
                             ) : (
                               <Layout className="w-4 h-4" />
                             )}
@@ -1045,10 +1053,15 @@ export default function ProductsPage() {
                           </button>
                           <button
                             onClick={() => handleGenerateLanding(product)}
-                            className="flex items-center w-full px-4 py-2 text-sm text-gray-300 hover:bg-gray-700"
+                            disabled={generatingLanding}
+                            className="flex items-center w-full px-4 py-2 text-sm text-gray-300 hover:bg-gray-700 disabled:opacity-50 disabled:cursor-not-allowed"
                           >
-                            <Layout className="w-4 h-4 mr-2" />
-                            Generar Landing
+                            {generatingLanding ? (
+                              <div className="w-4 h-4 mr-2 border-2 border-gray-300 border-t-transparent rounded-full animate-spin" />
+                            ) : (
+                              <Layout className="w-4 h-4 mr-2" />
+                            )}
+                            {generatingLanding ? <Loader /> : 'Generar Landing'}
                           </button>
                           <button
                             onClick={() => handleDuplicateProduct(product.id)}
