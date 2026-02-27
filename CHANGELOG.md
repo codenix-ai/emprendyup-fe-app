@@ -8,6 +8,7 @@
 
 ### Bug Fixes
 
+
 - cahnge dashboard ([#18](https://github.com/jcpachecoh/emprendyup-ssr-ecommerce/issues/18)) ([2ad8588](https://github.com/jcpachecoh/emprendyup-ssr-ecommerce/commit/2ad858868597beede7bc636e6211bf5db2374676))
 
 ## [1.23.2](https://github.com/jcpachecoh/emprendyup-ssr-ecommerce/compare/v1.23.1...v1.23.2) (2025-09-24)
