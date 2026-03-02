@@ -37,6 +37,7 @@ const GET_STORE_CONFIG = gql`
       secondaryColor
       accentColor
       backgroundColor
+      buttonColor
       textColor
       description
       email
@@ -89,6 +90,7 @@ const UPDATE_STORE_CONFIG = gql`
       accentColor
       backgroundColor
       textColor
+      buttonColor
       description
       email
       phone
@@ -758,12 +760,13 @@ export default function SingleStoreSettingsPage() {
                         <h4 className="text-md font-medium text-gray-900 dark:text-white mb-4">
                           Colores del Tema
                         </h4>
-                        <div className="grid grid-cols-1 md:grid-cols-5 gap-4">
+                        <div className="grid grid-cols-1 md:grid-cols-6 gap-4">
                           {[
                             { key: 'primaryColor', label: 'Principal' },
                             { key: 'secondaryColor', label: 'Secundario' },
                             { key: 'accentColor', label: 'Acento' },
                             { key: 'backgroundColor', label: 'Fondo' },
+                            { key: 'buttonColor', label: 'Botones' },
                             { key: 'textColor', label: 'Texto' },
                           ].map(({ key, label }) => (
                             <div key={key}>
