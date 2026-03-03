@@ -30,6 +30,8 @@ import {
   Building2,
   ShoppingBag,
   Calendar,
+  Receipt,
+  UserCheck,
 } from 'lucide-react';
 import Image from 'next/image';
 import { useSessionStore } from '@/lib/store/dashboard';
@@ -156,6 +158,8 @@ const getServiceNavigationGroups = () => {
         { name: 'Panel de Control', href: '/dashboard/service-dashboard', icon: BarChart3 },
         { name: 'Mi Servicio', href: '/dashboard/service', icon: Briefcase },
         { name: 'Calendario', href: '/dashboard/service-calendar', icon: Calendar },
+        { name: 'Gastos', href: '/dashboard/service-expenses', icon: Receipt },
+        { name: 'Clientes CRM', href: '/dashboard/service-crm', icon: UserCheck },
         { name: 'Imágenes', href: '/dashboard/service-images', icon: Package },
       ],
     },

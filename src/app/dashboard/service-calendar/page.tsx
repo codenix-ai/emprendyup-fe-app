@@ -18,6 +18,9 @@ import {
   Plus,
   Trash2,
   Check,
+  MapPin,
+  Bell,
+  CreditCard,
 } from 'lucide-react';
 import esLocale from '@fullcalendar/core/locales/es';
 
@@ -35,8 +38,30 @@ interface CalendarEvent extends EventInput {
     customerPhone: string;
     price: number;
     status: string;
+    paymentStatus?: string;
+    serviceAddress?: string;
+    serviceCity?: string;
+    serviceReference?: string;
+    notes?: string;
   };
 }
+
+const STATUS_LABELS: Record<string, string> = {
+  PENDING: 'Pendiente confirmación',
+  CONFIRMED: 'Confirmada',
+  CANCELLED_BY_CLIENT: 'Cancelada por cliente',
+  CANCELLED_BY_PROVIDER: 'Cancelada por proveedor',
+  CANCELLED: 'Cancelada',
+  COMPLETED: 'Completada',
+};
+
+const PAYMENT_STATUS_LABELS: Record<string, string> = {
+  PENDING: 'Pendiente',
+  PAID: 'Pagado',
+  PARTIAL: 'Parcial',
+  CANCELLED: 'Cancelado',
+  REFUNDED: 'Reembolsado',
+};
 
 // GraphQL Queries
 const GET_SERVICES = gql`
@@ -68,6 +93,10 @@ const GET_APPOINTMENTS = gql`
       status
       paymentStatus
       notes
+      serviceAddress
+      serviceCity
+      serviceReference
+      reminderSent
       createdAt
     }
   }
@@ -140,6 +169,9 @@ const UPDATE_APPOINTMENT = gql`
       status
       paymentStatus
       notes
+      serviceAddress
+      serviceCity
+      serviceReference
       createdAt
       updatedAt
     }
@@ -175,6 +207,11 @@ export default function ServiceCalendar() {
     startDatetime: '',
     endDatetime: '',
     notes: '',
+    serviceAddress: '',
+    serviceCity: '',
+    serviceReference: '',
+    status: 'PENDING',
+    paymentStatus: 'PENDING',
   });
 
   // Service Form
@@ -228,9 +265,10 @@ export default function ServiceCalendar() {
             ? new Date(endDate)
             : new Date(apt.endDatetime);
 
+          // Calendar preview: show only service – customer name – time (no price)
           const event = {
             id: apt.id,
-            title: `${service?.name || 'Servicio'} - ${apt.customerName}`,
+            title: `${service?.name || 'Servicio'} – ${apt.customerName}`,
             // Pass ISO strings so FullCalendar correctly applies `timeZone` (America/Bogota)
             start: parsedStart.toISOString(),
             end: parsedEnd.toISOString(),
@@ -245,6 +283,12 @@ export default function ServiceCalendar() {
               customerPhone: apt.customerPhone,
               price: service?.priceAmount || 0,
               status: apt.status,
+              paymentStatus: apt.paymentStatus,
+              serviceAddress: apt.serviceAddress || '',
+              serviceCity: apt.serviceCity || '',
+              serviceReference: apt.serviceReference || '',
+              notes: apt.notes || '',
+              reminderSent: apt.reminderSent,
             },
           };
 
@@ -265,6 +309,8 @@ export default function ServiceCalendar() {
       case 'PENDING':
         return '#f59e0b'; // orange
       case 'CANCELLED':
+      case 'CANCELLED_BY_CLIENT':
+      case 'CANCELLED_BY_PROVIDER':
         return '#ef4444'; // red
       case 'COMPLETED':
         return '#6366f1'; // indigo
@@ -293,7 +339,12 @@ export default function ServiceCalendar() {
       customerEmail: event.extendedProps.customerEmail || '',
       startDatetime: event.start?.toISOString() || '',
       endDatetime: event.end?.toISOString() || '',
-      notes: '',
+      notes: event.extendedProps.notes || '',
+      serviceAddress: event.extendedProps.serviceAddress || '',
+      serviceCity: event.extendedProps.serviceCity || '',
+      serviceReference: event.extendedProps.serviceReference || '',
+      status: event.extendedProps.status || 'PENDING',
+      paymentStatus: event.extendedProps.paymentStatus || 'PENDING',
     });
     setIsModalOpen(true);
   };
@@ -357,6 +408,9 @@ export default function ServiceCalendar() {
             startDatetime: startDate.toISOString(),
             endDatetime: endDate.toISOString(),
             notes: appointmentForm.notes,
+            serviceAddress: appointmentForm.serviceAddress || undefined,
+            serviceCity: appointmentForm.serviceCity || undefined,
+            serviceReference: appointmentForm.serviceReference || undefined,
           },
         },
       });
@@ -386,6 +440,11 @@ export default function ServiceCalendar() {
             startDatetime: startDate.toISOString(),
             endDatetime: endDate.toISOString(),
             notes: appointmentForm.notes,
+            status: appointmentForm.status,
+            paymentStatus: appointmentForm.paymentStatus,
+            serviceAddress: appointmentForm.serviceAddress || undefined,
+            serviceCity: appointmentForm.serviceCity || undefined,
+            serviceReference: appointmentForm.serviceReference || undefined,
           },
         },
       });
@@ -420,6 +479,11 @@ export default function ServiceCalendar() {
       startDatetime: '',
       endDatetime: '',
       notes: '',
+      serviceAddress: '',
+      serviceCity: '',
+      serviceReference: '',
+      status: 'PENDING',
+      paymentStatus: 'PENDING',
     });
     setSelectedEvent(null);
   };
@@ -589,15 +653,22 @@ export default function ServiceCalendar() {
                         <h4 className="font-medium text-gray-900 dark:text-white text-sm">
                           {apt.customerName}
                         </h4>
-                        <span
-                          className="text-xs px-2 py-1 rounded"
-                          style={{
-                            backgroundColor: getStatusColor(apt.status) + '20',
-                            color: getStatusColor(apt.status),
-                          }}
-                        >
-                          {apt.status}
-                        </span>
+                        <div className="flex flex-col items-end gap-1">
+                          <span
+                            className="text-xs px-2 py-0.5 rounded"
+                            style={{
+                              backgroundColor: getStatusColor(apt.status) + '20',
+                              color: getStatusColor(apt.status),
+                            }}
+                          >
+                            {STATUS_LABELS[apt.status] || apt.status}
+                          </span>
+                          {apt.reminderSent && (
+                            <span className="text-xs bg-blue-100 text-blue-700 dark:bg-blue-900 dark:text-blue-300 px-1.5 py-0.5 rounded flex items-center gap-1">
+                              🔔 Recordatorio enviado
+                            </span>
+                          )}
+                        </div>
                       </div>
                       <p className="text-xs text-gray-600 dark:text-gray-400">
                         {service?.name || 'Servicio'}
@@ -780,6 +851,110 @@ export default function ServiceCalendar() {
                   className="w-full px-3 sm:px-4 py-2.5 sm:py-3 text-sm sm:text-base border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-700 text-gray-900 dark:text-white focus:ring-2 focus:ring-[var(--fourth-base)] focus:border-transparent"
                 />
               </div>
+
+              {/* Address */}
+              <div className="border-t border-gray-100 dark:border-gray-700 pt-3 mt-1">
+                <p className="text-xs font-semibold text-gray-500 dark:text-gray-400 uppercase tracking-wide mb-3 flex items-center gap-1.5">
+                  <MapPin className="h-3.5 w-3.5" />
+                  Dirección del servicio (si es presencial)
+                </p>
+                <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+                  <div>
+                    <label className="block text-xs sm:text-sm font-medium text-gray-700 dark:text-gray-300 mb-1.5">
+                      Dirección
+                    </label>
+                    <input
+                      type="text"
+                      value={appointmentForm.serviceAddress}
+                      onChange={(e) =>
+                        setAppointmentForm({ ...appointmentForm, serviceAddress: e.target.value })
+                      }
+                      className="w-full px-3 sm:px-4 py-2.5 text-sm border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-700 text-gray-900 dark:text-white focus:ring-2 focus:ring-[var(--fourth-base)] focus:border-transparent"
+                      placeholder="Calle 72 #10-15"
+                    />
+                  </div>
+                  <div>
+                    <label className="block text-xs sm:text-sm font-medium text-gray-700 dark:text-gray-300 mb-1.5">
+                      Ciudad
+                    </label>
+                    <input
+                      type="text"
+                      value={appointmentForm.serviceCity}
+                      onChange={(e) =>
+                        setAppointmentForm({ ...appointmentForm, serviceCity: e.target.value })
+                      }
+                      className="w-full px-3 sm:px-4 py-2.5 text-sm border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-700 text-gray-900 dark:text-white focus:ring-2 focus:ring-[var(--fourth-base)] focus:border-transparent"
+                      placeholder="Bogotá"
+                    />
+                  </div>
+                </div>
+                <div className="mt-3">
+                  <label className="block text-xs sm:text-sm font-medium text-gray-700 dark:text-gray-300 mb-1.5">
+                    Referencia / Punto de encuentro
+                  </label>
+                  <input
+                    type="text"
+                    value={appointmentForm.serviceReference}
+                    onChange={(e) =>
+                      setAppointmentForm({ ...appointmentForm, serviceReference: e.target.value })
+                    }
+                    className="w-full px-3 sm:px-4 py-2.5 text-sm border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-700 text-gray-900 dark:text-white focus:ring-2 focus:ring-[var(--fourth-base)] focus:border-transparent"
+                    placeholder="Frente al parque, piso 3 apto 301..."
+                  />
+                </div>
+              </div>
+
+              {/* Status & Payment Status */}
+              <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+                <div>
+                  <label className="block text-xs sm:text-sm font-medium text-gray-700 dark:text-gray-300 mb-1.5">
+                    Estado de cita
+                  </label>
+                  <select
+                    value={appointmentForm.status}
+                    onChange={(e) =>
+                      setAppointmentForm({ ...appointmentForm, status: e.target.value })
+                    }
+                    className="w-full px-3 sm:px-4 py-2.5 text-sm border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-700 text-gray-900 dark:text-white focus:ring-2 focus:ring-[var(--fourth-base)] focus:border-transparent"
+                  >
+                    {Object.entries(STATUS_LABELS).map(([value, label]) => (
+                      <option key={value} value={value}>
+                        {label}
+                      </option>
+                    ))}
+                  </select>
+                </div>
+                <div>
+                  <label className="block text-xs sm:text-sm font-medium text-gray-700 dark:text-gray-300 mb-1.5">
+                    Estado de pago
+                  </label>
+                  <select
+                    value={appointmentForm.paymentStatus}
+                    onChange={(e) =>
+                      setAppointmentForm({ ...appointmentForm, paymentStatus: e.target.value })
+                    }
+                    className="w-full px-3 sm:px-4 py-2.5 text-sm border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-700 text-gray-900 dark:text-white focus:ring-2 focus:ring-[var(--fourth-base)] focus:border-transparent"
+                  >
+                    {Object.entries(PAYMENT_STATUS_LABELS).map(([value, label]) => (
+                      <option key={value} value={value}>
+                        {label}
+                      </option>
+                    ))}
+                  </select>
+                </div>
+              </div>
+
+              {/* Price — visible only in detail view */}
+              {selectedEvent && (
+                <div className="bg-gray-50 dark:bg-gray-700/50 rounded-lg p-3 flex items-center justify-between">
+                  <span className="text-sm text-gray-600 dark:text-gray-300 font-medium">
+                    Precio del servicio
+                  </span>
+                  <span className="text-base font-semibold text-[var(--fourth-base)]">
+                    ${(selectedEvent.extendedProps.price || 0).toLocaleString('es-CO')}
+                  </span>
+                </div>
+              )}
 
               {/* Notes */}
               <div>

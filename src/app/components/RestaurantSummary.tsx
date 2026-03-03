@@ -377,6 +377,17 @@ export default function RestaurantSummary({
                 />
               </div>
               <div className="flex flex-col items-center">
+                <label className="text-sm font-medium text-gray-300 mb-1">Botones</label>
+                <input
+                  type="color"
+                  name="buttonColor"
+                  value={formData.buttonColor || formData.primaryColor || '#3B82F6'}
+                  onChange={handleChange}
+                  className="w-12 h-12 border border-gray-600 rounded cursor-pointer bg-gray-800"
+                  disabled={isSubmitting}
+                />
+              </div>
+              <div className="flex flex-col items-center">
                 <label className="text-sm font-medium text-gray-300 mb-1">Acento</label>
                 <input
                   type="color"

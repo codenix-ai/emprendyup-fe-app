@@ -10,6 +10,8 @@ import {
   Users,
   TrendingUp,
   AlertCircle,
+  Download,
+  Filter,
 } from 'lucide-react';
 import KPICard from '../components/KPICard';
 import LineChart from '../components/LineChart';
@@ -92,6 +94,14 @@ export default function ServiceDashboard() {
   const serviceProviderId = user?.serviceProviderId;
   const [mounted, setMounted] = useState(false);
 
+  // Date range filter
+  const [dateFrom, setDateFrom] = useState<string>(() => {
+    const d = new Date();
+    d.setMonth(d.getMonth() - 6);
+    return d.toISOString().split('T')[0];
+  });
+  const [dateTo, setDateTo] = useState<string>(() => new Date().toISOString().split('T')[0]);
+
   useEffect(() => {
     setMounted(true);
   }, []);
@@ -113,21 +123,97 @@ export default function ServiceDashboard() {
 
   const services: Service[] = useMemo(() => servicesData?.servicesByProvider || [], [servicesData]);
 
+  // Filter appointments by date range
+  const filteredAppointments = useMemo(() => {
+    const from = new Date(dateFrom);
+    from.setHours(0, 0, 0, 0);
+    const to = new Date(dateTo);
+    to.setHours(23, 59, 59, 999);
+    return appointments.filter((apt) => {
+      const d = parseAppointmentDate(apt.startDatetime);
+      return d >= from && d <= to;
+    });
+  }, [appointments, dateFrom, dateTo]);
+
+  // CSV Export
+  const handleExportCSV = () => {
+    const headers = [
+      'Cliente',
+      'Correo',
+      'Teléfono',
+      'Servicio',
+      'Precio',
+      'Fecha',
+      'Hora',
+      'Estado',
+      'Estado Pago',
+    ];
+    const rows = filteredAppointments.map((apt) => {
+      const service = services.find((s) => s.id === apt.serviceId);
+      const date = parseAppointmentDate(apt.startDatetime);
+      return [
+        apt.customerName,
+        apt.customerEmail,
+        apt.customerPhone,
+        service?.name || '',
+        service?.priceAmount ?? 0,
+        date.toLocaleDateString('es-ES'),
+        date.toLocaleTimeString('es-ES', { hour: '2-digit', minute: '2-digit' }),
+        apt.status,
+        apt.paymentStatus,
+      ];
+    });
+    const csvContent = [headers, ...rows].map((r) => r.map(String).join(',')).join('\n');
+    const blob = new Blob(['\uFEFF' + csvContent], { type: 'text/csv;charset=utf-8;' });
+    const url = URL.createObjectURL(blob);
+    const link = document.createElement('a');
+    link.href = url;
+    link.download = `reporte-citas-${dateFrom}-${dateTo}.csv`;
+    link.click();
+    URL.revokeObjectURL(url);
+  };
+
   // Calculate KPIs
   const kpis = useMemo(() => {
     const now = new Date();
     const startOfMonth = new Date(now.getFullYear(), now.getMonth(), 1);
 
-    const totalAppointments = appointments.length;
-    const confirmedAppointments = appointments.filter((apt) => apt.status === 'CONFIRMED').length;
-    const pendingAppointments = appointments.filter((apt) => apt.status === 'PENDING').length;
-    const completedAppointments = appointments.filter((apt) => apt.status === 'COMPLETED').length;
+    const totalAppointments = filteredAppointments.length;
+    const confirmedAppointments = filteredAppointments.filter(
+      (apt) => apt.status === 'CONFIRMED'
+    ).length;
+    const pendingAppointments = filteredAppointments.filter(
+      (apt) => apt.status === 'PENDING'
+    ).length;
+    const completedAppointments = filteredAppointments.filter(
+      (apt) => apt.status === 'COMPLETED'
+    ).length;
+
+    // Paid vs pending (by paymentStatus)
+    const paidAppointments = filteredAppointments.filter(
+      (apt) => apt.paymentStatus === 'PAID'
+    ).length;
+    const pendingPayments = filteredAppointments.filter(
+      (apt) => apt.paymentStatus === 'PENDING'
+    ).length;
+
+    // New vs recurring clients (email frequency)
+    const emailCount: Record<string, number> = {};
+    appointments.forEach((apt) => {
+      emailCount[apt.customerEmail] = (emailCount[apt.customerEmail] || 0) + 1;
+    });
+    const newClients = filteredAppointments.filter(
+      (apt) => emailCount[apt.customerEmail] === 1
+    ).length;
+    const recurringClients = filteredAppointments.filter(
+      (apt) => emailCount[apt.customerEmail] > 1
+    ).length;
 
     // Calculate earnings from confirmed and completed appointments
     let totalEarnings = 0;
     let monthlyEarnings = 0;
 
-    appointments.forEach((apt) => {
+    filteredAppointments.forEach((apt) => {
       if (apt.status === 'CONFIRMED' || apt.status === 'COMPLETED') {
         const service = services.find((s) => s.id === apt.serviceId);
         if (service) {
@@ -154,13 +240,17 @@ export default function ServiceDashboard() {
       confirmedAppointments,
       pendingAppointments,
       completedAppointments,
+      paidAppointments,
+      pendingPayments,
+      newClients,
+      recurringClients,
       totalEarnings,
       monthlyEarnings,
       upcomingAppointments,
     };
-  }, [appointments, services]);
+  }, [filteredAppointments, appointments, services]);
 
-  // Generate chart data for appointments over time (last 6 months)
+  // Generate chart data for appointments over time (based on filter range)
   const appointmentsChartData = useMemo(() => {
     const now = new Date();
     const chartData = [];
@@ -170,7 +260,7 @@ export default function ServiceDashboard() {
       const monthEnd = new Date(now.getFullYear(), now.getMonth() - i + 1, 0);
       const monthLabel = monthDate.toLocaleDateString('es-ES', { month: 'short', year: '2-digit' });
 
-      const monthAppointments = appointments.filter((apt) => {
+      const monthAppointments = filteredAppointments.filter((apt) => {
         const aptDate = parseAppointmentDate(apt.startDatetime);
         return aptDate >= monthDate && aptDate <= monthEnd;
       }).length;
@@ -182,9 +272,9 @@ export default function ServiceDashboard() {
     }
 
     return chartData;
-  }, [appointments]);
+  }, [filteredAppointments]);
 
-  // Generate earnings chart data (last 6 months)
+  // Generate earnings chart data (based on filter range)
   const earningsChartData = useMemo(() => {
     const now = new Date();
     const chartData = [];
@@ -195,7 +285,7 @@ export default function ServiceDashboard() {
       const monthLabel = monthDate.toLocaleDateString('es-ES', { month: 'short', year: '2-digit' });
 
       let monthEarnings = 0;
-      appointments.forEach((apt) => {
+      filteredAppointments.forEach((apt) => {
         const aptDate = parseAppointmentDate(apt.startDatetime);
         if (aptDate >= monthDate && aptDate <= monthEnd) {
           if (apt.status === 'CONFIRMED' || apt.status === 'COMPLETED') {
@@ -214,13 +304,13 @@ export default function ServiceDashboard() {
     }
 
     return chartData;
-  }, [appointments, services]);
+  }, [filteredAppointments, services]);
 
   // Status distribution chart data
   const statusDistributionData = useMemo(() => {
     const statusCounts: Record<string, number> = {};
 
-    appointments.forEach((apt) => {
+    filteredAppointments.forEach((apt) => {
       const status = apt.status || 'UNKNOWN';
       statusCounts[status] = (statusCounts[status] || 0) + 1;
     });
@@ -237,7 +327,7 @@ export default function ServiceDashboard() {
       estado: statusLabels[status] || status,
       cantidad: count,
     }));
-  }, [appointments]);
+  }, [filteredAppointments]);
 
   // Get upcoming appointments
   const upcomingAppointmentsList = useMemo(() => {
@@ -245,7 +335,12 @@ export default function ServiceDashboard() {
     return appointments
       .filter((apt) => {
         const aptDate = parseAppointmentDate(apt.startDatetime);
-        return aptDate >= now && apt.status !== 'CANCELLED';
+        return (
+          aptDate >= now &&
+          apt.status !== 'CANCELLED' &&
+          apt.status !== 'CANCELLED_BY_CLIENT' &&
+          apt.status !== 'CANCELLED_BY_PROVIDER'
+        );
       })
       .sort((a, b) => {
         const dateA = parseAppointmentDate(a.startDatetime);
@@ -309,11 +404,55 @@ export default function ServiceDashboard() {
   return (
     <div className="space-y-6">
       {/* Header */}
-      <div>
-        <h1 className="text-2xl font-bold text-gray-900 dark:text-white">Panel de Control</h1>
-        <p className="text-gray-600 dark:text-gray-400">
-          Vista general de tus citas, ganancias y rendimiento
-        </p>
+      <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
+        <div>
+          <h1 className="text-2xl font-bold text-gray-900 dark:text-white">Panel de Control</h1>
+          <p className="text-gray-600 dark:text-gray-400">
+            Vista general de tus citas, ganancias y rendimiento
+          </p>
+        </div>
+        <button
+          onClick={handleExportCSV}
+          className="inline-flex items-center gap-2 px-4 py-2 bg-fourth-base text-white rounded-lg hover:opacity-90 transition-colors text-sm font-medium"
+        >
+          <Download className="h-4 w-4" />
+          Exportar CSV
+        </button>
+      </div>
+
+      {/* Date Range Filter */}
+      <div className="bg-white dark:bg-gray-800 rounded-lg border border-gray-200 dark:border-gray-700 p-4 flex flex-col sm:flex-row gap-4 items-start sm:items-center">
+        <div className="flex items-center gap-2 text-gray-600 dark:text-gray-400">
+          <Filter className="h-4 w-4" />
+          <span className="text-sm font-medium">Filtrar por fecha</span>
+        </div>
+        <div className="flex flex-col sm:flex-row gap-3">
+          <div className="flex items-center gap-2">
+            <label className="text-sm text-gray-600 dark:text-gray-400 whitespace-nowrap">
+              Desde
+            </label>
+            <input
+              type="date"
+              value={dateFrom}
+              onChange={(e) => setDateFrom(e.target.value)}
+              className="px-3 py-1.5 text-sm border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-700 text-gray-900 dark:text-white focus:ring-2 focus:ring-fourth-base"
+            />
+          </div>
+          <div className="flex items-center gap-2">
+            <label className="text-sm text-gray-600 dark:text-gray-400 whitespace-nowrap">
+              Hasta
+            </label>
+            <input
+              type="date"
+              value={dateTo}
+              onChange={(e) => setDateTo(e.target.value)}
+              className="px-3 py-1.5 text-sm border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-700 text-gray-900 dark:text-white focus:ring-2 focus:ring-fourth-base"
+            />
+          </div>
+        </div>
+        <span className="text-xs text-gray-500 dark:text-gray-400">
+          {filteredAppointments.length} citas en el rango
+        </span>
       </div>
 
       {/* KPI Cards */}
@@ -362,6 +501,29 @@ export default function ServiceDashboard() {
           title="Total Ganancias"
           value={`$${kpis.totalEarnings.toLocaleString()}`}
           icon={DollarSign}
+          loading={isLoading}
+        />
+      </div>
+
+      {/* Payment & Client KPIs */}
+      <div className="grid grid-cols-1 md:grid-cols-4 gap-6">
+        <KPICard
+          title="Citas Pagadas"
+          value={kpis.paidAppointments}
+          icon={CheckCircle}
+          loading={isLoading}
+        />
+        <KPICard
+          title="Pagos Pendientes"
+          value={kpis.pendingPayments}
+          icon={Clock}
+          loading={isLoading}
+        />
+        <KPICard title="Clientes Nuevos" value={kpis.newClients} icon={Users} loading={isLoading} />
+        <KPICard
+          title="Clientes Recurrentes"
+          value={kpis.recurringClients}
+          icon={TrendingUp}
           loading={isLoading}
         />
       </div>

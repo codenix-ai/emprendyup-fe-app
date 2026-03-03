@@ -259,6 +259,17 @@ export default function ServicesSummary({ open, onClose, data, onConfirm }: Serv
                   disabled={isSubmitting}
                 />
               </div>
+              <div className="flex flex-col items-center">
+                <label className="text-sm font-medium text-gray-300 mb-1">Botones</label>
+                <input
+                  type="color"
+                  name="buttonColor"
+                  value={formData.buttonColor || formData.primaryColor || '#7C3AED'}
+                  onChange={handleChange}
+                  className="w-12 h-12 border border-gray-600 rounded cursor-pointer bg-gray-800"
+                  disabled={isSubmitting}
+                />
+              </div>
             </div>
           </div>
 

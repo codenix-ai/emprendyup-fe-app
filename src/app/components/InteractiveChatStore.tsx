@@ -54,6 +54,7 @@ interface StoreData {
   bannerUrl: string;
   primaryColor: string;
   secondaryColor: string;
+  buttonColor: string;
   accentColor: string;
   backgroundColor: string;
   textColor: string;
@@ -125,7 +126,14 @@ const productsQuestions = [
     optional: true,
   },
   {
-    text: '📱 ¿Cuál es tu número de celular?',
+    text: '� Elige el color de los botones de tu tienda:',
+    field: 'buttonColor',
+    type: 'color' as const,
+    validation: { type: 'text' as const, required: false },
+    optional: true,
+  },
+  {
+    text: '�📱 ¿Cuál es tu número de celular?',
     field: 'phone',
     type: 'text' as const,
     validation: { type: 'phone' as const, required: false, message: 'Formato: +57 300 123 4567' },
@@ -325,7 +333,14 @@ const restaurantQuestions = [
     optional: true,
   },
   {
-    text: '📱 ¿Cuál es el teléfono de contacto?',
+    text: '� Elige el color de los botones de tu restaurante:',
+    field: 'buttonColor',
+    type: 'color' as const,
+    validation: { type: 'text' as const, required: false },
+    optional: true,
+  },
+  {
+    text: '�📱 ¿Cuál es el teléfono de contacto?',
     field: 'phone',
     type: 'text' as const,
     validation: { type: 'phone' as const, required: true, message: 'Formato: +57 300 123 4567' },
@@ -476,7 +491,14 @@ const servicesQuestions = [
     optional: true,
   },
   {
-    text: '📱 ¿Cuál es el teléfono de contacto?',
+    text: '� Elige el color de los botones de tu empresa:',
+    field: 'buttonColor',
+    type: 'color' as const,
+    validation: { type: 'text' as const, required: false },
+    optional: true,
+  },
+  {
+    text: '�📱 ¿Cuál es el teléfono de contacto?',
     field: 'phone',
     type: 'text' as const,
     validation: { type: 'phone' as const, required: true, message: 'Formato: +57 300 123 4567' },
@@ -534,6 +556,7 @@ const defaultStoreData: StoreData = {
   bannerUrl: '',
   primaryColor: '#3B82F6',
   secondaryColor: '#1F2937',
+  buttonColor: '#3B82F6',
   accentColor: '#10B981',
   backgroundColor: '#FFFFFF',
   textColor: '#111827',
@@ -2142,6 +2165,8 @@ export default function InteractiveChatStore() {
                           logoUrl: updatedData.logoUrl || '',
                           primaryColor: updatedData.primaryColor || '#3B82F6',
                           secondaryColor: updatedData.secondaryColor || '#1F2937',
+                          buttonColor:
+                            updatedData.buttonColor || updatedData.primaryColor || '#3B82F6',
                           address: updatedData.address,
                           lat: (updatedData.lat ?? storeData.lat) || null,
                           lng: (updatedData.lng ?? storeData.lng) || null,
@@ -2154,6 +2179,8 @@ export default function InteractiveChatStore() {
                             coverImageUrl: updatedData.coverImage || '',
                             primaryColor: updatedData.primaryColor || '#3B82F6',
                             secondaryColor: updatedData.secondaryColor || '#1F2937',
+                            buttonColor:
+                              updatedData.buttonColor || updatedData.primaryColor || '#3B82F6',
                             accentColor: updatedData.accentColor || '#10B981',
                             backgroundColor: updatedData.backgroundColor || '#FFFFFF',
                             textColor: updatedData.textColor || '#111827',
@@ -2221,7 +2248,10 @@ export default function InteractiveChatStore() {
                           logoUrl: updatedData.logoUrl || '',
                           primaryColor: updatedData.primaryColor || '#7C3AED',
                           secondaryColor: updatedData.secondaryColor || '#1F2937',
+                          buttonColor:
+                            updatedData.buttonColor || updatedData.primaryColor || '#7C3AED',
                           location: `${updatedData.city}, ${updatedData.department || 'Colombia'}`,
+
                           address: updatedData.address,
                           phone: updatedData.phone,
                           whatsappNumber: updatedData.whatsappNumber || updatedData.phone,
@@ -2235,6 +2265,8 @@ export default function InteractiveChatStore() {
                             coverImageUrl: updatedData.coverImage || '',
                             primaryColor: updatedData.primaryColor || '#7C3AED',
                             secondaryColor: updatedData.secondaryColor || '#1F2937',
+                            buttonColor:
+                              updatedData.buttonColor || updatedData.primaryColor || '#7C3AED',
                             accentColor: updatedData.accentColor || '#10B981',
                             backgroundColor: updatedData.backgroundColor || '#F9FAFB',
                             textColor: updatedData.textColor || '#111827',
