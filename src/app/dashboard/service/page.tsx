@@ -2,7 +2,17 @@
 import { useQuery, useMutation, gql } from '@apollo/client';
 import { useRouter } from 'next/navigation';
 import { useState, useEffect } from 'react';
-import { Save, CheckCircle, AlertCircle, Info, MapPin, Phone, Mail, Globe } from 'lucide-react';
+import {
+  Save,
+  CheckCircle,
+  AlertCircle,
+  Info,
+  MapPin,
+  Phone,
+  Mail,
+  Globe,
+  Image as ImageIcon,
+} from 'lucide-react';
 import { useSessionStore } from '@/lib/store/dashboard';
 import FileUpload from '@/app/components/FileUpload';
 import Image from 'next/image';
@@ -111,6 +121,7 @@ export default function ServiceDetailPage() {
     { id: 'details', label: 'Detalles', icon: Info },
     { id: 'location', label: 'Ubicación', icon: MapPin },
     { id: 'contact', label: 'Contacto', icon: Phone },
+    { id: 'images', label: 'Imágenes', icon: ImageIcon },
   ];
 
   if (!serviceId) {
