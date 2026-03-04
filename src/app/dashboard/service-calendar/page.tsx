@@ -145,10 +145,15 @@ const CREATE_APPOINTMENT = gql`
       customerName
       customerEmail
       customerPhone
+      customerWhatsappNumber
       startDatetime
       endDatetime
       status
       paymentStatus
+      serviceAddress
+      serviceCity
+      serviceReference
+      notes
       createdAt
     }
   }
@@ -321,11 +326,12 @@ export default function ServiceCalendar() {
 
   const handleDateSelect = (selectInfo: DateSelectArg) => {
     setSelectedEvent(null);
-    setAppointmentForm({
-      ...appointmentForm,
+    resetAppointmentForm();
+    setAppointmentForm((prev) => ({
+      ...prev,
       startDatetime: selectInfo.startStr,
       endDatetime: selectInfo.endStr || selectInfo.startStr,
-    });
+    }));
     setIsModalOpen(true);
   };
 
@@ -397,22 +403,33 @@ export default function ServiceCalendar() {
       const startDate = new Date(appointmentForm.startDatetime);
       const endDate = new Date(startDate.getTime() + service.durationMinutes * 60000);
 
+      // Build data object with only non-empty fields
+      const data: any = {
+        serviceProviderId,
+        serviceId: appointmentForm.serviceId,
+        customerName: appointmentForm.customerName,
+        customerPhone: appointmentForm.customerPhone,
+        customerEmail: appointmentForm.customerEmail,
+        startDatetime: startDate.toISOString(),
+        endDatetime: endDate.toISOString(),
+      };
+
+      // Add optional fields only if they have values
+      if (appointmentForm.notes?.trim()) {
+        data.notes = appointmentForm.notes.trim();
+      }
+      if (appointmentForm.serviceAddress?.trim()) {
+        data.serviceAddress = appointmentForm.serviceAddress.trim();
+      }
+      if (appointmentForm.serviceCity?.trim()) {
+        data.serviceCity = appointmentForm.serviceCity.trim();
+      }
+      if (appointmentForm.serviceReference?.trim()) {
+        data.serviceReference = appointmentForm.serviceReference.trim();
+      }
+
       await createAppointment({
-        variables: {
-          data: {
-            serviceProviderId,
-            serviceId: appointmentForm.serviceId,
-            customerName: appointmentForm.customerName,
-            customerPhone: appointmentForm.customerPhone,
-            customerEmail: appointmentForm.customerEmail,
-            startDatetime: startDate.toISOString(),
-            endDatetime: endDate.toISOString(),
-            notes: appointmentForm.notes,
-            serviceAddress: appointmentForm.serviceAddress || undefined,
-            serviceCity: appointmentForm.serviceCity || undefined,
-            serviceReference: appointmentForm.serviceReference || undefined,
-          },
-        },
+        variables: { data },
       });
       await refetchAppointments();
       setIsModalOpen(false);
@@ -429,23 +446,36 @@ export default function ServiceCalendar() {
       const startDate = new Date(appointmentForm.startDatetime);
       const endDate = new Date(appointmentForm.endDatetime);
 
+      // Build data object with only non-empty fields
+      const data: any = {
+        serviceId: appointmentForm.serviceId,
+        customerName: appointmentForm.customerName,
+        customerEmail: appointmentForm.customerEmail,
+        customerPhone: appointmentForm.customerPhone,
+        startDatetime: startDate.toISOString(),
+        endDatetime: endDate.toISOString(),
+        status: appointmentForm.status,
+        paymentStatus: appointmentForm.paymentStatus,
+      };
+
+      // Add optional fields only if they have values
+      if (appointmentForm.notes?.trim()) {
+        data.notes = appointmentForm.notes.trim();
+      }
+      if (appointmentForm.serviceAddress?.trim()) {
+        data.serviceAddress = appointmentForm.serviceAddress.trim();
+      }
+      if (appointmentForm.serviceCity?.trim()) {
+        data.serviceCity = appointmentForm.serviceCity.trim();
+      }
+      if (appointmentForm.serviceReference?.trim()) {
+        data.serviceReference = appointmentForm.serviceReference.trim();
+      }
+
       await updateAppointment({
         variables: {
           id: selectedEvent.extendedProps.appointmentId,
-          data: {
-            serviceId: appointmentForm.serviceId,
-            customerName: appointmentForm.customerName,
-            customerEmail: appointmentForm.customerEmail,
-            customerPhone: appointmentForm.customerPhone,
-            startDatetime: startDate.toISOString(),
-            endDatetime: endDate.toISOString(),
-            notes: appointmentForm.notes,
-            status: appointmentForm.status,
-            paymentStatus: appointmentForm.paymentStatus,
-            serviceAddress: appointmentForm.serviceAddress || undefined,
-            serviceCity: appointmentForm.serviceCity || undefined,
-            serviceReference: appointmentForm.serviceReference || undefined,
-          },
+          data,
         },
       });
       await refetchAppointments();
