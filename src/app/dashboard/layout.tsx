@@ -195,6 +195,7 @@ const getRestaurantNavigationGroups = () => {
         { name: 'Mi Restaurante', href: '/dashboard/restaurant', icon: UtensilsCrossed },
         { name: 'Reservaciones', href: '/dashboard/reservaciones', icon: Calendar },
         { name: 'Gastos y Ganancias', href: '/dashboard/restaurant-expenses', icon: Receipt },
+        { name: 'Nómina', href: '/dashboard/restaurant-payroll', icon: Users },
         { name: 'Imágenes del Menú', href: '/dashboard/menu-images', icon: Package },
       ],
     },
