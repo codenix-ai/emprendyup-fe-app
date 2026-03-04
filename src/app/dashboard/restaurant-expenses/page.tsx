@@ -667,49 +667,37 @@ export default function RestaurantExpenses() {
               No hay gastos registrados en este período.
             </div>
           ) : (
-            <div className="overflow-x-auto">
-              <table className="min-w-full divide-y divide-gray-200 dark:divide-gray-700">
-                <thead className="bg-gray-50 dark:bg-gray-900">
-                  <tr>
-                    {['Fecha', 'Categoría', 'Descripción', 'Valor', 'Método de Pago', ''].map(
-                      (h) => (
-                        <th
-                          key={h}
-                          className="px-6 py-3 text-left text-xs font-semibold text-gray-600 dark:text-gray-300 uppercase tracking-wider"
-                        >
-                          {h}
-                        </th>
-                      )
-                    )}
-                  </tr>
-                </thead>
-                <tbody className="divide-y divide-gray-200 dark:divide-gray-700">
-                  {filteredExpenses
-                    .slice()
-                    .sort((a, b) => parseDate(b.date).getTime() - parseDate(a.date).getTime())
-                    .map((expense) => (
-                      <tr
-                        key={expense.id}
-                        className="hover:bg-gray-50 dark:hover:bg-gray-700/50 transition"
-                      >
-                        <td className="px-6 py-4 text-sm text-gray-700 dark:text-gray-300 whitespace-nowrap">
-                          {parseDate(expense.date).toLocaleDateString('es-CO')}
-                        </td>
-                        <td className="px-6 py-4">
+            <>
+              {/* Mobile cards */}
+              <ul className="divide-y divide-gray-200 dark:divide-gray-700 sm:hidden">
+                {filteredExpenses
+                  .slice()
+                  .sort((a, b) => parseDate(b.date).getTime() - parseDate(a.date).getTime())
+                  .map((expense) => (
+                    <li key={expense.id} className="p-4 space-y-2">
+                      <div className="flex items-start justify-between gap-2">
+                        <div className="space-y-1">
                           <span className="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-blue-100 text-blue-800 dark:bg-blue-900 dark:text-blue-300">
                             {expense.category}
                           </span>
-                        </td>
-                        <td className="px-6 py-4 text-sm text-gray-700 dark:text-gray-300 max-w-xs truncate">
-                          {expense.description || '—'}
-                        </td>
-                        <td className="px-6 py-4 text-sm font-semibold text-red-600 dark:text-red-400 whitespace-nowrap">
+                          <p className="text-xs text-gray-500 dark:text-gray-400">
+                            {parseDate(expense.date).toLocaleDateString('es-CO')}
+                          </p>
+                        </div>
+                        <p className="text-base font-bold text-red-600 dark:text-red-400 shrink-0">
                           {formatCOP(expense.amount)}
-                        </td>
-                        <td className="px-6 py-4 text-sm text-gray-700 dark:text-gray-300 whitespace-nowrap">
+                        </p>
+                      </div>
+                      {expense.description && (
+                        <p className="text-sm text-gray-700 dark:text-gray-300">
+                          {expense.description}
+                        </p>
+                      )}
+                      <div className="flex items-center justify-between pt-1">
+                        <span className="text-xs text-gray-500 dark:text-gray-400">
                           {expense.paymentMethod}
-                        </td>
-                        <td className="px-6 py-4 whitespace-nowrap flex gap-2 justify-end">
+                        </span>
+                        <div className="flex gap-1">
                           <button
                             onClick={() => openEditExpense(expense)}
                             className="p-1.5 text-gray-400 hover:text-blue-500 transition-colors"
@@ -722,26 +710,98 @@ export default function RestaurantExpenses() {
                           >
                             <Trash2 className="h-4 w-4" />
                           </button>
-                        </td>
-                      </tr>
-                    ))}
-                </tbody>
-                <tfoot className="bg-gray-50 dark:bg-gray-900">
-                  <tr>
-                    <td
-                      colSpan={3}
-                      className="px-6 py-3 text-sm font-semibold text-gray-700 dark:text-gray-300"
-                    >
-                      Total del período
-                    </td>
-                    <td className="px-6 py-3 text-sm font-bold text-red-600 dark:text-red-400">
-                      {formatCOP(totalExpenses)}
-                    </td>
-                    <td colSpan={2} />
-                  </tr>
-                </tfoot>
-              </table>
-            </div>
+                        </div>
+                      </div>
+                    </li>
+                  ))}
+              </ul>
+              {/* Mobile total */}
+              <div className="sm:hidden px-4 py-3 bg-gray-50 dark:bg-gray-900 border-t border-gray-200 dark:border-gray-700 flex justify-between items-center">
+                <span className="text-sm font-semibold text-gray-700 dark:text-gray-300">
+                  Total del período
+                </span>
+                <span className="text-sm font-bold text-red-600 dark:text-red-400">
+                  {formatCOP(totalExpenses)}
+                </span>
+              </div>
+
+              {/* Desktop table */}
+              <div className="hidden sm:block overflow-x-auto">
+                <table className="min-w-full divide-y divide-gray-200 dark:divide-gray-700">
+                  <thead className="bg-gray-50 dark:bg-gray-900">
+                    <tr>
+                      {['Fecha', 'Categoría', 'Descripción', 'Valor', 'Método de Pago', ''].map(
+                        (h) => (
+                          <th
+                            key={h}
+                            className="px-6 py-3 text-left text-xs font-semibold text-gray-600 dark:text-gray-300 uppercase tracking-wider"
+                          >
+                            {h}
+                          </th>
+                        )
+                      )}
+                    </tr>
+                  </thead>
+                  <tbody className="divide-y divide-gray-200 dark:divide-gray-700">
+                    {filteredExpenses
+                      .slice()
+                      .sort((a, b) => parseDate(b.date).getTime() - parseDate(a.date).getTime())
+                      .map((expense) => (
+                        <tr
+                          key={expense.id}
+                          className="hover:bg-gray-50 dark:hover:bg-gray-700/50 transition"
+                        >
+                          <td className="px-6 py-4 text-sm text-gray-700 dark:text-gray-300 whitespace-nowrap">
+                            {parseDate(expense.date).toLocaleDateString('es-CO')}
+                          </td>
+                          <td className="px-6 py-4">
+                            <span className="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-blue-100 text-blue-800 dark:bg-blue-900 dark:text-blue-300">
+                              {expense.category}
+                            </span>
+                          </td>
+                          <td className="px-6 py-4 text-sm text-gray-700 dark:text-gray-300 max-w-xs truncate">
+                            {expense.description || '—'}
+                          </td>
+                          <td className="px-6 py-4 text-sm font-semibold text-red-600 dark:text-red-400 whitespace-nowrap">
+                            {formatCOP(expense.amount)}
+                          </td>
+                          <td className="px-6 py-4 text-sm text-gray-700 dark:text-gray-300 whitespace-nowrap">
+                            {expense.paymentMethod}
+                          </td>
+                          <td className="px-6 py-4 whitespace-nowrap flex gap-2 justify-end">
+                            <button
+                              onClick={() => openEditExpense(expense)}
+                              className="p-1.5 text-gray-400 hover:text-blue-500 transition-colors"
+                            >
+                              <Edit2 className="h-4 w-4" />
+                            </button>
+                            <button
+                              onClick={() => handleDeleteExpense(expense.id)}
+                              className="p-1.5 text-gray-400 hover:text-red-500 transition-colors"
+                            >
+                              <Trash2 className="h-4 w-4" />
+                            </button>
+                          </td>
+                        </tr>
+                      ))}
+                  </tbody>
+                  <tfoot className="bg-gray-50 dark:bg-gray-900">
+                    <tr>
+                      <td
+                        colSpan={3}
+                        className="px-6 py-3 text-sm font-semibold text-gray-700 dark:text-gray-300"
+                      >
+                        Total del período
+                      </td>
+                      <td className="px-6 py-3 text-sm font-bold text-red-600 dark:text-red-400">
+                        {formatCOP(totalExpenses)}
+                      </td>
+                      <td colSpan={2} />
+                    </tr>
+                  </tfoot>
+                </table>
+              </div>
+            </>
           )}
         </div>
       )}
@@ -759,44 +819,34 @@ export default function RestaurantExpenses() {
               No hay ganancias registradas en este período.
             </div>
           ) : (
-            <div className="overflow-x-auto">
-              <table className="min-w-full divide-y divide-gray-200 dark:divide-gray-700">
-                <thead className="bg-gray-50 dark:bg-gray-900">
-                  <tr>
-                    {['Fecha', 'Fuente', 'Descripción', 'Valor', 'Método de Pago', ''].map((h) => (
-                      <th
-                        key={h}
-                        className="px-6 py-3 text-left text-xs font-semibold text-gray-600 dark:text-gray-300 uppercase tracking-wider"
-                      >
-                        {h}
-                      </th>
-                    ))}
-                  </tr>
-                </thead>
-                <tbody className="divide-y divide-gray-200 dark:divide-gray-700">
-                  {filteredEarnings.map((earning) => (
-                    <tr
-                      key={earning.id}
-                      className="hover:bg-gray-50 dark:hover:bg-gray-700/50 transition"
-                    >
-                      <td className="px-6 py-4 text-sm text-gray-700 dark:text-gray-300 whitespace-nowrap">
-                        {parseDate(earning.date).toLocaleDateString('es-CO')}
-                      </td>
-                      <td className="px-6 py-4">
+            <>
+              {/* Mobile cards */}
+              <ul className="divide-y divide-gray-200 dark:divide-gray-700 sm:hidden">
+                {filteredEarnings.map((earning) => (
+                  <li key={earning.id} className="p-4 space-y-2">
+                    <div className="flex items-start justify-between gap-2">
+                      <div className="space-y-1">
                         <span className="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-green-100 text-green-800 dark:bg-green-900 dark:text-green-300">
                           {earning.source}
                         </span>
-                      </td>
-                      <td className="px-6 py-4 text-sm text-gray-700 dark:text-gray-300 max-w-xs truncate">
-                        {earning.description || '—'}
-                      </td>
-                      <td className="px-6 py-4 text-sm font-semibold text-green-600 dark:text-green-400 whitespace-nowrap">
+                        <p className="text-xs text-gray-500 dark:text-gray-400">
+                          {parseDate(earning.date).toLocaleDateString('es-CO')}
+                        </p>
+                      </div>
+                      <p className="text-base font-bold text-green-600 dark:text-green-400 shrink-0">
                         {formatCOP(earning.amount)}
-                      </td>
-                      <td className="px-6 py-4 text-sm text-gray-700 dark:text-gray-300 whitespace-nowrap">
+                      </p>
+                    </div>
+                    {earning.description && (
+                      <p className="text-sm text-gray-700 dark:text-gray-300">
+                        {earning.description}
+                      </p>
+                    )}
+                    <div className="flex items-center justify-between pt-1">
+                      <span className="text-xs text-gray-500 dark:text-gray-400">
                         {earning.paymentMethod}
-                      </td>
-                      <td className="px-6 py-4 whitespace-nowrap flex gap-2 justify-end">
+                      </span>
+                      <div className="flex gap-1">
                         <button
                           onClick={() => openEditEarning(earning)}
                           className="p-1.5 text-gray-400 hover:text-blue-500 transition-colors"
@@ -809,26 +859,95 @@ export default function RestaurantExpenses() {
                         >
                           <Trash2 className="h-4 w-4" />
                         </button>
-                      </td>
+                      </div>
+                    </div>
+                  </li>
+                ))}
+              </ul>
+              {/* Mobile total */}
+              <div className="sm:hidden px-4 py-3 bg-gray-50 dark:bg-gray-900 border-t border-gray-200 dark:border-gray-700 flex justify-between items-center">
+                <span className="text-sm font-semibold text-gray-700 dark:text-gray-300">
+                  Total del período
+                </span>
+                <span className="text-sm font-bold text-green-600 dark:text-green-400">
+                  {formatCOP(totalIncome)}
+                </span>
+              </div>
+
+              {/* Desktop table */}
+              <div className="hidden sm:block overflow-x-auto">
+                <table className="min-w-full divide-y divide-gray-200 dark:divide-gray-700">
+                  <thead className="bg-gray-50 dark:bg-gray-900">
+                    <tr>
+                      {['Fecha', 'Fuente', 'Descripción', 'Valor', 'Método de Pago', ''].map(
+                        (h) => (
+                          <th
+                            key={h}
+                            className="px-6 py-3 text-left text-xs font-semibold text-gray-600 dark:text-gray-300 uppercase tracking-wider"
+                          >
+                            {h}
+                          </th>
+                        )
+                      )}
                     </tr>
-                  ))}
-                </tbody>
-                <tfoot className="bg-gray-50 dark:bg-gray-900">
-                  <tr>
-                    <td
-                      colSpan={3}
-                      className="px-6 py-3 text-sm font-semibold text-gray-700 dark:text-gray-300"
-                    >
-                      Total del período
-                    </td>
-                    <td className="px-6 py-3 text-sm font-bold text-green-600 dark:text-green-400">
-                      {formatCOP(totalIncome)}
-                    </td>
-                    <td colSpan={2} />
-                  </tr>
-                </tfoot>
-              </table>
-            </div>
+                  </thead>
+                  <tbody className="divide-y divide-gray-200 dark:divide-gray-700">
+                    {filteredEarnings.map((earning) => (
+                      <tr
+                        key={earning.id}
+                        className="hover:bg-gray-50 dark:hover:bg-gray-700/50 transition"
+                      >
+                        <td className="px-6 py-4 text-sm text-gray-700 dark:text-gray-300 whitespace-nowrap">
+                          {parseDate(earning.date).toLocaleDateString('es-CO')}
+                        </td>
+                        <td className="px-6 py-4">
+                          <span className="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-green-100 text-green-800 dark:bg-green-900 dark:text-green-300">
+                            {earning.source}
+                          </span>
+                        </td>
+                        <td className="px-6 py-4 text-sm text-gray-700 dark:text-gray-300 max-w-xs truncate">
+                          {earning.description || '—'}
+                        </td>
+                        <td className="px-6 py-4 text-sm font-semibold text-green-600 dark:text-green-400 whitespace-nowrap">
+                          {formatCOP(earning.amount)}
+                        </td>
+                        <td className="px-6 py-4 text-sm text-gray-700 dark:text-gray-300 whitespace-nowrap">
+                          {earning.paymentMethod}
+                        </td>
+                        <td className="px-6 py-4 whitespace-nowrap flex gap-2 justify-end">
+                          <button
+                            onClick={() => openEditEarning(earning)}
+                            className="p-1.5 text-gray-400 hover:text-blue-500 transition-colors"
+                          >
+                            <Edit2 className="h-4 w-4" />
+                          </button>
+                          <button
+                            onClick={() => handleDeleteEarning(earning.id)}
+                            className="p-1.5 text-gray-400 hover:text-red-500 transition-colors"
+                          >
+                            <Trash2 className="h-4 w-4" />
+                          </button>
+                        </td>
+                      </tr>
+                    ))}
+                  </tbody>
+                  <tfoot className="bg-gray-50 dark:bg-gray-900">
+                    <tr>
+                      <td
+                        colSpan={3}
+                        className="px-6 py-3 text-sm font-semibold text-gray-700 dark:text-gray-300"
+                      >
+                        Total del período
+                      </td>
+                      <td className="px-6 py-3 text-sm font-bold text-green-600 dark:text-green-400">
+                        {formatCOP(totalIncome)}
+                      </td>
+                      <td colSpan={2} />
+                    </tr>
+                  </tfoot>
+                </table>
+              </div>
+            </>
           )}
         </div>
       )}
