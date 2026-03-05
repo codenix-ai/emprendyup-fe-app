@@ -57,6 +57,7 @@ import { ColorPicker } from './ColorPicker';
 import { SizeSelector } from './SizeSelector';
 import { CustomVariantSelector } from './CustomVariantSelector';
 import { VariantCombinationGenerator } from './VariantCombinationGenerator';
+import { CategoryFormModal } from './CategoryFormModal';
 
 // GraphQL Mutation
 const CREATE_PRODUCT_WITH_URLS = gql`
@@ -359,8 +360,13 @@ export function ProductFormWizard({
   const [errors, setErrors] = useState<any>({});
   const [isSaving, setIsSaving] = useState(false);
   const [isUploadingImages, setIsUploadingImages] = useState(false);
+  const [showCategoryModal, setShowCategoryModal] = useState(false);
+  const [selectedParentForNewCategory, setSelectedParentForNewCategory] = useState<any>(null);
 
   const userData = JSON.parse(localStorage.getItem('user') || '{}');
+
+  // Validar que tenemos un storeId válido
+  const validStoreId = userData?.storeId ? String(userData.storeId).trim() : null;
 
   const { data, error } = useQuery(GET_STORE_CONFIG, {
     variables: { storeId: userData?.storeId || '' },
@@ -1266,6 +1272,36 @@ export function ProductFormWizard({
     setCategories(categories.filter((c) => c.id !== catId));
   };
 
+  const handleCreateNewCategory = (parentCategory?: any) => {
+    setSelectedParentForNewCategory(parentCategory || null);
+    setShowCategoryModal(true);
+  };
+
+  const handleCategoryCreated = async (newCategory: any) => {
+    // Refetch categories to get the latest data
+    await refetchCategories();
+
+    // Automatically select the newly created category
+    handleSelectCategory(newCategory.id, newCategory.name, newCategory.slug, false);
+
+    toast.success('Categoría creada y seleccionada automáticamente');
+  };
+
+  // Debug logging when category modal opens
+  useEffect(() => {
+    if (showCategoryModal) {
+      console.log('Category modal opened - Debug info:', {
+        userData: {
+          ...userData,
+          token: userData?.token ? '[REDACTED]' : undefined,
+        },
+        validStoreId,
+        isAdmin: userData?.role === 'ADMIN' || userData?.isAdmin,
+        userHasStore: !!validStoreId,
+      });
+    }
+  }, [showCategoryModal]);
+
   const selectedCategoryNames = categories.map((c) => c.name).join(', ');
   const renderStep = () => {
     switch (currentStep) {
@@ -1393,37 +1429,55 @@ export function ProductFormWizard({
               </p>
             </div>
 
-            {transformedCategories && transformedCategories.length > 0 ? (
-              <div className="space-y-8">
-                {/* Custom Dropdown */}
-                <div className="relative">
-                  <button
-                    onClick={() => setIsOpen(!isOpen)}
-                    className="w-full bg-gradient-to-r from-gray-800 to-gray-900 border border-gray-700 hover:border-fourth-400 text-gray-300 rounded-lg p-4 focus:outline-none focus:ring-2 focus:ring-fourth-400 transition-all duration-200 flex items-center justify-between group"
-                  >
-                    <span className="text-left">
-                      {categories.length > 0
-                        ? `${categories.length} categoría${categories.length > 1 ? 's' : ''} seleccionada${categories.length > 1 ? 's' : ''}`
-                        : 'Selecciona una categoría'}
-                    </span>
-                    <ChevronDown
-                      className={`w-5 h-5 text-fourth-base transition-transform duration-200 ${
-                        isOpen ? 'rotate-180' : ''
-                      }`}
-                    />
-                  </button>
+            <div className="space-y-8">
+              {/* Custom Dropdown */}
+              <div className="relative z-50">
+                <button
+                  onClick={() => setIsOpen(!isOpen)}
+                  className="w-full bg-gradient-to-r from-gray-800 to-gray-900 border border-gray-700 hover:border-fourth-400 text-gray-300 rounded-lg p-4 focus:outline-none focus:ring-2 focus:ring-fourth-400 transition-all duration-200 flex items-center justify-between group"
+                >
+                  <span className="text-left">
+                    {categories.length > 0
+                      ? `${categories.length} categoría${categories.length > 1 ? 's' : ''} seleccionada${categories.length > 1 ? 's' : ''}`
+                      : 'Selecciona una categoría o crea una nueva'}
+                  </span>
+                  <ChevronDown
+                    className={`w-5 h-5 text-fourth-base transition-transform duration-200 ${
+                      isOpen ? 'rotate-180' : ''
+                    }`}
+                  />
+                </button>
 
-                  {/* Dropdown Menu */}
-                  {isOpen && (
-                    <div className="absolute top-full left-0 right-0 mt-2 bg-gray-800 border border-fourth-400/50 rounded-lg shadow-2xl z-50 max-h-96 overflow-y-auto">
-                      {transformedCategories.map((category: any) => (
+                {/* Dropdown Menu */}
+                {isOpen && (
+                  <div
+                    className="absolute top-full left-0 right-0 mt-2 bg-gray-800 border border-fourth-400/50 rounded-lg shadow-2xl z-50 overflow-y-auto"
+                    style={{
+                      maxHeight: 'min(50vh, 420px)',
+                      overflowY: 'auto',
+                      WebkitOverflowScrolling: 'touch',
+                    }}
+                  >
+                    {/* Create New Category Button - Always visible */}
+                    <button
+                      type="button"
+                      onClick={() => handleCreateNewCategory()}
+                      className="w-full text-left px-4 py-3 text-fourth-base font-medium bg-gray-900 hover:bg-gray-800 border-b border-gray-700 flex items-center gap-2 transition-colors sticky top-0"
+                    >
+                      <Plus className="w-4 h-4" />
+                      Crear nueva categoría
+                    </button>
+
+                    {/* Categories List */}
+                    {transformedCategories && transformedCategories.length > 0 ? (
+                      transformedCategories.map((category: any) => (
                         <div key={category.id}>
                           {/* Parent Category */}
                           <button
                             onClick={() =>
                               handleSelectCategory(category.id, category.name, category.slug, true)
                             }
-                            className={`w-full text-left px-4 py-3 hover:bg-fourth-400/10 text-white font-medium transition-colors border-b border-gray-700 last:border-b-0 flex items-center gap-3 ${
+                            className={`w-full text-left px-4 py-4 hover:bg-fourth-400/10 text-white font-medium transition-colors border-b border-gray-700 last:border-b-0 flex items-center gap-3 ${
                               categories.some((c) => c.id === category.id)
                                 ? 'bg-fourth-400/20 text-fourth-200'
                                 : ''
@@ -1444,7 +1498,7 @@ export function ProductFormWizard({
                                 onClick={() =>
                                   handleSelectCategory(child.id, child.name, child.slug)
                                 }
-                                className={`w-full text-left px-8 py-2.5 hover:bg-gray-700 text-gray-300 hover:text-fourth-base transition-colors text-sm flex items-center ${
+                                className={`w-full text-left px-8 py-3 hover:bg-gray-700 text-gray-300 hover:text-fourth-base transition-colors text-sm flex items-center ${
                                   categories.some((c) => c.id === child.id)
                                     ? 'bg-gray-700 text-fourth-200'
                                     : ''
@@ -1458,41 +1512,41 @@ export function ProductFormWizard({
                               </button>
                             ))}
                         </div>
-                      ))}
-                    </div>
-                  )}
-                </div>
-
-                {/* Selected Categories Tags */}
-                {categories.length > 0 && (
-                  <div className="bg-gradient-to-r from-fourth-900/30 to-fourth-800/20 border border-fourth-600/50 p-4 rounded-lg backdrop-blur-sm">
-                    <p className="text-fourth-300 text-sm font-medium mb-3">
-                      Categorías seleccionadas: {categories.length}
-                    </p>
-                    <div className="flex flex-wrap gap-2">
-                      {categories.map((cat) => (
-                        <div
-                          key={cat.id}
-                          className="px-3 py-1.5 bg-fourth-400 text-white text-xs rounded-full flex items-center gap-2 hover:bg-fourth-600 transition-colors group"
-                        >
-                          {cat.name}
-                          <button
-                            onClick={() => handleRemoveCategory(cat.id)}
-                            className="opacity-0 text-white group-hover:opacity-100 transition-opacity"
-                          >
-                            <X className="w-3.5 h-3.5" />
-                          </button>
-                        </div>
-                      ))}
-                    </div>
+                      ))
+                    ) : (
+                      <div className="px-4 py-4 text-center text-gray-400 text-sm">
+                        No hay categorías disponibles. Crea una nueva para empezar.
+                      </div>
+                    )}
                   </div>
                 )}
               </div>
-            ) : (
-              <div className="bg-gray-800 border border-gray-700 p-6 rounded-lg text-center">
-                <p className="text-gray-400">No hay categorías disponibles</p>
-              </div>
-            )}
+
+              {/* Selected Categories Tags */}
+              {categories.length > 0 && (
+                <div className="bg-gradient-to-r from-fourth-900/30 to-fourth-800/20 border border-fourth-600/50 p-4 rounded-lg backdrop-blur-sm">
+                  <p className="text-fourth-300 text-sm font-medium mb-3">
+                    Categorías seleccionadas: {categories.length}
+                  </p>
+                  <div className="flex flex-wrap gap-2">
+                    {categories.map((cat) => (
+                      <div
+                        key={cat.id}
+                        className="px-3 py-1.5 bg-fourth-400 text-white text-xs rounded-full flex items-center gap-2 hover:bg-fourth-600 transition-colors group"
+                      >
+                        {cat.name}
+                        <button
+                          onClick={() => handleRemoveCategory(cat.id)}
+                          className="opacity-0 text-white group-hover:opacity-100 transition-opacity"
+                        >
+                          <X className="w-3.5 h-3.5" />
+                        </button>
+                      </div>
+                    ))}
+                  </div>
+                </div>
+              )}
+            </div>
 
             {errors.categories && <p className="text-red-400 text-sm">{errors.categories}</p>}
           </div>
@@ -1847,7 +1901,7 @@ export function ProductFormWizard({
 
   return (
     <div className="max-w-4xl mx-auto p-4 md:p-6">
-      <div className="bg-gray-800 border border-gray-700 rounded-xl shadow-lg overflow-hidden">
+      <div className="bg-gray-800 border border-gray-700 rounded-xl shadow-lg overflow-visible">
         <div className="border-b border-gray-700 bg-gradient-to-r from-gray-800 to-gray-700 p-4 md:p-6">
           <div className="flex items-center justify-between">
             <div className="flex items-center space-x-3">
@@ -2067,6 +2121,15 @@ export function ProductFormWizard({
           <p className="text-red-400 text-sm">{errors.submit}</p>
         </div>
       )}
+
+      {/* Category Form Modal */}
+      <CategoryFormModal
+        isOpen={showCategoryModal}
+        onClose={() => setShowCategoryModal(false)}
+        storeId={validStoreId || ''}
+        onSuccess={handleCategoryCreated}
+        preselectedParent={selectedParentForNewCategory}
+      />
     </div>
   );
 }
