@@ -161,19 +161,19 @@ interface Quote {
 // ─── Helpers ─────────────────────────────────────────────────────────────────
 
 const STATUS_COLORS: Record<string, string> = {
-  pendiente: 'bg-yellow-100 text-yellow-800',
-  contactado: 'bg-blue-100 text-blue-800',
-  ganado: 'bg-green-100 text-green-800',
-  perdido: 'bg-red-100 text-red-800',
-  en_proceso: 'bg-indigo-100 text-indigo-800',
-  completado: 'bg-green-200 text-green-900',
-  rechazado: 'bg-red-200 text-red-900',
-  cancelado: 'bg-gray-100 text-gray-700',
-  aprovado_por_cliente: 'bg-teal-100 text-teal-800',
-  pendiente_de_envio_cotizacion: 'bg-orange-100 text-orange-800',
-  cotizacion_enviada: 'bg-cyan-100 text-cyan-800',
-  pendiente_de_confirmacion: 'bg-purple-100 text-purple-800',
-  confirmado: 'bg-emerald-100 text-emerald-800',
+  PENDIENTE: 'bg-yellow-100 text-yellow-800',
+  CONTACTADO: 'bg-blue-100 text-blue-800',
+  GANADO: 'bg-green-100 text-green-800',
+  PERDIDO: 'bg-red-100 text-red-800',
+  EN_PROCESO: 'bg-indigo-100 text-indigo-800',
+  COMPLETADO: 'bg-green-200 text-green-900',
+  RECHAZADO: 'bg-red-200 text-red-900',
+  CANCELADO: 'bg-gray-100 text-gray-700',
+  APROVADO_POR_CLIENTE: 'bg-teal-100 text-teal-800',
+  PENDIENTE_DE_ENVIO_COTIZACION: 'bg-orange-100 text-orange-800',
+  COTIZACION_ENVIADA: 'bg-cyan-100 text-cyan-800',
+  PENDIENTE_DE_CONFIRMACION: 'bg-purple-100 text-purple-800',
+  CONFIRMADO: 'bg-emerald-100 text-emerald-800',
 };
 
 function StatusBadge({ estado }: { estado: string }) {
@@ -220,19 +220,19 @@ function QuoteDetailModal({ quoteId, onClose }: { quoteId: string; onClose: () =
   const [updateError, setUpdateError] = useState('');
 
   const QUOTE_STATES: { value: string; label: string }[] = [
-    { value: 'pendiente', label: 'Pendiente' },
-    { value: 'contactado', label: 'Contactado' },
-    { value: 'pendiente_de_envio_cotizacion', label: 'Pendiente de envío de cotización' },
-    { value: 'cotizacion_enviada', label: 'Cotización enviada' },
-    { value: 'pendiente_de_confirmacion', label: 'Pendiente de confirmación' },
-    { value: 'aprovado_por_cliente', label: 'Aprobado por cliente' },
-    { value: 'confirmado', label: 'Confirmado' },
-    { value: 'en_proceso', label: 'En proceso' },
-    { value: 'ganado', label: 'Ganado' },
-    { value: 'completado', label: 'Completado' },
-    { value: 'perdido', label: 'Perdido' },
-    { value: 'rechazado', label: 'Rechazado' },
-    { value: 'cancelado', label: 'Cancelado' },
+    { value: 'PENDIENTE', label: 'Pendiente' },
+    { value: 'CONTACTADO', label: 'Contactado' },
+    { value: 'PENDIENTE_DE_ENVIO_COTIZACION', label: 'Pendiente de envío de cotización' },
+    { value: 'COTIZACION_ENVIADA', label: 'Cotización enviada' },
+    { value: 'PENDIENTE_DE_CONFIRMACION', label: 'Pendiente de confirmación' },
+    { value: 'APROVADO_POR_CLIENTE', label: 'Aprobado por cliente' },
+    { value: 'CONFIRMADO', label: 'Confirmado' },
+    { value: 'EN_PROCESO', label: 'En proceso' },
+    { value: 'GANADO', label: 'Ganado' },
+    { value: 'COMPLETADO', label: 'Completado' },
+    { value: 'PERDIDO', label: 'Perdido' },
+    { value: 'RECHAZADO', label: 'Rechazado' },
+    { value: 'CANCELADO', label: 'Cancelado' },
   ];
 
   async function handleUpdate(e: React.FormEvent) {
