@@ -1,0 +1,162 @@
+{
+  "cta": {
+    "title": "Compra Ahora y Protege tu Confort",
+    "subtitle": "Asegura tu pasamontañas térmico hoy mismo",
+    "buttonText": "Añadir al Carrito",
+    "buttonAction": "#carrito",
+    "backgroundColor": "#E74C3C"
+  },
+  "faq": {
+    "items": [
+      {
+        "answer": "No es impermeable, está diseñado principalmente para retención de calor.",
+        "question": "¿El pasamontañas es resistente al agua?"
+      },
+      {
+        "answer": "Se puede lavar a mano o en máquina con agua fría y secar al aire.",
+        "question": "¿Cómo se lava el pasamontañas?"
+      },
+      {
+        "answer": "Sí, el diseño permite adaptarse a diferentes tamaños de cabeza.",
+        "question": "¿Es un tamaño ajustable?"
+      },
+      {
+        "answer": "Está diseñado para ambientes fríos, perfecto para uso laboral en cuartos fríos.",
+        "question": "¿Es adecuado para actividades al aire libre?"
+      },
+      {
+        "answer": "Sí, se ajusta bien bajo la mayoría de cascos de seguridad.",
+        "question": "¿Puedo usarlo con un casco de seguridad?"
+      },
+      {
+        "answer": "Está fabricado con materiales hipoalergénicos, pero siempre es recomendable hacer una prueba previa.",
+        "question": "¿Es apto para personas alérgicas?"
+      }
+    ],
+    "title": "Preguntas Frecuentes",
+    "subtitle": "Respuestas a tus dudas"
+  },
+  "seo": {
+    "title": "Pasamontañas Térmico para Cuartos Fríos - Pawis",
+    "keywords": [
+      "pasamontañas térmico",
+      "cuartos fríos",
+      "protección contra el frío",
+      "ropa laboral",
+      "Pawis"
+    ],
+    "description": "Compra el pasamontañas térmico ideal para cuartos fríos. Ofrece protección y confort en ambientes fríos, disponible en varios colores."
+  },
+  "hero": {
+    "price": "20000",
+    "title": "Pasamontañas",
+    "buttons": [
+      { "text": "Compra Ahora", "style": "primary", "action": "#comprar" },
+      { "text": "Más Información", "style": "secondary", "action": "#informacion" }
+    ],
+    "currency": "COP",
+    "subtitle": "Tu barrera contra el frío extremo",
+    "description": "Mantente cálido y protegido en los entornos más fríos con nuestro pasamontañas especialmente diseñado para brindar confort y seguridad.",
+    "backgroundImage": {
+      "id": "https://images.unsplash.com/photo-1766837774704-44831a27e87d?crop=entropy&cs=tinysrgb&fit=max&fm=jpg&ixid=M3w4NTY4Njl8MHwxfHJhbmRvbXx8fHx8fHx8fDE3NzE5Mzg3MTF8&ixlib=rb-4.1.0&q=80&w=1080",
+      "alt": "Pasamontañas - Hero image"
+    }
+  },
+  "theme": {
+    "fonts": { "body": "Verdana, sans-serif", "heading": "Arial, sans-serif" },
+    "colors": {
+      "text": "#34495E",
+      "accent": "#F39C12",
+      "primary": "#2C3E50",
+      "secondary": "#E74C3C",
+      "background": "#ECF0F1",
+      "primaryDark": "#0e2032",
+      "primaryLight": "#4a5c6e"
+    }
+  },
+  "gallery": {
+    "title": "Galería de Imágenes",
+    "images": [
+      {
+        "id": "https://images.unsplash.com/photo-1462678522506-09a896e3d33f?crop=entropy&cs=tinysrgb&fit=max&fm=jpg&ixid=M3w4NTY4Njl8MHwxfHJhbmRvbXx8fHx8fHx8fDE3NzE5Mzg3MTF8&ixlib=rb-4.1.0&q=80&w=1080",
+        "alt": "Pasamontañas - Image 1"
+      },
+      {
+        "id": "https://images.unsplash.com/photo-1710848871562-4d4acd863dff?crop=entropy&cs=tinysrgb&fit=max&fm=jpg&ixid=M3w4NTY4Njl8MHwxfHJhbmRvbXx8fHx8fHx8fDE3NzE5Mzg3MTF8&ixlib=rb-4.1.0&q=80&w=1080",
+        "alt": "Pasamontañas - Image 2"
+      },
+      {
+        "id": "https://images.unsplash.com/photo-1769370287192-7ddc36c19221?crop=entropy&cs=tinysrgb&fit=max&fm=jpg&ixid=M3w4NTY4Njl8MHwxfHJhbmRvbXx8fHx8fHx8fDE3NzE5Mzg3MTF8&ixlib=rb-4.1.0&q=80&w=1080",
+        "alt": "Pasamontañas - Image 3"
+      }
+    ],
+    "subtitle": "Visualiza el producto en acción"
+  },
+  "benefits": {
+    "items": [
+      "Protege eficazmente del frío extremo, asegurando comodidad en todo momento.",
+      "Ligero y fácil de transportar, ideal para trabajos en movimiento.",
+      "Diseño versátil que complementa cualquier indumentaria laboral.",
+      "Fácil mantenimiento para un uso prolongado y confiable.",
+      "Aumenta la seguridad y eficiencia en ambientes laborales fríos."
+    ],
+    "title": "Beneficios del Producto",
+    "subtitle": "Por qué elegir nuestro pasamontañas térmico"
+  },
+  "branding": {
+    "logo": {
+      "alt": "Logo de Pawis",
+      "url": "https://emprendyup-images.s3.us-east-1.amazonaws.com/pawis/adf79d1a-d2f9-4c68-92c9-7cb395ab76ac.webp"
+    },
+    "tagline": "Protección y confort en ambientes fríos",
+    "description": "El pasamontañas para cuartos fríos ofrece protección directa contra el frío en las zonas más expuestas del cuerpo. Su diseño térmico ayuda a mantener el calor en cabeza, cuello y rostro, proporcionando abrigo constante sin incomodidad ni restricción de movimiento.\n\nLigero, práctico y funcional, es ideal para trabajos en cámaras de refrigeración, cuartos fríos y áreas de congelación, convirtiéndose en un complemento esencial para la dotación térmica laboral.\n\nDisponible en los colores: amarillo, gris, azul claro, azul oscuro, rojo y blanco, este pasamontañas combina protección, abrigo y estilo en una sola prenda.\nUn esencial para enfrentar el frío con seguridad, confort y durabilidad.",
+    "productName": "Pasamontañas"
+  },
+  "features": {
+    "items": [
+      "Aislamiento térmico avanzado para máxima retención de calor.",
+      "Material ligero que permite libertad de movimiento.",
+      "Diseño ergonómico que se adapta a distintas formas de cabeza.",
+      "Variedad de colores para combinar con tu equipo de trabajo.",
+      "Fácil de lavar y mantener en óptimas condiciones.",
+      "Costuras reforzadas para mayor durabilidad."
+    ],
+    "title": "Características Destacadas",
+    "subtitle": "Diseñado para tu comodidad y protección"
+  },
+  "testimonials": {
+    "items": [
+      {
+        "name": "Carlos Martínez",
+        "rating": 5,
+        "comment": "Desde que uso este pasamontañas, trabajar en el cuarto frío es mucho más soportable. Realmente mantiene el calor sin ser incómodo."
+      },
+      {
+        "name": "Ana López",
+        "rating": 4,
+        "comment": "Gran producto, muy ligero y fácil de usar. Además, los colores disponibles son un plus para mi equipo."
+      },
+      {
+        "name": "Jorge Rivera",
+        "rating": 5,
+        "comment": "No pensé que un pasamontañas pudiera ser tan efectivo. La calidad del material es excelente y se ajusta perfectamente."
+      }
+    ],
+    "title": "Testimonios de Clientes",
+    "subtitle": "Lo que nuestros clientes dicen",
+    "showStars": true
+  },
+  "specifications": {
+    "items": [
+      { "name": "Material", "value": "Fibras sintéticas térmicas" },
+      { "name": "Peso", "value": "150 gramos" },
+      {
+        "name": "Colores Disponibles",
+        "value": "Amarillo, Gris, Azul Claro, Azul Oscuro, Rojo, Blanco"
+      },
+      { "name": "Tamaño", "value": "Único ajustable" }
+    ],
+    "title": "Especificaciones Técnicas",
+    "subtitle": "Detalles que importan"
+  }
+}

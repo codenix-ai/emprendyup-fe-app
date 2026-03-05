@@ -32,6 +32,7 @@ import {
   Calendar,
   Receipt,
   UserCheck,
+  ClipboardList,
 } from 'lucide-react';
 import Image from 'next/image';
 import { useSessionStore } from '@/lib/store/dashboard';
@@ -116,6 +117,7 @@ const getStoreNavigationGroups = () => {
       items: [
         { name: 'Mi Tienda', href: '/dashboard/store', icon: Store },
         { name: 'Pedidos', href: '/dashboard/orders', icon: ShoppingCart },
+        { name: 'Cotizaciones', href: '/dashboard/quotes', icon: ClipboardList },
         { name: 'Productos', href: '/dashboard/products', icon: Package },
         { name: 'Categorias', href: '/dashboard/categories', icon: List },
       ],
