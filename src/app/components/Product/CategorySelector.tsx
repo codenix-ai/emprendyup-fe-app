@@ -185,12 +185,8 @@ export function CategorySelector({ selectedCategories, onChange }: CategorySelec
             className="fixed bg-gray-800 border border-gray-700 rounded-xl shadow-2xl overflow-hidden animate-in slide-in-from-top-2 duration-200"
             style={{
               zIndex: 9999,
-              top: dropdownRef.current
-                ? dropdownRef.current.getBoundingClientRect().bottom + window.scrollY + 8
-                : 0,
-              left: dropdownRef.current
-                ? dropdownRef.current.getBoundingClientRect().left + window.scrollX
-                : 0,
+              top: dropdownRef.current ? dropdownRef.current.getBoundingClientRect().bottom + 8 : 0,
+              left: dropdownRef.current ? dropdownRef.current.getBoundingClientRect().left : 0,
               width: dropdownRef.current
                 ? dropdownRef.current.getBoundingClientRect().width
                 : 'auto',
