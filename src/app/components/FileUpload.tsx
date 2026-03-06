@@ -1,5 +1,5 @@
 'use client';
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { Upload, X } from 'lucide-react';
 import Image from 'next/image';
 
@@ -17,6 +17,11 @@ export default function FileUpload({
 }) {
   const [preview, setPreview] = useState<string | null>(initialImage || null);
   const [isUploading, setIsUploading] = useState(false);
+
+  // Update preview when initialImage changes
+  useEffect(() => {
+    setPreview(initialImage || null);
+  }, [initialImage]);
 
   const handleFileChange = async (e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0];
