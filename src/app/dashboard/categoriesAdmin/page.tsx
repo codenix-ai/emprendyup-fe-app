@@ -20,6 +20,8 @@ import {
 } from 'lucide-react';
 import { useMemo, useState, useEffect, JSX } from 'react';
 import toast from 'react-hot-toast';
+import FileUpload from '@/app/components/FileUpload';
+import Image from 'next/image';
 
 const GET_ALL_CATEGORIES = gql`
   query GetAllCategories {
@@ -28,6 +30,7 @@ const GET_ALL_CATEGORIES = gql`
       name
       slug
       description
+      image
       isActive
       order
       createdAt
@@ -46,6 +49,7 @@ const GET_ALL_CATEGORIES = gql`
         name
         slug
         description
+        image
         isActive
         order
         createdAt
@@ -62,6 +66,7 @@ const GET_ALL_CATEGORIES = gql`
             id
             name
           }
+          image
           isActive
           order
           createdAt
@@ -78,6 +83,7 @@ const CREATE_CATEGORY = gql`
       name
       slug
       description
+      image
       parentId
       storeId
       isActive
@@ -104,6 +110,7 @@ const UPDATE_CATEGORY = gql`
       name
       slug
       description
+      image
       isActive
       order
       updatedAt
@@ -163,6 +170,7 @@ interface Category {
   name: string;
   slug: string;
   description?: string;
+  image?: string;
   isActive: boolean;
   order: number;
   createdAt: string;
@@ -212,6 +220,7 @@ const CategoryFormModal = ({
     slug: category?.slug || '',
     parentId: category?.parent?.id || '',
     storeId: category?.store?.id || '',
+    image: category?.image || '',
   });
   const [errors, setErrors] = useState<{ [key: string]: string }>({});
   const [isLoading, setIsLoading] = useState(false);
@@ -246,6 +255,7 @@ const CategoryFormModal = ({
         slug: category.slug || generateSlug(category.name || ''),
         parentId: category.parent?.id || '',
         storeId: category.store?.id || '',
+        image: category.image || '',
       });
     } else {
       setFormData({
@@ -254,6 +264,7 @@ const CategoryFormModal = ({
         slug: '',
         parentId: preselectedParent?.id || '',
         storeId: preselectedParent?.store?.id || '',
+        image: '',
       });
     }
     setErrors({});
@@ -267,6 +278,7 @@ const CategoryFormModal = ({
         slug: '',
         parentId: '',
         storeId: '',
+        image: '',
       });
       setErrors({});
       setIsLoading(false);
@@ -598,6 +610,18 @@ const CategoryFormModal = ({
                 placeholder="Descripción opcional"
                 aria-label="Descripción de la categoría"
                 disabled={isLoading}
+              />
+            </div>
+
+            <div>
+              <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">
+                Imagen de la categoría
+              </label>
+              <FileUpload
+                onFile={(url) => setFormData({ ...formData, image: url })}
+                accept="image/*"
+                storeId={formData.storeId}
+                initialImage={formData.image}
               />
             </div>
 
@@ -991,6 +1015,24 @@ const CategoryRow = ({
   return (
     <>
       <tr className="hover:bg-gray-50 dark:hover:bg-gray-700/50 transition-colors">
+        <td className="px-6 py-4">
+          <div className="flex items-center justify-center">
+            {category.image ? (
+              <Image
+                src={category.image}
+                alt={category.name}
+                width={40}
+                height={40}
+                className="w-10 h-10 object-cover rounded-lg"
+                unoptimized
+              />
+            ) : (
+              <div className="w-10 h-10 bg-gray-200 dark:bg-gray-700 rounded-lg flex items-center justify-center">
+                <Tag className="w-5 h-5 text-gray-400" />
+              </div>
+            )}
+          </div>
+        </td>
         <td className="py-4" style={{ paddingLeft: `${depth * 40 + 24}px` }}>
           <div className="flex items-center gap-2">
             {/* Botón expandir/colapsar para categorías con hijos */}
@@ -1541,6 +1583,9 @@ export default function CategoriesPage() {
                 <table className="w-full">
                   <thead className="bg-gray-50 dark:bg-gray-900/50">
                     <tr>
+                      <th className="px-6 py-4 text-left text-xs font-semibold text-gray-500 dark:text-gray-400 uppercase tracking-wider">
+                        Imagen
+                      </th>
                       <th className="px-6 py-4 text-left text-xs font-semibold text-gray-500 dark:text-gray-400 uppercase tracking-wider">
                         Nombre
                       </th>
