@@ -89,7 +89,7 @@ jobs:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
           JIRA_MCP_URL: ${{ secrets.JIRA_MCP_URL }}
           SLACK_WEBHOOK_URL: ${{ secrets.SLACK_WEBHOOK_URL }}
-        run: npx ts-node agents/fe-fixer/index.ts || true
+        run: npx ts-node --project tsconfig.agents.json agents/fe-fixer/index.ts || true
 
       - name: Run BE Fixer
         env:
@@ -97,7 +97,7 @@ jobs:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
           JIRA_MCP_URL: ${{ secrets.JIRA_MCP_URL }}
           SLACK_WEBHOOK_URL: ${{ secrets.SLACK_WEBHOOK_URL }}
-        run: npx ts-node agents/be-fixer/index.ts || true
+        run: npx ts-node --project tsconfig.agents.json agents/be-fixer/index.ts || true
 
   # ── Step 5: Pipeline summary ─────────────────
   summary:

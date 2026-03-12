@@ -56,7 +56,7 @@ jobs:
           JIRA_PROJECT_KEY: EMPR
           SLACK_WEBHOOK_URL: ${{ secrets.SLACK_WEBHOOK_URL }}
           REPORT_TYPE: weekly
-        run: npx ts-node agents/inspector/index.ts --report-type weekly
+        run: npx ts-node --project tsconfig.agents.json agents/inspector/index.ts --report-type weekly
 
       - name: Publish to GitHub Summary
         run: |

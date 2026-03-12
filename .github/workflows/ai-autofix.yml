@@ -88,7 +88,7 @@ jobs:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
           JIRA_MCP_URL: ${{ secrets.JIRA_MCP_URL }}
           SLACK_WEBHOOK_URL: ${{ secrets.SLACK_WEBHOOK_URL }}
-        run: npx ts-node agents/fe-fixer/index.ts
+        run: npx ts-node --project tsconfig.agents.json agents/fe-fixer/index.ts
 
       - name: Upload FE fixer report
         uses: actions/upload-artifact@v4
@@ -158,7 +158,7 @@ jobs:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
           JIRA_MCP_URL: ${{ secrets.JIRA_MCP_URL }}
           SLACK_WEBHOOK_URL: ${{ secrets.SLACK_WEBHOOK_URL }}
-        run: npx ts-node agents/be-fixer/index.ts
+        run: npx ts-node --project tsconfig.agents.json agents/be-fixer/index.ts
 
       - name: Upload BE fixer report
         uses: actions/upload-artifact@v4

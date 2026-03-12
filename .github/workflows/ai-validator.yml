@@ -110,7 +110,7 @@ jobs:
           BASE_URL: ${{ secrets.TEST_BASE_URL }}
           TEST_USER_EMAIL: ${{ secrets.TEST_USER_EMAIL }}
           TEST_USER_PASSWORD: ${{ secrets.TEST_USER_PASSWORD }}
-        run: npx ts-node agents/validator/index.ts
+        run: npx ts-node --project tsconfig.agents.json agents/validator/index.ts
 
       - name: Post validation result to PR
         if: github.event_name == 'pull_request'

@@ -63,7 +63,7 @@ jobs:
           JIRA_PROJECT_KEY: EMPR
           SEVERITY_THRESHOLD: ${{ github.event.inputs.severity || 'medium' }}
           SLACK_WEBHOOK_URL: ${{ secrets.SLACK_WEBHOOK_URL }}
-        run: npx ts-node agents/inspector/index.ts
+        run: npx ts-node --project tsconfig.agents.json agents/inspector/index.ts
 
       - name: Comment PR with findings summary
         if: github.event_name == 'pull_request'

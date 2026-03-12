@@ -187,7 +187,7 @@ jobs:
           JIRA_PROJECT_KEY: EMPR
           SLACK_WEBHOOK_URL: ${{ secrets.SLACK_WEBHOOK_URL }}
           CREATE_JIRA_ISSUES: ${{ github.event.inputs.create_jira_issues || 'true' }}
-        run: npx ts-node agents/qa-runner/index.ts
+        run: npx ts-node --project tsconfig.agents.json agents/qa-runner/index.ts
 
       - name: Generate HTML summary
         if: always()

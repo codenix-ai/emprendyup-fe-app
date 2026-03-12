@@ -105,7 +105,7 @@ jobs:
           JIRA_PROJECT_KEY: EMPR
           SLACK_WEBHOOK_URL: ${{ secrets.SLACK_WEBHOOK_URL }}
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
-        run: npx ts-node agents/jira-scribe/index.ts
+        run: npx ts-node --project tsconfig.agents.json agents/jira-scribe/index.ts
 
       # ── Optionally trigger Auto-fix ────────────────────────────────────
       - name: Trigger Auto-fix workflow

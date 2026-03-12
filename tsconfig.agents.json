@@ -1,0 +1,13 @@
+{
+  "extends": "./tsconfig.json",
+  "compilerOptions": {
+    "module": "commonjs",
+    "moduleResolution": "node",
+    "esModuleInterop": true,
+    "isolatedModules": false,
+    "noEmit": false,
+    "outDir": ".agents-dist"
+  },
+  "include": ["agents/**/*.ts"],
+  "exclude": ["node_modules", "src", ".next"]
+}
