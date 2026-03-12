@@ -1,0 +1,104 @@
+name: 🔍 AI Inspector
+
+on:
+  pull_request:
+    branches: [main, develop]
+    types: [opened, synchronize, reopened]
+  push:
+    branches: [main, develop]
+  workflow_dispatch:
+    inputs:
+      severity:
+        description: 'Severidad mínima a reportar'
+        required: false
+        default: 'medium'
+        type: choice
+        options: [critical, high, medium, low]
+
+concurrency:
+  group: inspector-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  static-analysis:
+    name: 🔍 Static Analysis + AI Triage
+    runs-on: ubuntu-latest
+    permissions:
+      contents: read
+      pull-requests: write
+      security-events: write
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+
+      - name: Setup Node.js 20
+        uses: actions/setup-node@v4
+        with:
+          node-version: 20
+          cache: npm
+
+      - name: Install dependencies
+        run: npm ci
+
+      - name: Create reports directory
+        run: mkdir -p reports
+
+      - name: TypeScript strict check
+        run: npx tsc --noEmit 2> reports/tsc.txt || true
+
+      - name: ESLint analysis
+        run: npx eslint . --ext .ts,.tsx,.js,.jsx --format json -o reports/eslint.json || true
+
+      - name: Dependency security audit
+        run: npm audit --json > reports/audit.json 2>/dev/null || true
+
+      - name: Run AI Inspector Agent
+        env:
+          ANTHROPIC_API_KEY: ${{ secrets.ANTHROPIC_API_KEY }}
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          JIRA_MCP_URL: ${{ secrets.JIRA_MCP_URL }}
+          JIRA_PROJECT_KEY: EMPR
+          SEVERITY_THRESHOLD: ${{ github.event.inputs.severity || 'medium' }}
+          SLACK_WEBHOOK_URL: ${{ secrets.SLACK_WEBHOOK_URL }}
+        run: npx ts-node agents/inspector/index.ts
+
+      - name: Comment PR with findings summary
+        if: github.event_name == 'pull_request'
+        uses: actions/github-script@v7
+        with:
+          script: |
+            const fs = require('fs');
+            if (!fs.existsSync('reports/inspector-report.json')) return;
+            const findings = JSON.parse(fs.readFileSync('reports/inspector-report.json', 'utf-8'));
+            const critical = findings.filter(f => f.severity === 'critical').length;
+            const high     = findings.filter(f => f.severity === 'high').length;
+            const medium   = findings.filter(f => f.severity === 'medium').length;
+            const icon     = critical > 0 ? '🚨' : high > 0 ? '⚠️' : '✅';
+            const body = `## ${icon} AI Inspector Report\n\n| Severity | Count |\n|----------|-------|\n| 🔴 Critical | ${critical} |\n| 🟠 High | ${high} |\n| 🟡 Medium | ${medium} |\n| **Total** | **${findings.length}** |\n\n${critical > 0 || high > 0 ? '> Issues críticos/altos creados automáticamente en Jira.' : '> ✅ Sin issues bloqueantes.'}\n\n*Generado por AI Inspector Agent — emprendy.ai*`;
+            github.rest.issues.createComment({
+              issue_number: context.issue.number,
+              owner: context.repo.owner,
+              repo: context.repo.repo,
+              body
+            });
+
+      - name: Upload inspector report
+        uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: inspector-report-${{ github.run_number }}
+          path: reports/
+          retention-days: 30
+
+      - name: Block merge on critical findings
+        run: |
+          if [ -f reports/inspector-report.json ]; then
+            CRITICAL=$(node -e "const f=require('./reports/inspector-report.json');console.log(f.filter(x=>x.severity==='critical').length)")
+            if [ "$CRITICAL" -gt "0" ]; then
+              echo "::error::🚨 $CRITICAL critical finding(s). Merge bloqueado. Revisar Jira."
+              exit 1
+            fi
+          fi

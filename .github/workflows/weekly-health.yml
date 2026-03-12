@@ -1,0 +1,82 @@
+name: 📊 Weekly Health Check
+
+# Reporte semanal de salud del repositorio
+on:
+  schedule:
+    - cron: '0 8 * * 1'   # Lunes 8am UTC (3am Colombia)
+  workflow_dispatch:
+
+jobs:
+  health-report:
+    name: 📊 Generate Weekly Health Report
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 0   # Historial completo para métricas de git
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: 20
+          cache: npm
+
+      - name: Install dependencies
+        run: npm ci
+
+      - name: Create reports directory
+        run: mkdir -p reports
+
+      - name: Collect git metrics
+        run: |
+          echo "=== Commits last 7 days ===" > reports/git-metrics.txt
+          git log --oneline --since="7 days ago" | wc -l >> reports/git-metrics.txt
+
+          echo "=== Files changed last 7 days ===" >> reports/git-metrics.txt
+          git diff --name-only HEAD~7 HEAD 2>/dev/null | wc -l >> reports/git-metrics.txt
+
+          echo "=== PRs merged last week ===" >> reports/git-metrics.txt
+          git log --oneline --since="7 days ago" --merges | wc -l >> reports/git-metrics.txt
+
+          echo "=== Auto-fix commits ===" >> reports/git-metrics.txt
+          git log --oneline --since="7 days ago" --grep="Auto-fixed by" | wc -l >> reports/git-metrics.txt
+
+      - name: Run full static analysis
+        run: |
+          npx tsc --noEmit 2> reports/tsc.txt || true
+          npx eslint . --ext .ts,.tsx --format json -o reports/eslint.json || true
+          npm audit --json > reports/audit.json 2>/dev/null || true
+
+      - name: Generate health report with AI
+        env:
+          ANTHROPIC_API_KEY: ${{ secrets.ANTHROPIC_API_KEY }}
+          JIRA_MCP_URL: ${{ secrets.JIRA_MCP_URL }}
+          JIRA_PROJECT_KEY: EMPR
+          SLACK_WEBHOOK_URL: ${{ secrets.SLACK_WEBHOOK_URL }}
+          REPORT_TYPE: weekly
+        run: npx ts-node agents/inspector/index.ts --report-type weekly
+
+      - name: Publish to GitHub Summary
+        run: |
+          echo "# 📊 emprendy.ai Weekly Health Report" >> $GITHUB_STEP_SUMMARY
+          echo "**Week of:** $(date -u '+%Y-%m-%d')" >> $GITHUB_STEP_SUMMARY
+          echo "" >> $GITHUB_STEP_SUMMARY
+          if [ -f reports/inspector-report.json ]; then
+            TOTAL=$(node -e "console.log(require('./reports/inspector-report.json').length)")
+            CRITICAL=$(node -e "const f=require('./reports/inspector-report.json');console.log(f.filter(x=>x.severity==='critical').length)")
+            HIGH=$(node -e "const f=require('./reports/inspector-report.json');console.log(f.filter(x=>x.severity==='high').length)")
+            echo "| Metric | Value |" >> $GITHUB_STEP_SUMMARY
+            echo "|--------|-------|" >> $GITHUB_STEP_SUMMARY
+            echo "| 🔴 Critical issues | $CRITICAL |" >> $GITHUB_STEP_SUMMARY
+            echo "| 🟠 High issues | $HIGH |" >> $GITHUB_STEP_SUMMARY
+            echo "| 📋 Total findings | $TOTAL |" >> $GITHUB_STEP_SUMMARY
+          fi
+
+      - name: Upload weekly report
+        uses: actions/upload-artifact@v4
+        with:
+          name: weekly-health-report-$(date +%Y-%W)
+          path: reports/
+          retention-days: 90

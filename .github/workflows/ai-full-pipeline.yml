@@ -1,0 +1,137 @@
+name: 🚀 AI Full Pipeline
+
+# Pipeline completo: Inspector → QA → Jira → Fix → Validate
+# Úsalo para una auditoría completa on-demand o antes de un release
+
+on:
+  workflow_dispatch:
+    inputs:
+      trigger_reason:
+        description: 'Razón del pipeline (ej: pre-release v2.0)'
+        required: false
+        default: 'manual trigger'
+      run_autofix:
+        description: '¿Intentar auto-fix de issues encontrados?'
+        required: false
+        default: 'false'
+        type: boolean
+      notify_slack:
+        description: '¿Notificar progreso en Slack?'
+        required: false
+        default: 'true'
+        type: boolean
+
+jobs:
+  # ── Step 1: Static Analysis ──────────────────
+  inspector:
+    name: '1️⃣  Inspector'
+    uses: ./.github/workflows/ai-inspector.yml
+    secrets: inherit
+
+  # ── Step 2: Full Regression ──────────────────
+  regression:
+    name: '2️⃣  Regression'
+    needs: inspector
+    if: always()    # Correr aunque Inspector encuentre issues
+    uses: ./.github/workflows/ai-regression.yml
+    secrets: inherit
+    with:
+      create_jira_issues: 'true'
+
+  # ── Step 3: Auto-fix (opcional) ──────────────
+  autofix:
+    name: '3️⃣  Auto-fix'
+    needs: regression
+    if: |
+      always() &&
+      github.event.inputs.run_autofix == 'true' &&
+      needs.regression.result != 'skipped'
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+        with:
+          token: ${{ secrets.GITHUB_TOKEN }}
+          fetch-depth: 0
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: 20
+          cache: npm
+
+      - name: Install dependencies
+        run: npm ci
+
+      - name: Configure git
+        run: |
+          git config user.name  "emprendy-ai-bot"
+          git config user.email "bot@emprendy.ai"
+
+      - name: Download regression reports
+        uses: actions/download-artifact@v4
+        with:
+          pattern: regression-report-*
+          path: reports/
+          merge-multiple: true
+
+      - name: Run FE Fixer
+        env:
+          ANTHROPIC_API_KEY: ${{ secrets.ANTHROPIC_API_KEY }}
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          JIRA_MCP_URL: ${{ secrets.JIRA_MCP_URL }}
+          SLACK_WEBHOOK_URL: ${{ secrets.SLACK_WEBHOOK_URL }}
+        run: npx ts-node agents/fe-fixer/index.ts || true
+
+      - name: Run BE Fixer
+        env:
+          ANTHROPIC_API_KEY: ${{ secrets.ANTHROPIC_API_KEY }}
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          JIRA_MCP_URL: ${{ secrets.JIRA_MCP_URL }}
+          SLACK_WEBHOOK_URL: ${{ secrets.SLACK_WEBHOOK_URL }}
+        run: npx ts-node agents/be-fixer/index.ts || true
+
+  # ── Step 4: Pipeline summary ─────────────────
+  summary:
+    name: '4️⃣  Pipeline Summary'
+    needs: [inspector, regression, autofix]
+    if: always()
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Download all reports
+        uses: actions/download-artifact@v4
+        with:
+          path: all-reports/
+          merge-multiple: true
+
+      - name: Generate pipeline summary
+        run: |
+          echo "## 🚀 emprendy.ai — AI Full Pipeline Summary" >> $GITHUB_STEP_SUMMARY
+          echo "" >> $GITHUB_STEP_SUMMARY
+          echo "**Trigger:** ${{ github.event.inputs.trigger_reason }}" >> $GITHUB_STEP_SUMMARY
+          echo "**Run:** #${{ github.run_number }} — $(date -u '+%Y-%m-%d %H:%M UTC')" >> $GITHUB_STEP_SUMMARY
+          echo "" >> $GITHUB_STEP_SUMMARY
+          echo "| Step | Status |" >> $GITHUB_STEP_SUMMARY
+          echo "|------|--------|" >> $GITHUB_STEP_SUMMARY
+          echo "| 🔍 Inspector | ${{ needs.inspector.result }} |" >> $GITHUB_STEP_SUMMARY
+          echo "| 🧪 Regression | ${{ needs.regression.result }} |" >> $GITHUB_STEP_SUMMARY
+          echo "| 🔧 Auto-fix | ${{ needs.autofix.result || 'skipped' }} |" >> $GITHUB_STEP_SUMMARY
+
+      - name: Notify Slack — pipeline complete
+        if: github.event.inputs.notify_slack == 'true'
+        env:
+          SLACK_WEBHOOK_URL: ${{ secrets.SLACK_WEBHOOK_URL }}
+        run: |
+          STATUS_INSPECTOR="${{ needs.inspector.result }}"
+          STATUS_REGRESSION="${{ needs.regression.result }}"
+          ICON="✅"
+          if [ "$STATUS_INSPECTOR" = "failure" ] || [ "$STATUS_REGRESSION" = "failure" ]; then
+            ICON="❌"
+          fi
+          curl -s -X POST "$SLACK_WEBHOOK_URL" \
+            -H 'Content-Type: application/json' \
+            -d "{
+              \"text\": \"${ICON} *emprendy.ai AI Pipeline* completado — Run #${{ github.run_number }}\n• Inspector: ${STATUS_INSPECTOR}\n• Regression: ${STATUS_REGRESSION}\n• Motivo: ${{ github.event.inputs.trigger_reason }}\"
+            }" || true

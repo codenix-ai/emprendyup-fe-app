@@ -1,0 +1,232 @@
+name: 🧪 AI Regression Suite
+
+on:
+  schedule:
+    - cron: '0 2 * * *'      # Diario a las 2am UTC (9pm Colombia)
+  push:
+    branches: [main]          # También en cada merge a main
+  workflow_dispatch:
+    inputs:
+      module:
+        description: 'Módulo específico (vacío = todos)'
+        required: false
+        default: ''
+        type: choice
+        options:
+          - ''
+          - store
+          - restaurant
+          - service
+          - dashboard
+      browser:
+        description: 'Navegador'
+        required: false
+        default: 'all'
+        type: choice
+        options: [all, chromium, firefox, webkit]
+      create_jira_issues:
+        description: 'Crear issues en Jira automáticamente'
+        required: false
+        default: 'true'
+        type: boolean
+
+concurrency:
+  group: regression-${{ github.ref }}
+  cancel-in-progress: false   # No cancelar regresiones en curso
+
+jobs:
+  # ─── JOB 1: Preparar ambiente ──────────────
+  setup:
+    name: 🏗️ Setup Test Environment
+    runs-on: ubuntu-latest
+    outputs:
+      test-url: ${{ steps.env.outputs.url }}
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: 20
+          cache: npm
+
+      - name: Install dependencies
+        run: npm ci
+
+      - name: Start test environment
+        id: env
+        run: |
+          docker-compose -f docker-compose.test.yml up -d
+          echo "url=${{ secrets.TEST_BASE_URL }}" >> $GITHUB_OUTPUT
+
+      - name: Wait for services to be ready
+        run: |
+          echo "Waiting for API health check..."
+          for i in {1..30}; do
+            if curl -sf "${{ secrets.TEST_BASE_URL }}/api/health" > /dev/null 2>&1; then
+              echo "✅ Services ready!"
+              break
+            fi
+            echo "  Attempt $i/30 — waiting 5s..."
+            sleep 5
+          done
+
+  # ─── JOB 2: Tests paralelos por módulo ─────
+  e2e-tests:
+    name: 🎭 E2E — ${{ matrix.module }}
+    runs-on: ubuntu-latest
+    needs: setup
+    strategy:
+      fail-fast: false         # Correr todos los módulos aunque uno falle
+      matrix:
+        module: [store, restaurant, service, dashboard]
+        browser: [chromium]    # Agregar firefox, webkit para más cobertura
+        exclude:
+          - module: ${{ github.event.inputs.module != '' && github.event.inputs.module != matrix.module && 'skip' || 'never' }}
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: 20
+          cache: npm
+
+      - name: Install dependencies
+        run: npm ci
+
+      - name: Install Playwright (${{ matrix.browser }})
+        run: npx playwright install --with-deps ${{ matrix.browser }}
+
+      - name: Run ${{ matrix.module }} tests
+        env:
+          BASE_URL: ${{ secrets.TEST_BASE_URL }}
+          TEST_USER_EMAIL: ${{ secrets.TEST_USER_EMAIL }}
+          TEST_USER_PASSWORD: ${{ secrets.TEST_USER_PASSWORD }}
+          TEST_ADMIN_EMAIL: ${{ secrets.TEST_ADMIN_EMAIL }}
+          TEST_ADMIN_PASSWORD: ${{ secrets.TEST_ADMIN_PASSWORD }}
+          TEST_STAFF_EMAIL: ${{ secrets.TEST_STAFF_EMAIL }}
+          TEST_STAFF_PASSWORD: ${{ secrets.TEST_STAFF_PASSWORD }}
+        run: |
+          npx playwright test \
+            agents/qa-runner/scenarios/${{ matrix.module }}.spec.ts \
+            --project=${{ matrix.browser }} \
+            --reporter=json,html \
+            --retries=2 \
+            --timeout=30000 \
+            --output=test-results/${{ matrix.module }}/ \
+            2>&1 | tee reports/playwright-${{ matrix.module }}.log || true
+
+          # Guardar resultado JSON
+          cp test-results/.last-run.json reports/playwright-${{ matrix.module }}.json 2>/dev/null || \
+          echo '{"passed":0,"failed":0,"skipped":0}' > reports/playwright-${{ matrix.module }}.json
+
+      - name: Upload ${{ matrix.module }} results
+        uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: results-${{ matrix.module }}-${{ matrix.browser }}-${{ github.run_number }}
+          path: |
+            reports/playwright-${{ matrix.module }}.json
+            test-results/${{ matrix.module }}/
+            playwright-report/
+          retention-days: 14
+
+  # ─── JOB 3: QA Runner Agent + Jira ─────────
+  analyze-and-report:
+    name: 🤖 AI Analysis + Jira Issues
+    runs-on: ubuntu-latest
+    needs: e2e-tests
+    if: always()   # Siempre correr, aunque haya tests fallidos
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: 20
+          cache: npm
+
+      - name: Install dependencies
+        run: npm ci
+
+      - name: Download all test results
+        uses: actions/download-artifact@v4
+        with:
+          pattern: results-*-${{ github.run_number }}
+          path: reports/
+          merge-multiple: true
+
+      - name: Merge all Playwright reports
+        run: |
+          node -e "
+          const fs = require('fs');
+          const modules = ['store', 'restaurant', 'service', 'dashboard'];
+          const merged = [];
+          for (const m of modules) {
+            const file = 'reports/playwright-' + m + '.json';
+            if (fs.existsSync(file)) {
+              const data = JSON.parse(fs.readFileSync(file, 'utf-8'));
+              merged.push(...(data.suites || data.results || []));
+            }
+          }
+          fs.writeFileSync('reports/playwright.json', JSON.stringify({ results: merged }, null, 2));
+          console.log('Merged', merged.length, 'test results');
+          "
+
+      - name: Run QA Runner Agent
+        env:
+          ANTHROPIC_API_KEY: ${{ secrets.ANTHROPIC_API_KEY }}
+          JIRA_MCP_URL: ${{ secrets.JIRA_MCP_URL }}
+          JIRA_PROJECT_KEY: EMPR
+          SLACK_WEBHOOK_URL: ${{ secrets.SLACK_WEBHOOK_URL }}
+          CREATE_JIRA_ISSUES: ${{ github.event.inputs.create_jira_issues || 'true' }}
+        run: npx ts-node agents/qa-runner/index.ts
+
+      - name: Generate HTML summary
+        if: always()
+        run: |
+          node -e "
+          const fs = require('fs');
+          let html = '<h2>🧪 emprendy.ai Regression Report</h2><table border=1>';
+          html += '<tr><th>Module</th><th>Passed</th><th>Failed</th><th>Status</th></tr>';
+          const modules = ['store','restaurant','service','dashboard'];
+          for (const m of modules) {
+            const file = 'reports/playwright-' + m + '.json';
+            if (fs.existsSync(file)) {
+              const d = JSON.parse(fs.readFileSync(file,'utf-8'));
+              const p = d.passed || 0, f = d.failed || 0;
+              html += '<tr><td>' + m + '</td><td>' + p + '</td><td>' + f + '</td><td>' + (f > 0 ? '❌' : '✅') + '</td></tr>';
+            }
+          }
+          html += '</table>';
+          fs.writeFileSync('reports/summary.html', html);
+          "
+
+      - name: Upload final report
+        uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: regression-report-${{ github.run_number }}
+          path: reports/
+          retention-days: 30
+
+  # ─── JOB 4: Cleanup ────────────────────────
+  teardown:
+    name: 🧹 Teardown
+    runs-on: ubuntu-latest
+    needs: [e2e-tests, analyze-and-report]
+    if: always()
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Stop test environment
+        run: docker-compose -f docker-compose.test.yml down --remove-orphans || true

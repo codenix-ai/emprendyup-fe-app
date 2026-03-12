@@ -1,0 +1,169 @@
+name: 🔧 AI Auto-fix
+
+on:
+  # Se activa cuando un issue de Jira con label auto-fix es asignado
+  # También puede dispararse manualmente desde GitHub Actions
+  workflow_dispatch:
+    inputs:
+      jira_key:
+        description: 'Clave del issue Jira (ej: EMPR-42)'
+        required: true
+        type: string
+      layer:
+        description: 'Capa del sistema a corregir'
+        required: true
+        type: choice
+        options: [frontend, backend, both]
+      affected_file:
+        description: 'Ruta del archivo afectado (ej: src/components/Store/StoreForm.tsx)'
+        required: false
+        type: string
+
+  # También se puede triggerear desde el Jira Scribe agent vía repository_dispatch
+  repository_dispatch:
+    types: [jira-issue-created]
+
+jobs:
+  # ─── FE Fixer ────────────────────────────────
+  fe-fix:
+    name: ⚛️ FE Fixer
+    runs-on: ubuntu-latest
+    if: |
+      github.event_name == 'repository_dispatch' && github.event.client_payload.layer == 'frontend' ||
+      github.event_name == 'workflow_dispatch' && (github.event.inputs.layer == 'frontend' || github.event.inputs.layer == 'both')
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+        with:
+          token: ${{ secrets.GITHUB_TOKEN }}
+          fetch-depth: 0
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: 20
+          cache: npm
+
+      - name: Install dependencies
+        run: npm ci
+
+      - name: Configure git for agent commits
+        run: |
+          git config user.name  "emprendy-ai-bot"
+          git config user.email "bot@emprendy.ai"
+
+      - name: Build FE issues manifest from Jira
+        env:
+          ANTHROPIC_API_KEY: ${{ secrets.ANTHROPIC_API_KEY }}
+          JIRA_MCP_URL: ${{ secrets.JIRA_MCP_URL }}
+          JIRA_PROJECT_KEY: EMPR
+        run: |
+          JIRA_KEY="${{ github.event.inputs.jira_key || github.event.client_payload.jira_key }}"
+          FILE="${{ github.event.inputs.affected_file || github.event.client_payload.affected_file }}"
+
+          mkdir -p reports
+          cat > reports/fe-issues.json << EOF
+          [
+            {
+              "key": "${JIRA_KEY}",
+              "summary": "Auto-fix solicitado para ${JIRA_KEY}",
+              "description": "Fix automático de frontend. Consultar Jira para detalles.",
+              "issueType": "Bug",
+              "priority": "High",
+              "labels": ["frontend", "auto-fix"],
+              "component": "frontend",
+              "storyPoints": 1,
+              "affectedFile": "${FILE}",
+              "codeSnippet": "",
+              "layer": "frontend",
+              "status": "Open"
+            }
+          ]
+          EOF
+
+      - name: Run FE Fixer Agent
+        env:
+          ANTHROPIC_API_KEY: ${{ secrets.ANTHROPIC_API_KEY }}
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          JIRA_MCP_URL: ${{ secrets.JIRA_MCP_URL }}
+          SLACK_WEBHOOK_URL: ${{ secrets.SLACK_WEBHOOK_URL }}
+        run: npx ts-node agents/fe-fixer/index.ts
+
+      - name: Upload FE fixer report
+        uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: fe-fixer-report-${{ github.run_number }}
+          path: reports/
+          retention-days: 7
+
+  # ─── BE Fixer ────────────────────────────────
+  be-fix:
+    name: 🔧 BE Fixer
+    runs-on: ubuntu-latest
+    if: |
+      github.event_name == 'repository_dispatch' && github.event.client_payload.layer == 'backend' ||
+      github.event_name == 'workflow_dispatch' && (github.event.inputs.layer == 'backend' || github.event.inputs.layer == 'both')
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+        with:
+          token: ${{ secrets.GITHUB_TOKEN }}
+          fetch-depth: 0
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: 20
+          cache: npm
+
+      - name: Install dependencies
+        run: npm ci
+
+      - name: Configure git for agent commits
+        run: |
+          git config user.name  "emprendy-ai-bot"
+          git config user.email "bot@emprendy.ai"
+
+      - name: Build BE issues manifest
+        run: |
+          JIRA_KEY="${{ github.event.inputs.jira_key || github.event.client_payload.jira_key }}"
+          FILE="${{ github.event.inputs.affected_file || github.event.client_payload.affected_file }}"
+
+          mkdir -p reports
+          cat > reports/be-issues.json << EOF
+          [
+            {
+              "key": "${JIRA_KEY}",
+              "summary": "Auto-fix solicitado para ${JIRA_KEY}",
+              "description": "Fix automático de backend. Consultar Jira para detalles.",
+              "issueType": "Bug",
+              "priority": "High",
+              "labels": ["backend", "auto-fix"],
+              "component": "backend",
+              "storyPoints": 1,
+              "affectedFile": "${FILE}",
+              "codeSnippet": "",
+              "layer": "backend",
+              "status": "Open"
+            }
+          ]
+          EOF
+
+      - name: Run BE Fixer Agent
+        env:
+          ANTHROPIC_API_KEY: ${{ secrets.ANTHROPIC_API_KEY }}
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          JIRA_MCP_URL: ${{ secrets.JIRA_MCP_URL }}
+          SLACK_WEBHOOK_URL: ${{ secrets.SLACK_WEBHOOK_URL }}
+        run: npx ts-node agents/be-fixer/index.ts
+
+      - name: Upload BE fixer report
+        uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: be-fixer-report-${{ github.run_number }}
+          path: reports/
+          retention-days: 7
