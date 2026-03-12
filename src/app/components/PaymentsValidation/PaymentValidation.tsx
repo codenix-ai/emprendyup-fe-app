@@ -76,12 +76,8 @@ export default function PaymentValidation({ paymentId }: PaymentValidationProps)
       // Use GraphQL mutation to update payment
       await handleUpdatePaymentMutation(paymentId, updateInput);
 
-      console.log('Payment updated successfully via GraphQL');
-
       // Update order status based on payment status
       const resultUpdate = await updateOrderStatus(wompiData, mappedStatus);
-
-      console.log('Order status update result:', resultUpdate);
 
       // Refetch GraphQL data to get updated payment info
       if (refetch) {
@@ -267,7 +263,6 @@ export default function PaymentValidation({ paymentId }: PaymentValidationProps)
   // Helper function to get status icon and color
   const getStatusDisplay = (status: string, isPayment: boolean = false) => {
     const baseClasses = 'inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium';
-    console.log('🚀 ~ getStatusDisplay ~ status:', status, 'isPayment:', isPayment);
     if (isPayment) {
       switch (status) {
         case PaymentStatus.COMPLETED:
@@ -363,7 +358,6 @@ export default function PaymentValidation({ paymentId }: PaymentValidationProps)
         order: payment?.order, // Keep order info from GraphQL if available
       }
     : payment;
-  console.log('🚀 ~ PaymentValidation ~ currentPayment:', currentPayment);
 
   // Monitor order status updates when payment is completed
   useEffect(() => {

@@ -54,15 +54,6 @@ export default function BarChartInternal({
   // Check if all values are zero
   const allZero = displayedData.every((d: any) => Number(d[yKey] || 0) === 0);
 
-  console.log('Chart metrics:', {
-    totalPeriods: data.length,
-    displayedPeriods: displayedData.length,
-    maxValue,
-    yDomainMax,
-    allZero,
-    sampleData: displayedData.slice(0, 3),
-  });
-
   return (
     <div className="bg-white dark:bg-gray-800 rounded-lg shadow-sm border border-gray-200 dark:border-gray-700 p-6">
       {title && (

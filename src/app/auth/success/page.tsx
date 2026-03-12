@@ -15,13 +15,10 @@ function AuthSuccessPage() {
 
     if (token || userStr) {
       // Handle OAuth callback with query parameters
-      console.log('🔍 Auth Success - Token:', token);
-      console.log('🔍 Auth Success - User:', userStr);
 
       // Store token if provided
       if (token && token !== 'null' && token !== 'undefined' && token.trim() !== '') {
         localStorage.setItem('accessToken', token);
-        console.log('✅ Token stored in localStorage');
       }
 
       // Store user data if provided
@@ -30,7 +27,6 @@ function AuthSuccessPage() {
           const userData = JSON.parse(userStr);
           if (userData && typeof userData === 'object') {
             localStorage.setItem('user', JSON.stringify(userData));
-            console.log('✅ User data stored in localStorage');
           }
         } catch (e) {
           console.error('❌ Failed to parse user data:', e);

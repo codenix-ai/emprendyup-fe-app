@@ -106,3 +106,18 @@ export interface Viewport {
   height: number;
   label: string;
 }
+
+// ── Local Task Queue ───────────────────────────
+export interface Task {
+  id: string; // e.g. TASK-0001
+  status: 'pending' | 'in-progress' | 'done' | 'failed' | 'skipped';
+  finding: Finding;
+  attempts: number;
+  fix?: {
+    explanation: string;
+    appliedTo: string; // file path that was modified
+  };
+  error?: string;
+  createdAt: string;
+  updatedAt: string;
+}

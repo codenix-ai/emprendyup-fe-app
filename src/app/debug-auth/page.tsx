@@ -14,7 +14,6 @@ export default function DebugAuth() {
       try {
         const parsedUser = JSON.parse(userData);
         setUser(parsedUser);
-        console.log('Debug - Parsed user:', parsedUser);
       } catch (e) {
         console.error('Debug - Error parsing user:', e);
       }

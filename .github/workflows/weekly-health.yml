@@ -2,8 +2,6 @@ name: 📊 Weekly Health Check
 
 # Reporte semanal de salud del repositorio
 on:
-  schedule:
-    - cron: '0 8 * * 1'   # Lunes 8am UTC (3am Colombia)
   workflow_dispatch:
 
 jobs:

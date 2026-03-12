@@ -78,7 +78,6 @@ export function VariantCombinationGenerator({
       combinations.length === 0 &&
       !hasInitialized.current
     ) {
-      console.log('🔄 Loading existing combinations:', existingCombinations.length);
       setCombinations(existingCombinations);
       setShowCombinations(true);
       onCombinationsChange(existingCombinations);
@@ -108,7 +107,6 @@ export function VariantCombinationGenerator({
     // 2. Variants actually changed
     // 3. We're not in edit mode OR we don't have existing combinations loaded
     if (hasVariants && variantsChanged && (!isEditMode || !hasInitialized.current)) {
-      console.log('🔄 Auto-generating combinations due to variant changes');
       autoGenerateCombinations();
     }
   }, [colors.length, sizes.length, customVariants.length]);

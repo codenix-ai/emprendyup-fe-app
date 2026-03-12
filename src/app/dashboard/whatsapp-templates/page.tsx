@@ -124,7 +124,6 @@ const WhatsAppTemplatesPage = () => {
           refetch();
           // Si tienes react-hot-toast instalado, puedes usar:
           toast.success(`Plantilla "${name}" eliminada correctamente`);
-          console.log(`Plantilla "${name}" eliminada correctamente`);
         })
         .catch((err) => {
           console.error('Error al eliminar:', err);

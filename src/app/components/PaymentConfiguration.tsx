@@ -108,7 +108,6 @@ export default function PaymentConfiguration({ storeId }: PaymentConfigurationPr
 
     setSaving(true);
     try {
-      console.log('Saving Wompi config with storeId:', fallbackStoreId);
       await setupWompiConfiguration({ ...wompiConfig, cashEnabled });
       toast.success('Configuración de Wompi guardada exitosamente');
     } catch (error) {
@@ -129,7 +128,6 @@ export default function PaymentConfiguration({ storeId }: PaymentConfigurationPr
 
     setSaving(true);
     try {
-      console.log('Saving MercadoPago config with storeId:', fallbackStoreId);
       await setupMercadoPagoConfiguration({ ...mercadoPagoConfig, cashEnabled });
       toast.success('Configuración de MercadoPago guardada exitosamente');
     } catch (error) {
@@ -150,7 +148,6 @@ export default function PaymentConfiguration({ storeId }: PaymentConfigurationPr
 
     setSaving(true);
     try {
-      console.log('Saving ePayco config with storeId:', fallbackStoreId);
       await setupEpaycoConfiguration({ ...epaycoConfig, cashEnabled });
       toast.success('Configuración de ePayco guardada exitosamente');
     } catch (error) {

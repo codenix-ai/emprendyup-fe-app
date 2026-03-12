@@ -36,7 +36,6 @@ export default function CheckoutPage() {
   };
 
   const handleSubmit = () => {
-    console.log('Processing payment...', formData);
     const checkoutUrl = `/dashboard/plans/payment-confirmation`;
 
     router.push(checkoutUrl);

@@ -387,7 +387,6 @@ export default function ProductsPage() {
       product.name?.toLowerCase().includes(searchTerm.toLowerCase()) ||
       product.title?.toLowerCase().includes(searchTerm.toLowerCase())
   );
-  console.log('Filtered products:', filteredProducts);
 
   // Colors from store - usando slate-900 como color principal
   const primaryColor = '#0F172A'; // slate-900
@@ -606,7 +605,6 @@ export default function ProductsPage() {
       const { data } = await duplicateProduct({ variables: { id: productId } });
       // Debug log to inspect server response when errors occur
       // eslint-disable-next-line no-console
-      console.log('duplicateProduct response:', data);
 
       if (data?.duplicateProduct) {
         // Refetch list to show duplicated product

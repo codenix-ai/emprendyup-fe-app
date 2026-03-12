@@ -72,14 +72,6 @@ export async function GET(req: Request) {
     // Try to register/login with Google profile
     const authUrl = `${base.replace(/\/$/, '')}/auth/google`;
 
-    console.log('🔍 Sending to backend:', {
-      googleId: profile.id,
-      email: profile.email,
-      name: profile.name,
-      picture: profile.picture || null,
-      accessToken: accessToken,
-    });
-
     const authResponse = await fetch(authUrl, {
       method: 'POST',
       headers: {
@@ -113,8 +105,6 @@ export async function GET(req: Request) {
     const userData = authData?.user;
 
     // Debug the extracted values
-    console.log('🔍 Extracted token:', token);
-    console.log('🔍 Extracted userData:', userData);
 
     // Parse state to get redirect URL and determine final destination based on user store
     let baseRedirectTo = '/dashboard/insights'; // Default redirect from state

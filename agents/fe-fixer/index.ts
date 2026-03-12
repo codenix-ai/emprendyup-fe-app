@@ -1,19 +1,20 @@
 // ─────────────────────────────────────────────
 //  emprendy.ai — Agent 4: FE FIXER
-//  Auto-corrección de bugs de Frontend
+//  Auto-corrección local de bugs de Frontend
 // ─────────────────────────────────────────────
-import { execSync } from 'child_process';
 import * as fs from 'fs';
 import * as path from 'path';
+import { execSync } from 'child_process';
 import Anthropic from '@anthropic-ai/sdk';
-import { JiraIssue } from '../shared/types';
-import { consume, publish, notifySlack } from '../shared/bus';
+import { Task } from '../shared/types';
+import { getPendingTasks, updateTask, printTaskSummary } from '../shared/task-queue';
+import { notifySlack } from '../shared/bus';
 import { transitionIssue, addComment } from '../shared/jira-mcp';
 
 const client = new Anthropic();
+const MAX_FIXES = parseInt(process.env.MAX_FIXES ?? '5', 10);
 
-// ─── Leer el archivo afectado ─────────────────
-function readAffectedFile(filePath: string): string {
+function readFile(filePath: string): string {
   try {
     return fs.existsSync(filePath) ? fs.readFileSync(filePath, 'utf-8') : '';
   } catch {
@@ -21,34 +22,25 @@ function readAffectedFile(filePath: string): string {
   }
 }
 
-// ─── Detectar contexto del proyecto FE ────────
 function detectProjectContext(): string {
   const pkg = fs.existsSync('package.json')
     ? JSON.parse(fs.readFileSync('package.json', 'utf-8'))
     : {};
-
   const deps = { ...pkg.dependencies, ...pkg.devDependencies };
-  const stack = [];
-  if (deps['next']) stack.push('Next.js ' + (deps['next'] || ''));
-  if (deps['react']) stack.push('React ' + (deps['react'] || ''));
+  const stack: string[] = [];
+  if (deps['next']) stack.push('Next.js');
+  if (deps['react']) stack.push('React');
   if (deps['typescript']) stack.push('TypeScript');
   if (deps['tailwindcss']) stack.push('Tailwind CSS');
   if (deps['@tanstack/react-query']) stack.push('TanStack Query');
-  if (deps['zustand']) stack.push('Zustand');
   if (deps['zod']) stack.push('Zod');
-
   return stack.join(', ') || 'React/TypeScript';
 }
 
-// ─── Generar el fix con Claude ────────────────
 async function generateFix(
-  issue: JiraIssue,
+  task: Task,
   fileContent: string
-): Promise<{
-  fixedCode: string;
-  testCode: string;
-  explanation: string;
-}> {
+): Promise<{ fixedCode: string; explanation: string }> {
   const context = detectProjectContext();
 
   const response = await client.messages.create({
@@ -59,30 +51,31 @@ Trabajas en emprendy.ai, una plataforma para crear tiendas, restaurantes y servi
 
 Al corregir un bug de frontend:
 1. Respeta estrictamente el estilo de código existente
-2. No introduzcas nuevas dependencias sin justificación
+2. No introduzcas nuevas dependencias
 3. El fix debe ser mínimo y quirúrgico — cambia solo lo necesario
-4. Incluye un test unitario que valide el fix
-5. Asegúrate de que el TypeScript compile sin errores
-6. Si hay implicaciones de accesibilidad, corrígelas también
+4. Asegúrate de que el TypeScript compile sin errores
+5. Si hay implicaciones de accesibilidad, corrígelas también
 
 Responde ÚNICAMENTE con JSON en este formato exacto:
 {
   "fixedCode": "// código completo del archivo corregido",
-  "testCode": "// código del test unitario",
   "explanation": "// qué cambió y por qué (max 3 oraciones)"
 }`,
-
     messages: [
       {
         role: 'user',
-        content: `Issue Jira: ${issue.key}
-Resumen: ${issue.summary}
-Descripción: ${issue.description}
-Archivo afectado: ${issue.affectedFile}
+        content: `Corrige este hallazgo de código:
+
+Tipo:      ${task.finding.type}
+Severidad: ${task.finding.severity}
+Archivo:   ${task.finding.file}:${task.finding.line}
+Error:     ${task.finding.description}
+Regla:     ${task.finding.rule ?? 'N/A'}
+${task.finding.fix ? `Fix sugerido por linter: ${task.finding.fix}` : ''}
 
 Código actual del archivo:
 \`\`\`typescript
-${fileContent}
+${fileContent.slice(0, 8000)}
 \`\`\``,
       },
     ],
@@ -93,146 +86,101 @@ ${fileContent}
     .map((b) => (b as any).text)
     .join('');
 
-  try {
-    const clean = text.replace(/```json|```/g, '').trim();
-    return JSON.parse(clean);
-  } catch {
-    throw new Error(`Could not parse Claude response: ${text.slice(0, 200)}`);
-  }
+  const clean = text.replace(/```json|```/g, '').trim();
+  return JSON.parse(clean);
 }
 
-// ─── Aplicar fix al sistema de archivos ──────
 async function applyFix(
-  issue: JiraIssue,
-  fix: { fixedCode: string; testCode: string; explanation: string }
+  task: Task,
+  fix: { fixedCode: string; explanation: string }
 ): Promise<void> {
-  const branch = `fix/fe-${issue.key}-${Date.now()}`;
+  const filePath = task.finding.file;
 
+  // Write the fixed code
+  const dir = path.dirname(filePath);
+  if (dir && dir !== '.') fs.mkdirSync(dir, { recursive: true });
+  fs.writeFileSync(filePath, fix.fixedCode);
+
+  // Run eslint --fix on the file
   try {
-    // Crear rama
-    execSync(`git checkout -b ${branch}`, { stdio: 'inherit' });
+    execSync(`npx eslint ${filePath} --fix --quiet`, { stdio: 'pipe' });
+  } catch {}
 
-    // Escribir el código corregido
-    const dir = path.dirname(issue.affectedFile);
-    if (dir && dir !== '.') fs.mkdirSync(dir, { recursive: true });
-    fs.writeFileSync(issue.affectedFile, fix.fixedCode);
-
-    // Escribir test
-    const testPath = issue.affectedFile.replace(/\.(ts|tsx)$/, '.test.$1');
-    fs.writeFileSync(testPath, fix.testCode);
-
-    // Ejecutar lint y type-check en los archivos modificados
-    try {
-      execSync(`npx eslint ${issue.affectedFile} --fix`, { stdio: 'pipe' });
-    } catch {
-      /* lint issues will be in the PR for review */
-    }
-
-    try {
-      execSync('npx tsc --noEmit', { stdio: 'pipe' });
-    } catch (e) {
-      console.warn('[FE FIXER] TypeScript errors remain — PR will flag them');
-    }
-
-    // Commit
-    execSync(`git add ${issue.affectedFile} ${testPath}`, { stdio: 'inherit' });
-    execSync(
-      `git commit -m "fix(${issue.key}): ${issue.summary}
-
-${fix.explanation}
-
-Auto-fixed by FE Fixer Agent
-Jira: ${issue.key}"`,
-      { stdio: 'inherit' }
-    );
-
-    // Push
-    execSync(`git push origin ${branch}`, { stdio: 'inherit' });
-
-    // Crear PR vía GitHub CLI (si disponible)
-    try {
-      execSync(
-        `gh pr create \
-        --title "fix(${issue.key}): ${issue.summary}" \
-        --body "## Auto-fix por FE Fixer Agent\n\n**Issue Jira:** ${issue.key}\n\n**Cambios:**\n${fix.explanation}\n\n**Módulo:** ${issue.component}\n\n⚠️ *Revisar antes de mergear*" \
-        --label "auto-fix,frontend" \
-        --base main`,
-        { stdio: 'inherit' }
-      );
-
-      console.log(`[FE FIXER] PR creado para ${issue.key}`);
-    } catch {
-      console.warn('[FE FIXER] gh CLI not available — push branch manually');
-    }
-
-    // Actualizar issue en Jira
-    await transitionIssue(issue.key, 'In Review');
-    await addComment(
-      issue.key,
-      `🤖 *FE Fixer Agent* aplicó un fix automático.\n\n*Cambios:* ${fix.explanation}\n\n*Rama:* ${branch}\n\nPR abierto para revisión.`
-    );
-  } catch (err) {
-    // Volver a main en caso de error
-    try {
-      execSync('git checkout main', { stdio: 'pipe' });
-    } catch {}
-    throw err;
-  }
+  console.log(`  ✏️  Applied fix to ${filePath}`);
+  console.log(`  💬 ${fix.explanation}`);
 }
 
-// ─── Main ─────────────────────────────────────
 async function main() {
-  console.log('⚛️  [FE FIXER] Checking for frontend issues...\n');
+  console.log('⚛️  [FE FIXER] Looking for pending frontend tasks...\n');
 
-  // Leer issues de Jira asignados a FE
-  // En producción, esto vendría del MCP de Jira; aquí simulamos desde un archivo
-  const issuesFile = 'reports/fe-issues.json';
-  if (!fs.existsSync(issuesFile)) {
-    console.log('[FE FIXER] No frontend issues file found. Waiting for Jira Scribe...');
+  const tasks = getPendingTasks('frontend');
+  if (tasks.length === 0) {
+    console.log('[FE FIXER] No pending frontend tasks. Run inspector + task-manager first.');
+    printTaskSummary();
     return;
   }
 
-  const issues: JiraIssue[] = JSON.parse(fs.readFileSync(issuesFile, 'utf-8'));
-  const feIssues = issues.filter(
-    (i) => i.layer === 'frontend' && ['Open', 'In Progress'].includes(i.status) && !i.fixBranch
-  );
-
-  console.log(`[FE FIXER] ${feIssues.length} frontend issues to fix`);
+  console.log(`[FE FIXER] ${tasks.length} pending tasks (processing up to ${MAX_FIXES})\n`);
 
   let fixed = 0;
-  for (const issue of feIssues.slice(0, 3)) {
-    // máximo 3 fixes por run
-    console.log(`\n[FE FIXER] Processing ${issue.key}: ${issue.summary}`);
+  let failed = 0;
 
-    const fileContent = readAffectedFile(issue.affectedFile);
+  for (const task of tasks.slice(0, MAX_FIXES)) {
+    console.log(
+      `\n[FE FIXER] ${task.id} [${task.finding.severity}] ${task.finding.file}:${task.finding.line}`
+    );
+    console.log(`  📌 ${task.finding.description.slice(0, 100)}`);
+
+    const fileContent = readFile(task.finding.file);
     if (!fileContent) {
-      console.warn(`[FE FIXER] File not found: ${issue.affectedFile} — skipping`);
+      console.warn(`  ⚠️  File not found — skipping`);
+      task.status = 'skipped';
+      task.error = 'File not found';
+      updateTask(task);
       continue;
     }
 
+    // Mark in-progress
+    task.status = 'in-progress';
+    task.attempts++;
+    updateTask(task);
+
     try {
-      const fix = await generateFix(issue, fileContent);
-      await applyFix(issue, fix);
+      const fix = await generateFix(task, fileContent);
+      await applyFix(task, fix);
+
+      task.status = 'done';
+      task.fix = { explanation: fix.explanation, appliedTo: task.finding.file };
+      updateTask(task);
+
+      // Update Jira if configured (best-effort)
+      await transitionIssue(task.id, 'In Review').catch(() => {});
+      await addComment(task.id, `🤖 FE Fixer applied local fix: ${fix.explanation}`).catch(
+        () => {}
+      );
+
       fixed++;
-      console.log(`[FE FIXER] ✅ Fixed ${issue.key}`);
-    } catch (err) {
-      console.error(`[FE FIXER] ❌ Failed to fix ${issue.key}:`, err);
-      await addComment(
-        issue.key,
-        `🤖 *FE Fixer Agent* intentó aplicar un fix automático pero falló.\n\nError: ${err}\n\nRequiere intervención manual.`
-      ).catch(() => {});
+      console.log(`  ✅ Done`);
+    } catch (err: unknown) {
+      const msg = err instanceof Error ? err.message : String(err);
+      task.status = 'failed';
+      task.error = msg;
+      updateTask(task);
+      failed++;
+      console.error(`  ❌ Failed: ${msg.slice(0, 120)}`);
     }
   }
 
+  printTaskSummary();
+
   if (fixed > 0) {
     await notifySlack(
-      `FE Fixer aplicó *${fixed} fixes automáticos* de frontend. PRs listos para revisión.`,
-      'success'
+      `⚛️ *FE Fixer* — ${fixed} frontend fix(es) applied locally.\n${failed > 0 ? `⚠️ ${failed} failed — check tasks/ for details.` : ''}`,
+      fixed > 0 ? 'success' : 'high'
     );
   }
 
-  publish('fe-fixer', 'validator', 'FIXES_APPLIED', { layer: 'frontend', count: fixed });
-  console.log(`\n✅ [FE FIXER] Done. ${fixed} fixes applied.`);
+  console.log(`\n✅ [FE FIXER] Done. ${fixed} fixed, ${failed} failed.`);
 }
 
 main().catch((err) => {

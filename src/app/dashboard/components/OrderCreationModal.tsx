@@ -76,7 +76,6 @@ export default function OrderCreationModal({
         throw new Error('No se recibió el ID de la orden');
       }
 
-      console.log('Orden creada exitosamente:', data.createOrder);
       setOrderId(createdOrderId);
 
       // Crear el pago de referencia
@@ -107,7 +106,6 @@ export default function OrderCreationModal({
         throw new Error('No se recibió el ID del pago');
       }
 
-      console.log('Pago creado exitosamente:', paymentData.createPayment);
       setPaymentId(createdPaymentId);
       setStep('success');
 

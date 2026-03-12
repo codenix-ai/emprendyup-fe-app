@@ -121,7 +121,6 @@ export default function InsightsPage() {
     if (userData) {
       const parsedUser = JSON.parse(userData);
       setUser(parsedUser);
-      console.log('🚀 ~ InsightsPage ~ userData from localStorage:', parsedUser);
     }
   }, []);
 

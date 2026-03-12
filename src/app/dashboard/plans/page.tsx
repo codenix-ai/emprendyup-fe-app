@@ -69,11 +69,6 @@ export default function PlansPage() {
 
   // Transform products into Plan[] format for PricingPlans component
   const transformedPlans = useMemo(() => {
-    console.log(
-      'Building transformedPlans from productsData:',
-      productsData?.productsByStore?.items
-    );
-
     const getDefaultFeatures = (planType: string): string[] => {
       const defaultFeatures: { [key: string]: string[] } = {
         basic: [
@@ -116,16 +111,10 @@ export default function PlansPage() {
 
     // Use productsData directly, not filtered subscriptionProducts
     if (!productsData?.productsByStore?.items || productsData.productsByStore.items.length === 0) {
-      console.log('No products data available, returning empty array');
       return [];
     }
 
     const allProducts = productsData.productsByStore.items;
-    console.log('Total products from endpoint:', allProducts.length);
-    console.log(
-      'All product names:',
-      allProducts.map((p: any) => p.name)
-    );
 
     // Filter products by selected billing cycle (monthly or annual)
     const filteredProducts = allProducts.filter((product: any) => {
@@ -139,13 +128,6 @@ export default function PlansPage() {
       }
     });
 
-    console.log(`Selected cycle: ${selectedCycle}`);
-    console.log(`Filtered products for ${selectedCycle}:`, filteredProducts.length);
-    console.log(
-      'Filtered product names:',
-      filteredProducts.map((p: any) => p.name)
-    );
-
     // Transform each product into a plan card
     const plans = filteredProducts.map((product: any) => {
       const metadata = product.metadata ? JSON.parse(product.metadata) : {};
@@ -157,8 +139,6 @@ export default function PlansPage() {
         (product.name.toLowerCase().includes('annual') ? 'annual' : 'monthly');
       const displayName = metadata.displayName || product.title || product.name;
       const features = metadata.features || getDefaultFeatures(planType);
-
-      console.log('Transforming product:', product.name, '-> Plan ID:', product.id);
 
       return {
         id: product.id,
@@ -177,7 +157,6 @@ export default function PlansPage() {
     // Sort plans by price (ascending order)
     const sortedPlans = plans.sort((a: Plan, b: Plan) => parseFloat(a.price) - parseFloat(b.price));
 
-    console.log('Total transformed plans:', sortedPlans.length);
     return sortedPlans;
   }, [productsData, selectedCycle]);
 
@@ -186,9 +165,6 @@ export default function PlansPage() {
       console.error('Error loading products:', errorProducts);
     }
     if (productsData) {
-      console.log('Products loaded:', productsData.productsByStore?.items);
-      console.log('Subscription products:', subscriptionProducts);
-      console.log('Transformed plans:', transformedPlans);
     }
   }, [productsData, errorProducts, subscriptionProducts, transformedPlans]);
 
@@ -196,7 +172,6 @@ export default function PlansPage() {
   useEffect(() => {
     const checkEpayco = () => {
       if (window.ePayco) {
-        console.log('ePayco está disponible:', window.ePayco);
         setScriptLoaded(true);
         return true;
       }
@@ -228,10 +203,6 @@ export default function PlansPage() {
   }, []);
 
   const handlePlanSelect = async (planId: string, billingCycle: 'monthly' | 'annual') => {
-    console.log('Script loaded:', scriptLoaded);
-    console.log('window.ePayco:', window.ePayco);
-    console.log('Selected plan ID:', planId);
-
     if (!scriptLoaded || !window.ePayco) {
       console.error('ePayco script not loaded yet');
       alert(
@@ -265,8 +236,6 @@ export default function PlansPage() {
         features: metadata.features || [],
       };
 
-      console.log('Selected plan config:', planConfig);
-
       // Guardar datos del plan seleccionado y abrir modal
       setSelectedPlanData({
         planId,
@@ -281,9 +250,6 @@ export default function PlansPage() {
   };
 
   const handleOrderCreated = async (orderId: string, paymentId: string) => {
-    console.log('Order created with ID:', orderId);
-    console.log('Payment created with ID:', paymentId);
-
     if (!selectedPlanData) {
       console.error('No plan data available');
       return;
@@ -341,8 +307,6 @@ export default function PlansPage() {
         methodconfirmation: 'post',
       };
 
-      console.log('Opening ePayco checkout with data:', checkoutData);
-
       // Abrir el checkout de ePayco usando el handler
       handler.open(checkoutData);
     } catch (error) {
@@ -351,7 +315,6 @@ export default function PlansPage() {
     }
   };
 
-  console.log('transformedPlans', transformedPlans, selectedPlanData);
   return (
     <>
       {/* Script de ePayco */}
@@ -359,7 +322,6 @@ export default function PlansPage() {
         src="https://checkout.epayco.co/checkout.js"
         strategy="afterInteractive"
         onLoad={() => {
-          console.log('Script de ePayco cargado exitosamente');
           setScriptLoaded(true);
         }}
         onError={(error) => {

@@ -177,7 +177,6 @@ export default function RestaurantDetailPage() {
     variables: { id: restaurantId },
     skip: !restaurantId,
   });
-  console.log('Restaurant data:', data);
 
   const { data: menuData } = useQuery(GET_MENU_ITEMS, {
     variables: { restaurantId },
@@ -291,11 +290,6 @@ export default function RestaurantDetailPage() {
   };
 
   const handleAddOrUpdateMenuItem = async () => {
-    console.log('handleAddOrUpdateMenuItem', {
-      newMenuItem,
-      editingMenuItemId,
-      menuIdFromForm: formData.menuId,
-    });
     if (!newMenuItem.name) return;
     const menuId =
       newMenuItem.menuId || formData.menuId || data?.restaurant?.menu?.id || menuInfoData?.menu?.id;

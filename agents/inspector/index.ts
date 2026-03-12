@@ -177,7 +177,48 @@ function detectModule(filePath: string): Module {
   return 'api';
 }
 
-// ─── 4. Main ─────────────────────────────────
+// ─── 4. Slack summary ────────────────────────
+async function sendSlackSummary(opts: {
+  findings: Finding[];
+  critical: Finding[];
+  high: Finding[];
+  medium: Finding[];
+  low: Finding[];
+  byModule: Record<string, number>;
+  created: number;
+  dryRun: boolean;
+}): Promise<void> {
+  const { findings, critical, high, medium, low, byModule, created, dryRun } = opts;
+
+  const icon = critical.length > 0 ? '🚨' : high.length > 0 ? '⚠️' : '✅';
+  const moduleLines = Object.entries(byModule)
+    .sort((a, b) => b[1] - a[1])
+    .slice(0, 5)
+    .map(([mod, count]) => `  • ${mod}: ${count}`)
+    .join('\n');
+
+  const lines = [
+    `${icon} *emprendy.ai — Inspector Report*${dryRun ? ' _(dry run)_' : ''}`,
+    '',
+    `*Findings: ${findings.length} total*`,
+    `🔴 Critical: ${critical.length}   🟠 High: ${high.length}   🟡 Medium: ${medium.length}   ⚪ Low: ${low.length}`,
+    '',
+    `*Top modules affected:*\n${moduleLines || '  —'}`,
+    '',
+    created > 0
+      ? `📋 ${created} Jira issue(s) created automatically.`
+      : critical.length + high.length > 0
+        ? `📋 Jira skipped (not configured).`
+        : `✅ No critical/high issues — no Jira tickets needed.`,
+  ];
+
+  await notifySlack(
+    lines.join('\n'),
+    critical.length > 0 ? 'critical' : high.length > 0 ? 'high' : 'success'
+  );
+}
+
+// ─── 5. Main ─────────────────────────────────
 async function main() {
   console.log('🔍 [INSPECTOR] Starting static analysis...\n');
   fs.mkdirSync(REPORT_DIR, { recursive: true });
@@ -202,15 +243,40 @@ async function main() {
   const critical = findings.filter((f) => f.severity === 'critical');
   const high = findings.filter((f) => f.severity === 'high');
 
+  const medium = findings.filter((f) => f.severity === 'medium');
+  const low = findings.filter((f) => f.severity === 'low');
+
   // Guardar reporte
   fs.writeFileSync('reports/inspector-report.json', JSON.stringify(findings, null, 2));
   console.log(
-    `\n📊 Report: ${findings.length} findings (${critical.length} critical, ${high.length} high)`
+    `\n📊 Report: ${findings.length} findings — 🔴 ${critical.length} critical | 🟠 ${high.length} high | 🟡 ${medium.length} medium | ⚪ ${low.length} low`
   );
+
+  // Resumen por módulo
+  const byModule: Record<string, number> = {};
+  for (const f of findings) {
+    byModule[f.module] = (byModule[f.module] ?? 0) + 1;
+  }
+  const moduleLines = Object.entries(byModule)
+    .sort((a, b) => b[1] - a[1])
+    .map(([mod, count]) => `  • ${mod}: ${count}`)
+    .join('\n');
+
+  console.log('\nFindings by module:\n' + moduleLines);
 
   if (DRY_RUN) {
     console.log('\n[DRY RUN] Skipping Jira issue creation.');
     console.log(JSON.stringify(findings.slice(0, 3), null, 2));
+    await sendSlackSummary({
+      findings,
+      critical,
+      high,
+      medium,
+      low,
+      byModule,
+      created: 0,
+      dryRun: true,
+    });
     return;
   }
 
@@ -230,13 +296,17 @@ async function main() {
     created++;
   }
 
-  // Notificar
-  if (critical.length > 0) {
-    await notifySlack(
-      `Inspector encontró *${critical.length} issues críticos* en el último análisis. ${created} issues creados en Jira.`,
-      'critical'
-    );
-  }
+  // Slack: resumen completo siempre
+  await sendSlackSummary({
+    findings,
+    critical,
+    high,
+    medium,
+    low,
+    byModule,
+    created,
+    dryRun: false,
+  });
 
   // Publicar al bus para que QA Runner pueda reaccionar
   publish('inspector', 'qa-runner', 'INSPECTION_COMPLETE', {
@@ -245,6 +315,13 @@ async function main() {
     high: high.length,
     report: 'reports/inspector-report.json',
   });
+
+  // Auto-generate tasks from findings
+  try {
+    execSync('npx ts-node --project tsconfig.agents.json agents/task-manager/index.ts', {
+      stdio: 'inherit',
+    });
+  } catch {}
 
   console.log('\n✅ [INSPECTOR] Done.');
 }

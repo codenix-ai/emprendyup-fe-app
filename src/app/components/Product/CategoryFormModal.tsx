@@ -120,13 +120,6 @@ export function CategoryFormModal({
   // Debug logging
   useEffect(() => {
     if (isOpen) {
-      console.log('CategoryFormModal opened:', {
-        storeId,
-        selectedStoreId,
-        userData,
-        isAdmin: userData?.role === 'ADMIN' || userData?.isAdmin,
-        userHasNoStore: !storeId || storeId.trim() === '',
-      });
     }
   }, [isOpen, storeId]);
 
@@ -144,7 +137,6 @@ export function CategoryFormModal({
   // Log when stores data updates
   useEffect(() => {
     if (availableStores && availableStores.length > 0) {
-      console.log('Available stores updated:', availableStores);
     }
   }, [availableStores]);
 
@@ -212,14 +204,6 @@ export function CategoryFormModal({
     const finalStoreId = shouldShowStoreSelector ? selectedStoreId : storeId;
 
     // Logging detallado para debug
-    console.log('=== CATEGORY FORM SUBMIT DEBUG ===', {
-      shouldShowStoreSelector,
-      selectedStoreId,
-      storeId,
-      finalStoreId,
-      isAdmin,
-      userHasNoStore,
-    });
 
     // Validar que storeId existe
     if (!finalStoreId || finalStoreId.trim() === '') {
@@ -255,12 +239,6 @@ export function CategoryFormModal({
 
       const mutation = formData.parentId ? createSubcategory : createCategory;
 
-      console.log('=== SENDING MUTATION ===', {
-        storeId: finalStoreId,
-        input: inputPayload,
-        timestamp: new Date().toISOString(),
-      });
-
       const result = await mutation({
         variables: {
           storeId: finalStoreId,
@@ -269,8 +247,6 @@ export function CategoryFormModal({
       });
 
       const newCategory = result.data?.createStoreCategory || result.data?.createSubcategory;
-
-      console.log('Category created successfully:', newCategory);
 
       toast.success(
         formData.parentId ? 'Subcategoría creada exitosamente' : 'Categoría creada exitosamente'
@@ -291,14 +267,6 @@ export function CategoryFormModal({
       console.error('Error creating category:', error);
       const errorMessage =
         error?.graphQLErrors?.[0]?.message || error?.message || 'Error al guardar la categoría';
-
-      console.log('Full error details:', {
-        code: error?.code,
-        message: errorMessage,
-        graphQLErrors: error?.graphQLErrors,
-        networkError: error?.networkError,
-        status: error?.networkError?.statusCode,
-      });
 
       if (
         errorMessage.toLowerCase().includes('duplicate') ||
@@ -366,11 +334,6 @@ export function CategoryFormModal({
                     value={selectedStoreId}
                     onChange={(e) => {
                       const value = e.target.value;
-                      console.log('Store selected:', {
-                        selectedValue: value,
-                        selectedStore: availableStores.find((s: Store) => s.id === value),
-                        allStores: availableStores,
-                      });
                       setSelectedStoreId(value);
                     }}
                     className={`w-full px-3 py-2 border rounded-lg focus:outline-none focus:ring-2 focus:ring-fourth-base bg-gray-800 text-white ${

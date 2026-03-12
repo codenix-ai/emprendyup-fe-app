@@ -88,12 +88,10 @@ export default function AdminPage() {
 
   const toggleUserStatus = (userId: string) => {
     // In a real app, this would make an API call
-    console.log('Toggle user status:', userId);
   };
 
   const deleteUser = (userId: string) => {
     // In a real app, this would make an API call
-    console.log('Delete user:', userId);
   };
 
   return (

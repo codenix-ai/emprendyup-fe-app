@@ -752,8 +752,6 @@ const EventsPage = () => {
         ];
       });
 
-      console.log('📦 Final payload parameters:', JSON.stringify(parameters, null, 2));
-
       const payload = {
         phoneNumbers,
         templateName: process.env.NEXT_PUBLIC_WS_EVENTS_TEMPLATE_ID,

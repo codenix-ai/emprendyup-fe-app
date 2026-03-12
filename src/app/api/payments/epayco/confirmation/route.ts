@@ -4,8 +4,6 @@ export async function POST(req: NextRequest) {
   try {
     const body = await req.json();
 
-    console.log('Confirmación de ePayco recibida:', body);
-
     // Extraer datos importantes de la confirmación
     const {
       x_cust_id_cliente,
@@ -55,12 +53,8 @@ export async function POST(req: NextRequest) {
     // 3. Enviar notificaciones al usuario
     // 4. Actualizar el estado del usuario
 
-    console.log(`Transacción ${x_transaction_id} - Estado: ${status}`);
-
     if (status === 'approved') {
       // TODO: Implementar lógica para activar suscripción
-      console.log(`Activando suscripción para factura: ${x_id_invoice}`);
-
       // Ejemplo de lo que podrías hacer:
       // await activateSubscription({
       //   invoiceId: x_id_invoice,
@@ -101,8 +95,6 @@ export async function GET(req: NextRequest) {
       x_response_reason_text: searchParams.get('x_response_reason_text'),
       x_franchise: searchParams.get('x_franchise'),
     };
-
-    console.log('Confirmación GET de ePayco recibida:', confirmationData);
 
     // Procesar la confirmación usando la misma lógica que POST
     // ... (similar al código de arriba)

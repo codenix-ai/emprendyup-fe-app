@@ -88,7 +88,6 @@ export default function ChatTienda() {
         ...prev,
         { from: 'bot', text: '✅ ¡Perfecto! Ya tengo toda la información de tu tienda 🎉' },
       ]);
-      console.log('📦 Datos finales de la tienda:', storeData);
     }
   };
 

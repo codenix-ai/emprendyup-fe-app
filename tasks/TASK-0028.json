@@ -1,0 +1,20 @@
+{
+  "id": "TASK-0028",
+  "status": "pending",
+  "finding": {
+    "id": "eslint-/Users/juancarlos/emprendyup/emprendyup-fe-app/agents/jira-scribe/index.ts-7",
+    "type": "lint",
+    "severity": "medium",
+    "layer": "unknown",
+    "module": "api",
+    "file": "/Users/juancarlos/emprendyup/emprendyup-fe-app/agents/jira-scribe/index.ts",
+    "line": 7,
+    "description": "'consume' is defined but never used.",
+    "codeSnippet": "",
+    "rule": "no-unused-vars",
+    "timestamp": "2026-03-12T16:02:47.357Z"
+  },
+  "attempts": 0,
+  "createdAt": "2026-03-12T16:03:36.128Z",
+  "updatedAt": "2026-03-12T16:03:36.128Z"
+}

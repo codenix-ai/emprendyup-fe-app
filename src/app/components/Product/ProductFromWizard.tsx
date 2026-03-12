@@ -677,8 +677,6 @@ export function ProductFormWizard({
   const convertVariantCombinationsToNewFormat = () => {
     if (!variantCombinations || variantCombinations.length === 0) return [];
 
-    console.log('🔄 Converting variant combinations:', variantCombinations);
-
     const convertedCombinations = variantCombinations
       .map((combination, index) => {
         if (!combination.variants || !Array.isArray(combination.variants)) {
@@ -702,12 +700,10 @@ export function ProductFormWizard({
           price: combination.price || formData.price,
         };
 
-        console.log(`✅ Converted combination ${index}:`, result);
         return result;
       })
       .filter(Boolean);
 
-    console.log('🎯 Final converted combinations:', convertedCombinations);
     return convertedCombinations;
   };
 
@@ -767,7 +763,6 @@ export function ProductFormWizard({
                 },
               },
             });
-            console.log('✅ Recreated variant combination and stock for', variantIds);
           } catch (createErr) {
             console.error('❌ Failed to recreate variant combination:', createErr);
           }
@@ -788,22 +783,13 @@ export function ProductFormWizard({
       let allVariants = productVariantsData?.productVariantsByProduct || [];
 
       if (!allVariants.length || createdVariants) {
-        console.log('🔄 Refetching product variants for accurate state...');
-        console.log('🔍 Using productId for refetch:', productId);
-
         await new Promise((resolve) => setTimeout(resolve, 1000));
 
         const refetchResult = await refetchProductVariants({ productId });
         allVariants = refetchResult.data?.productVariantsByProduct || [];
-        console.log('🔍 Refetch result:', refetchResult.data);
-        console.log('🔍 Found variants count:', allVariants.length);
       }
 
       let allVariantIds = allVariants.map((v: { id: string }) => v.id);
-      console.log(
-        '🔍 Current variants in database:',
-        allVariants.map((v: any) => `${v.type || v.typeVariant}:${v.name || v.nameVariant}`)
-      );
 
       const combinationsToCreate = variantCombinations.filter(
         (c: VariantCombination) => !c.stockId
@@ -836,12 +822,7 @@ export function ProductFormWizard({
               v.name.trim().toLowerCase() === variant.name.trim().toLowerCase()
           );
 
-          console.log(
-            `🔍 Checking variant ${variant.type}:${variant.name} - exists: ${alreadyExists}, inList: ${alreadyInList}`
-          );
-
           if (!alreadyExists && !alreadyInList) {
-            console.log(`✅ Adding variant to create: ${variant.type}:${variant.name}`);
             variantsToCreate.push({
               name: variant.name,
               type: variant.type,
@@ -849,24 +830,20 @@ export function ProductFormWizard({
               jsonData: variant.value ? { value: variant.value } : undefined,
             });
           } else {
-            console.log(`⏭️ Skipping existing variant: ${variant.type}:${variant.name}`);
           }
         });
       });
 
       if (variantsToCreate.length > 0) {
-        console.log(`🚀 Creating ${variantsToCreate.length} new variants:`, variantsToCreate);
         await createVariants({ variables: { inputs: variantsToCreate } });
 
         if (productId) {
           await new Promise((resolve) => setTimeout(resolve, 400));
-          console.log('🔄 Refetching variants after creation...');
           const refetchResult = await refetchProductVariants({ productId });
           allVariants = refetchResult.data?.productVariantsByProduct || [];
           allVariantIds = allVariants.map((v: { id: string }) => v.id);
         }
       } else {
-        console.log('✅ No new variants to create - all variants already exist');
       }
 
       if (combinationsToCreate.length > 0) {
@@ -884,17 +861,8 @@ export function ProductFormWizard({
                   );
                 });
                 if (matched) {
-                  console.log(
-                    `✅ Found variant match: ${variant.type}:${variant.name} -> ID: ${matched.id}`
-                  );
                 } else {
                   console.warn(`❌ No variant match found for: ${variant.type}:${variant.name}`);
-                  console.log(
-                    'Available variants:',
-                    allVariants.map(
-                      (v: any) => `${v.typeVariant || v.type}:${v.nameVariant || v.name}`
-                    )
-                  );
                 }
                 return matched?.id;
               })
@@ -909,11 +877,6 @@ export function ProductFormWizard({
             console.warn('Combination variants:', combination.variants);
             continue;
           }
-
-          console.log(
-            `🔗 Creating combination with variantIds: [${variantIds.join(', ')}] for variants:`,
-            combination.variants.map((v: any) => `${v.type}:${v.name}`)
-          );
 
           await createVariantCombination({
             variables: {
@@ -1058,21 +1021,12 @@ export function ProductFormWizard({
           variants: convertVariantsToNewFormat(), // Add variants here
         };
 
-        console.log('🔍 UPDATE Input being sent:', {
-          colors: updateInput.colors,
-          sizes: updateInput.sizes,
-          variants: updateInput.variants,
-          stock: updateInput.stock,
-        });
-
         const { data } = await updateProduct({
           variables: {
             id: product.id,
             input: updateInput,
           },
         });
-
-        console.log('📥 UPDATE Response from backend:', data);
 
         if (data.updateProduct) {
           if (variantCombinations.length > 0) {
@@ -1112,24 +1066,12 @@ export function ProductFormWizard({
           stock: effectiveStock,
         };
 
-        console.log('🔍 CREATE Input being sent:', {
-          colors: createInput.colors,
-          sizes: createInput.sizes,
-          variants: createInput.variants,
-          stock: createInput.stock,
-        });
-
         const { data } = await createProductWithUrls({
           variables: { input: createInput },
         });
 
-        console.log('📥 CREATE Response from backend:', data);
-
         if (data.createProductWithUrls) {
           const newProductId = data.createProductWithUrls.id;
-
-          console.log('🎉 Product created successfully!');
-          console.log('📋 Backend response variants:', data.createProductWithUrls.variants);
 
           if (variantCombinations.length > 0) {
             await saveVariantCombinations(newProductId, undefined);
@@ -1290,15 +1232,6 @@ export function ProductFormWizard({
   // Debug logging when category modal opens
   useEffect(() => {
     if (showCategoryModal) {
-      console.log('Category modal opened - Debug info:', {
-        userData: {
-          ...userData,
-          token: userData?.token ? '[REDACTED]' : undefined,
-        },
-        validStoreId,
-        isAdmin: userData?.role === 'ADMIN' || userData?.isAdmin,
-        userHasStore: !!validStoreId,
-      });
     }
   }, [showCategoryModal]);
 

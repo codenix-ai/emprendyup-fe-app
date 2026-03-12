@@ -34,7 +34,6 @@ function PaymentResponsePage() {
         }
 
         setHasProcessed(true);
-        console.log('Validando pago con ref_payco:', refPayco);
 
         // Validar el pago con ePayco
         const epaycoResponse = await fetch(
@@ -46,7 +45,6 @@ function PaymentResponsePage() {
         }
 
         const epaycoData = await epaycoResponse.json();
-        console.log('Respuesta de ePayco:', epaycoData);
 
         if (!epaycoData.success) {
           setPaymentStatus('error');
@@ -82,7 +80,6 @@ function PaymentResponsePage() {
           // Actualizar el estado del pago en el backend
           try {
             const backendUrl = process.env.NEXT_PUBLIC_API_URL;
-            console.log('Actualizando estado en backend:', backendUrl);
 
             const backendResponse = await fetch(`${backendUrl}/payments/epayco/confirm`, {
               method: 'POST',
@@ -109,7 +106,6 @@ function PaymentResponsePage() {
               console.error('Error actualizando backend:', await backendResponse.text());
             } else {
               const backendData = await backendResponse.json();
-              console.log('Backend actualizado exitosamente:', backendData);
             }
           } catch (backendError) {
             console.error('Error al comunicarse con el backend:', backendError);

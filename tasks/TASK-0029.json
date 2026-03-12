@@ -1,0 +1,20 @@
+{
+  "id": "TASK-0029",
+  "status": "pending",
+  "finding": {
+    "id": "eslint-/Users/juancarlos/emprendyup/emprendyup-fe-app/agents/jira-scribe/index.ts-29",
+    "type": "lint",
+    "severity": "medium",
+    "layer": "unknown",
+    "module": "api",
+    "file": "/Users/juancarlos/emprendyup/emprendyup-fe-app/agents/jira-scribe/index.ts",
+    "line": 29,
+    "description": "Unexpected console statement.",
+    "codeSnippet": "",
+    "rule": "no-console",
+    "timestamp": "2026-03-12T15:52:01.611Z"
+  },
+  "attempts": 0,
+  "createdAt": "2026-03-12T16:01:55.321Z",
+  "updatedAt": "2026-03-12T16:01:55.321Z"
+}

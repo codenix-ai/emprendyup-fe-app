@@ -1160,7 +1160,6 @@ export default function InteractiveChatStore() {
         ]);
         if (process.env.NODE_ENV === 'development') {
           // eslint-disable-next-line no-console
-          console.log('✅ Datos completos de la tienda:', storeData);
         }
       }, 1500);
       return;
@@ -1840,7 +1839,6 @@ export default function InteractiveChatStore() {
                         };
 
                         const apiUrl = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:4000';
-                        console.log('🚀 Enviando request a IA:', requestBody);
 
                         const response = await fetch(`${apiUrl}/ai/description/generate`, {
                           method: 'POST',
@@ -1850,12 +1848,9 @@ export default function InteractiveChatStore() {
                           body: JSON.stringify(requestBody),
                         });
 
-                        console.log('📡 Response status:', response.status, response.statusText);
-
                         // 200 OK o 201 Created son válidos
                         if (response.ok || response.status === 201) {
                           const result = await response.json();
-                          console.log('✅ Respuesta de IA:', result);
                           if (result.data.description) {
                             setTempDescription(result.data.description);
                             setIsTyping(false);

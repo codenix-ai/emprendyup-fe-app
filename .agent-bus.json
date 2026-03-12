@@ -1,0 +1,38 @@
+[
+  {
+    "from": "inspector",
+    "to": "qa-runner",
+    "event": "INSPECTION_COMPLETE",
+    "payload": {
+      "total": 651,
+      "critical": 1,
+      "high": 8,
+      "report": "reports/inspector-report.json"
+    },
+    "timestamp": "2026-03-12T15:43:05.182Z"
+  },
+  {
+    "from": "inspector",
+    "to": "qa-runner",
+    "event": "INSPECTION_COMPLETE",
+    "payload": {
+      "total": 651,
+      "critical": 1,
+      "high": 8,
+      "report": "reports/inspector-report.json"
+    },
+    "timestamp": "2026-03-12T15:44:44.068Z"
+  },
+  {
+    "from": "inspector",
+    "to": "qa-runner",
+    "event": "INSPECTION_COMPLETE",
+    "payload": {
+      "total": 666,
+      "critical": 1,
+      "high": 8,
+      "report": "reports/inspector-report.json"
+    },
+    "timestamp": "2026-03-12T16:03:33.628Z"
+  }
+]

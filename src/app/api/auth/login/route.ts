@@ -26,7 +26,6 @@ export async function POST(request: Request) {
     });
 
     const data = await response.json();
-    console.log('🚀 ~ POST ~ data:', data);
 
     if (!response.ok) {
       console.error('Backend login failed:', data);

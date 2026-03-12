@@ -69,7 +69,6 @@ export default function ProductListClient({
   const totalPages = Math.ceil(total / pageSizeVal);
 
   const handleAddToFavorites = (item: Product) => {
-    console.log(`Add to favorites: ${item.title}`);
     // Save to localStorage
     try {
       const favorites = JSON.parse(localStorage.getItem('favorites') || '[]');

@@ -15,10 +15,6 @@ export default async function CreateStorePage() {
 
   // 3. Escenario 2 → Usuario ya tiene tienda
   if (stores.length > 0) {
-    console.log('📊 Event: store_create_redirected_existing', {
-      userId: user.id,
-      storeId: stores[0].id,
-    });
     redirect(`/dashboard`);
   }
 

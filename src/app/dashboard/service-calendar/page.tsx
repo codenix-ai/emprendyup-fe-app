@@ -249,9 +249,6 @@ export default function ServiceCalendar() {
 
   // Load appointments into calendar events
   useEffect(() => {
-    console.log('🔍 Appointments Data:', appointmentsData);
-    console.log('🔍 Services Data:', servicesData);
-
     if (appointmentsData?.appointmentsByProvider) {
       const calendarEvents: CalendarEvent[] = appointmentsData.appointmentsByProvider.map(
         (apt: any) => {
@@ -297,12 +294,10 @@ export default function ServiceCalendar() {
             },
           };
 
-          console.log('📅 Event created:', event);
           return event;
         }
       );
 
-      console.log('✅ Total events to display:', calendarEvents.length);
       setEvents(calendarEvents);
     }
   }, [appointmentsData, servicesData]);

@@ -182,7 +182,6 @@ export default function RestaurantDetailPage() {
     variables: { restaurantId: restaurantId },
     skip: !restaurantId,
   });
-  console.log('menuData:', data);
 
   const [updateRestaurant] = useMutation(UPDATE_RESTAURANT);
   const [formData, setFormData] = useState<any>({});
@@ -516,7 +515,6 @@ export default function RestaurantDetailPage() {
 
   const inputClassName =
     'w-full px-4 py-3 border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-700 text-gray-900 dark:text-white focus:ring-2 focus:ring-[var(--fourth-base)] focus:border-transparent';
-  console.log('formData:', formData);
   return (
     <div className="min-h-screen bg-gray-50 dark:bg-gray-900">
       {/* Header */}

@@ -7,16 +7,6 @@ on:
   # Called from ai-full-pipeline.yml
   workflow_call:
 
-  # Auto-trigger when Inspector finishes
-  workflow_run:
-    workflows: ['🔍 AI Inspector']
-    types: [completed]
-    branches: [main, develop]
-
-  # Also triggered by Regression via repository_dispatch
-  repository_dispatch:
-    types: [inspector-completed, regression-completed]
-
   workflow_dispatch:
     inputs:
       source:

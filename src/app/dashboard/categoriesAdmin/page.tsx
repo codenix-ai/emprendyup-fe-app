@@ -332,7 +332,7 @@ const CategoryFormModal = ({
         inputPayload.parentId = formData.parentId;
       }
 
-      console.log('Enviando datos:', inputPayload); // Para debug
+      // Para debug
 
       if (category) {
         // Update existing category
