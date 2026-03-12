@@ -1,0 +1,64 @@
+{
+  "customRules": [
+    {
+      "id": "empr-no-hardcoded-prices",
+      "pattern": "\\$\\d+\\.\\d{2}",
+      "message": "Precio hardcodeado detectado. Usa constantes o variables de configuración.",
+      "severity": "high",
+      "modules": ["store", "restaurant", "service"]
+    },
+    {
+      "id": "empr-no-console-log",
+      "pattern": "console\\.log",
+      "message": "console.log detectado en producción. Usa el logger centralizado.",
+      "severity": "medium",
+      "excludePaths": ["*.test.ts", "*.spec.ts", "scripts/"]
+    },
+    {
+      "id": "empr-missing-error-handling",
+      "pattern": "await .+ without try/catch",
+      "message": "Llamada async sin manejo de error. Agrega try/catch o .catch()",
+      "severity": "high"
+    },
+    {
+      "id": "empr-expose-api-key",
+      "pattern": "(api_key|apiKey|API_KEY)\\s*=\\s*['\"][a-zA-Z0-9]{20,}",
+      "message": "Posible API key expuesta en código fuente.",
+      "severity": "critical"
+    },
+    {
+      "id": "empr-unvalidated-user-input",
+      "pattern": "req\\.body\\.[a-zA-Z]+(?!.*zod|.*joi|.*validate)",
+      "message": "req.body sin validación detectada. Usa Zod o Joi.",
+      "severity": "high",
+      "modules": ["api"]
+    },
+    {
+      "id": "empr-missing-auth-middleware",
+      "pattern": "router\\.(get|post|put|delete)\\(['\"][^'\"]+['\"],\\s*async",
+      "message": "Endpoint sin middleware de autenticación.",
+      "severity": "high",
+      "modules": ["api"]
+    },
+    {
+      "id": "empr-image-without-alt",
+      "pattern": "<img(?![^>]*alt=)",
+      "message": "Imagen sin atributo alt. Requerido para accesibilidad.",
+      "severity": "medium",
+      "modules": ["store", "restaurant", "service", "dashboard"]
+    }
+  ],
+  "ignorePaths": [
+    "node_modules/",
+    ".next/",
+    "dist/",
+    "build/",
+    "coverage/",
+    "*.config.js",
+    "*.config.ts"
+  ],
+  "severityOverrides": {
+    "no-unused-vars": "medium",
+    "no-explicit-any": "low"
+  }
+}

@@ -5,8 +5,8 @@ import { gql, useMutation } from '@apollo/client';
 import Link from 'next/link';
 import Image from 'next/image';
 import { useRouter, useSearchParams } from 'next/navigation';
-import BackToHome from '../components/back-to-home';
-import Switcher from '../components/switcher';
+import { motion, AnimatePresence } from 'framer-motion';
+import { Eye, EyeOff, ArrowLeft, Loader2, AlertCircle, CheckCircle2, Check } from 'lucide-react';
 import { GoogleLogin, CredentialResponse } from '@react-oauth/google';
 import GoogleOAuthProvider from '../components/GoogleOAuthProvider';
 import { handleGoogleSignup, parseGoogleCredential } from '@/lib/utils/googleAuth';
@@ -25,6 +25,32 @@ const REGISTER_MUTATION = gql`
   }
 `;
 
+type PolicyCheck = { label: string; pass: boolean };
+
+function PasswordStrength({ password }: { password: string }) {
+  const checks: PolicyCheck[] = [
+    { label: 'Mínimo 8 caracteres', pass: password.length >= 8 },
+    { label: 'Una letra mayúscula', pass: /[A-Z]/.test(password) },
+    { label: 'Una letra minúscula', pass: /[a-z]/.test(password) },
+    { label: 'Un número', pass: /\d/.test(password) },
+    { label: 'Un carácter especial (!@#$%)', pass: /[\W_]/.test(password) },
+  ];
+  if (!password) return null;
+  return (
+    <ul className="mt-2 space-y-1">
+      {checks.map((c) => (
+        <li
+          key={c.label}
+          className={`flex items-center gap-1.5 text-xs ${c.pass ? 'text-green-400' : 'text-slate-500'}`}
+        >
+          <Check size={11} className={c.pass ? 'text-green-400' : 'text-slate-600'} />
+          {c.label}
+        </li>
+      ))}
+    </ul>
+  );
+}
+
 function SignupForm() {
   const router = useRouter();
   const searchParams = useSearchParams();
@@ -32,17 +58,11 @@ function SignupForm() {
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
   const [confirmPassword, setConfirmPassword] = useState('');
-  const [storeId, setStoreId] = useState('');
+  const [storeId] = useState('');
   const [acceptTerms, setAcceptTerms] = useState(false);
   const [showPassword, setShowPassword] = useState(false);
-
-  // Password policy checks (live)
-  const hasUpper = /[A-Z]/.test(password);
-  const [showPasswordRequirements, setShowPasswordRequirements] = useState(false);
-  const hasLower = /[a-z]/.test(password);
-  const hasNumber = /\d/.test(password);
-  const hasSpecial = /[\W_]/.test(password);
-  const hasMin = password.length >= 8;
+  const [showConfirm, setShowConfirm] = useState(false);
+  const [showPwHints, setShowPwHints] = useState(false);
 
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState('');
@@ -51,38 +71,11 @@ function SignupForm() {
   const [registerMutation] = useMutation(REGISTER_MUTATION);
   const [googleLoading, setGoogleLoading] = useState(false);
 
-  // Handle OAuth errors from URL params
   useEffect(() => {
     const oauthError = searchParams.get('error');
     const message = searchParams.get('message');
-
     if (oauthError) {
       const errorMessages: Record<string, string> = {
-        oauth_cancelled: 'Has cancelado el registro con Google.',
-        no_authorization_code: 'Error de autorización con Google.',
-        oauth_not_configured: 'Google OAuth no está configurado correctamente.',
-        token_exchange_failed: 'Error al intercambiar el token de Google.',
-        profile_fetch_failed: 'Error al obtener tu perfil de Google.',
-        backend_not_configured: 'Backend no configurado.',
-      };
-
-      setError(
-        errorMessages[oauthError] || message || 'Ocurrió un error durante el registro con Google.'
-      );
-
-      // Limpia la URL
-      const newUrl = new URL(window.location.href);
-      newUrl.searchParams.delete('error');
-      newUrl.searchParams.delete('message');
-      window.history.replaceState({}, '', newUrl.toString());
-    }
-  }, [searchParams]);
-
-  // Handle OAuth errors from URL params
-  useEffect(() => {
-    const oauthError = searchParams.get('error');
-    if (oauthError) {
-      const errorMessages = {
         oauth_cancelled: 'Has cancelado el registro con Google.',
         no_authorization_code: 'Error de autorización con Google.',
         oauth_not_configured: 'Google OAuth no está configurado correctamente.',
@@ -92,14 +85,27 @@ function SignupForm() {
         backend_auth_failed: 'Error de autenticación en el servidor.',
         unexpected_error: 'Error inesperado durante el registro con Google.',
       };
-      setError(errorMessages[oauthError as keyof typeof errorMessages] || 'Error desconocido');
-
-      // Clear the error from URL
+      setError(errorMessages[oauthError] || message || 'Error desconocido');
       const newUrl = new URL(window.location.href);
       newUrl.searchParams.delete('error');
+      newUrl.searchParams.delete('message');
       window.history.replaceState({}, '', newUrl.toString());
     }
   }, [searchParams]);
+
+  const redirectAfterAuth = (user: {
+    role?: string;
+    storeId?: string | null;
+    restaurantId?: string | null;
+    serviceProviderId?: string | null;
+  }) => {
+    const hasBusiness = user.storeId || user.restaurantId || user.serviceProviderId;
+    if (user.role === 'ADMIN' || hasBusiness) {
+      router.push('/dashboard/insights');
+    } else {
+      router.push('/dashboard/store/new');
+    }
+  };
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -111,118 +117,69 @@ function SignupForm() {
       setError('Debes aceptar los Términos y Condiciones.');
       return;
     }
-
     if (password !== confirmPassword) {
       setError('Las contraseñas no coinciden.');
       return;
     }
 
-    // Enforce password policy: min 8 chars, uppercase, lowercase, number, special char
     const passwordRegex = /^(?=.*[a-z])(?=.*[A-Z])(?=.*\d)(?=.*[\W_]).{8,}$/;
     if (!passwordRegex.test(password)) {
-      setError(
-        'La contraseña debe tener mínimo 8 caracteres e incluir mayúscula, minúscula, número y un carácter especial.'
-      );
-      setShowPasswordRequirements(true);
+      setError('La contraseña no cumple los requisitos de seguridad.');
+      setShowPwHints(true);
       return;
     }
 
     setLoading(true);
     try {
       const { data } = await registerMutation({
-        variables: {
-          input: {
-            name,
-            email,
-            password,
-            storeId: storeId || null,
-          },
-        },
+        variables: { input: { name, email, password, storeId: storeId || null } },
       });
-      if (!data?.register?.user?.id) {
-        throw new Error('Error en el registro');
-      }
-      // Store access token if needed
-      if (data.register.access_token) {
+      if (!data?.register?.user?.id) throw new Error('Error en el registro');
+      if (data.register.access_token)
         localStorage.setItem('accessToken', data.register.access_token);
-      }
       setShowToast(true);
       setTimeout(() => {
         setShowToast(false);
-        setName('');
-        setEmail('');
-        setPassword('');
-        setConfirmPassword('');
-        setStoreId('');
-        setAcceptTerms(false);
         router.push(`/otp-confirmation?email=${encodeURIComponent(email)}`);
-      }, 6000);
-    } catch (err: any) {
-      setError(err.message || 'Error en el registro');
+      }, 5000);
+    } catch (err: unknown) {
+      setError(err instanceof Error ? err.message : 'Error en el registro');
     } finally {
       setLoading(false);
     }
   };
 
-  // Handle Google Signup Success
   const onGoogleSignupSuccess = async (credentialResponse: CredentialResponse) => {
     setError('');
     setSuccess('');
     setGoogleLoading(true);
-
     try {
       const tokens = parseGoogleCredential(credentialResponse);
-
-      // Try signup endpoint first
       const response = await handleGoogleSignup(tokens);
-
       if (response.success && response.user) {
-        // Store tokens if provided
-        if (response.access_token) {
-          localStorage.setItem('accessToken', response.access_token);
-        }
+        if (response.access_token) localStorage.setItem('accessToken', response.access_token);
         localStorage.setItem('user', JSON.stringify(response.user));
-
         setSuccess('Registro con Google exitoso. Redirigiendo...');
-
-        // Redirect based on user status
-        setTimeout(() => {
-          if (response.user?.role === 'ADMIN') {
-            router.push('/dashboard/insights');
-          } else if (
-            response.user?.storeId ||
-            response.user?.restaurantId ||
-            response.user?.serviceProviderId
-          ) {
-            router.push('/dashboard/insights');
-          } else {
-            router.push('/dashboard/store/new');
-          }
-        }, 1000);
+        setTimeout(() => redirectAfterAuth(response.user!), 900);
       } else {
-        // Handle backend errors
         if (
           response.message?.includes('User already exists') ||
           response.message?.includes('already registered')
         ) {
           setError('Ya existe una cuenta con este correo. Por favor inicia sesión.');
-        } else if (response.message?.includes('No account found')) {
-          setError('Error al crear la cuenta. Por favor intenta nuevamente.');
         } else if (response.message?.includes('token validation')) {
           setError('Error al validar el token de Google. Por favor intenta nuevamente.');
         } else {
           setError(response.error || response.message || 'Error al registrarse con Google');
         }
       }
-    } catch (err: any) {
-      console.error('Google signup error:', err);
+    } catch {
       setError('Error al procesar el registro con Google');
     } finally {
       setGoogleLoading(false);
     }
   };
 
-  // Handle Google Signup Error
   const onGoogleSignupError = () => {
     setError('Error al registrarse con Google. Por favor intenta nuevamente.');
     setGoogleLoading(false);
@@ -230,319 +187,326 @@ function SignupForm() {
 
   return (
     <GoogleOAuthProvider>
-      <section className="w-full h-screen flex items-center justify-center bg-gradient-to-br from-fourth-base/10 via-blue-50 to-green-50 dark:from-slate-800 dark:via-slate-900 dark:to-slate-800">
-        <div className="w-full h-full flex items-center justify-center">
-          <div className="w-full h-full bg-white dark:bg-black">
-            <div className="grid md:grid-cols-2 grid-cols-1 items-center h-full">
-              {/* Imagen lateral */}
-              <div className="relative md:shrink-0 h-full">
-                <Image
-                  src="/images/ab1.jpg"
-                  fill
-                  className="w-full h-full object-cover"
-                  alt="signup"
+      <section className="min-h-screen flex bg-black">
+        {/* ── Left panel – decorative image ───────────────────────── */}
+        <div className="relative hidden md:flex md:w-1/2 lg:w-[45%] flex-col justify-end overflow-hidden">
+          <Image
+            src="/images/ab2.jpg"
+            fill
+            priority
+            className="object-cover"
+            alt="Emprendedora trabajando"
+          />
+          <div className="absolute inset-0 bg-gradient-to-t from-black/70 via-black/20 to-transparent" />
+          <div className="absolute inset-0 bg-gradient-to-r from-transparent to-black/40" />
+          <div className="relative z-10 p-10 pb-14">
+            <Link
+              href="/"
+              className="inline-flex items-center gap-2 mb-8"
+              aria-label="Volver al inicio"
+            >
+              <Image src="/images/logo.svg" width={40} height={40} alt="EmprendyUp" />
+              <span className="text-white font-bold text-xl">EmprendyUp</span>
+            </Link>
+            <blockquote className="text-white">
+              <p className="text-2xl font-semibold leading-snug max-w-sm">
+                &ldquo;Miles de emprendedores ya están haciendo crecer su negocio con
+                nosotros.&rdquo;
+              </p>
+              <footer className="mt-4 text-white/60 text-sm">
+                Únete hoy, es completamente gratis
+              </footer>
+            </blockquote>
+          </div>
+        </div>
+
+        {/* ── Right panel – form ──────────────────────────────────── */}
+        <div className="flex flex-1 flex-col justify-center px-6 py-12 sm:px-10 lg:px-14 xl:px-16 bg-[#0d0d0d] overflow-y-auto">
+          <Link
+            href="/"
+            className="inline-flex items-center gap-1.5 text-slate-400 hover:text-white text-sm mb-6 transition-colors w-fit"
+          >
+            <ArrowLeft size={16} />
+            Volver al inicio
+          </Link>
+
+          <motion.div
+            className="w-full max-w-sm mx-auto"
+            initial={{ opacity: 0, y: 16 }}
+            animate={{ opacity: 1, y: 0 }}
+            transition={{ duration: 0.45, ease: 'easeOut' }}
+          >
+            {/* Mobile logo */}
+            <div className="md:hidden flex justify-center mb-6">
+              <Image src="/images/logo.svg" width={44} height={44} alt="EmprendyUp" />
+            </div>
+
+            <h1 className="text-2xl font-bold text-white mb-1">Crea tu cuenta gratis</h1>
+            <p className="text-slate-400 text-sm mb-7">
+              ¿Ya tienes cuenta?{' '}
+              <Link href="/login" className="text-fourth-base hover:underline font-medium">
+                Inicia sesión
+              </Link>
+            </p>
+
+            {/* Alerts */}
+            <AnimatePresence mode="wait">
+              {error && (
+                <motion.div
+                  key="error"
+                  initial={{ opacity: 0, scale: 0.97 }}
+                  animate={{ opacity: 1, scale: 1 }}
+                  exit={{ opacity: 0, scale: 0.97 }}
+                  className="mb-5 flex items-start gap-2.5 rounded-xl border border-red-500/30 bg-red-500/10 px-4 py-3 text-sm text-red-400"
+                  role="alert"
+                >
+                  <AlertCircle size={16} className="mt-0.5 shrink-0" />
+                  <span>{error}</span>
+                </motion.div>
+              )}
+              {success && (
+                <motion.div
+                  key="success"
+                  initial={{ opacity: 0, scale: 0.97 }}
+                  animate={{ opacity: 1, scale: 1 }}
+                  exit={{ opacity: 0, scale: 0.97 }}
+                  className="mb-5 flex items-start gap-2.5 rounded-xl border border-green-500/30 bg-green-500/10 px-4 py-3 text-sm text-green-400"
+                  role="status"
+                >
+                  <CheckCircle2 size={16} className="mt-0.5 shrink-0" />
+                  <span>{success}</span>
+                </motion.div>
+              )}
+            </AnimatePresence>
+
+            <form onSubmit={handleSubmit} noValidate className="space-y-4">
+              {/* Name */}
+              <div>
+                <label
+                  htmlFor="RegisterName"
+                  className="block text-sm font-medium text-slate-300 mb-1.5"
+                >
+                  Nombre completo
+                </label>
+                <input
+                  id="RegisterName"
+                  type="text"
+                  value={name}
+                  onChange={(e) => setName(e.target.value)}
+                  placeholder="Tu nombre"
+                  required
+                  autoComplete="name"
+                  className="w-full rounded-xl border border-white/10 bg-white/5 px-4 py-2.5 text-white placeholder-slate-500 text-sm outline-none transition focus:border-fourth-base focus:ring-2 focus:ring-fourth-base/30"
                 />
               </div>
 
-              {/* Formulario */}
-              <div className="p-8 lg:px-20 flex flex-col justify-center h-full min-h-screen md:min-h-full bg-black">
-                <form onSubmit={handleSubmit} className="text-start lg:py-20 py-8">
-                  <h2 className="text-white text-xl font-bold mb-6 text-center">Registro</h2>
+              {/* Email */}
+              <div>
+                <label
+                  htmlFor="RegisterEmail"
+                  className="block text-sm font-medium text-slate-300 mb-1.5"
+                >
+                  Correo electrónico
+                </label>
+                <input
+                  id="RegisterEmail"
+                  type="email"
+                  value={email}
+                  onChange={(e) => setEmail(e.target.value)}
+                  placeholder="nombre@gmail.com"
+                  required
+                  autoComplete="email"
+                  className="w-full rounded-xl border border-white/10 bg-white/5 px-4 py-2.5 text-white placeholder-slate-500 text-sm outline-none transition focus:border-fourth-base focus:ring-2 focus:ring-fourth-base/30"
+                />
+              </div>
 
-                  {/* Error Message */}
-                  {error && (
-                    <div className="mb-4 p-3 bg-red-500/10 border border-red-500 rounded text-red-500 text-sm">
-                      {error}
-                    </div>
-                  )}
+              {/* Password */}
+              <div>
+                <label
+                  htmlFor="RegisterPassword"
+                  className="block text-sm font-medium text-slate-300 mb-1.5"
+                >
+                  Contraseña
+                </label>
+                <div className="relative">
+                  <input
+                    id="RegisterPassword"
+                    type={showPassword ? 'text' : 'password'}
+                    value={password}
+                    onChange={(e) => {
+                      setPassword(e.target.value);
+                      setShowPwHints(true);
+                    }}
+                    placeholder="••••••••"
+                    required
+                    autoComplete="new-password"
+                    className="w-full rounded-xl border border-white/10 bg-white/5 px-4 py-2.5 pr-11 text-white placeholder-slate-500 text-sm outline-none transition focus:border-fourth-base focus:ring-2 focus:ring-fourth-base/30"
+                  />
+                  <button
+                    type="button"
+                    onClick={() => setShowPassword((s) => !s)}
+                    aria-label={showPassword ? 'Ocultar contraseña' : 'Mostrar contraseña'}
+                    className="absolute right-3 top-1/2 -translate-y-1/2 text-slate-400 hover:text-white transition-colors"
+                  >
+                    {showPassword ? <EyeOff size={17} /> : <Eye size={17} />}
+                  </button>
+                </div>
+                {showPwHints && <PasswordStrength password={password} />}
+              </div>
 
-                  {/* Success Message */}
-                  {success && (
-                    <div className="mb-4 p-3 bg-green-500/10 border border-green-500 rounded text-green-500 text-sm">
-                      {success}
-                    </div>
-                  )}
+              {/* Confirm password */}
+              <div>
+                <label
+                  htmlFor="RegisterConfirmPassword"
+                  className="block text-sm font-medium text-slate-300 mb-1.5"
+                >
+                  Confirmar contraseña
+                </label>
+                <div className="relative">
+                  <input
+                    id="RegisterConfirmPassword"
+                    type={showConfirm ? 'text' : 'password'}
+                    value={confirmPassword}
+                    onChange={(e) => setConfirmPassword(e.target.value)}
+                    placeholder="••••••••"
+                    required
+                    autoComplete="new-password"
+                    className={`w-full rounded-xl border bg-white/5 px-4 py-2.5 pr-11 text-white placeholder-slate-500 text-sm outline-none transition focus:ring-2 ${
+                      confirmPassword && confirmPassword !== password
+                        ? 'border-red-500/60 focus:border-red-500 focus:ring-red-500/30'
+                        : 'border-white/10 focus:border-fourth-base focus:ring-fourth-base/30'
+                    }`}
+                  />
+                  <button
+                    type="button"
+                    onClick={() => setShowConfirm((s) => !s)}
+                    aria-label={showConfirm ? 'Ocultar contraseña' : 'Mostrar contraseña'}
+                    className="absolute right-3 top-1/2 -translate-y-1/2 text-slate-400 hover:text-white transition-colors"
+                  >
+                    {showConfirm ? <EyeOff size={17} /> : <Eye size={17} />}
+                  </button>
+                </div>
+                {confirmPassword && confirmPassword !== password && (
+                  <p className="mt-1 text-xs text-red-400">Las contraseñas no coinciden</p>
+                )}
+              </div>
 
-                  <div className="grid grid-cols-1">
-                    <div className="mb-4">
-                      <label className="font-semibold text-white" htmlFor="RegisterName">
-                        Nombre:
-                      </label>
-                      <input
-                        id="RegisterName"
-                        type="text"
-                        value={name}
-                        onChange={(e) => setName(e.target.value)}
-                        className="mt-3 w-full py-2 px-3 h-10 bg-transparent border rounded text-white placeholder-gray-400"
-                        placeholder="Nombre completo"
-                        required
-                      />
-                    </div>
+              {/* Terms */}
+              <div className="flex items-start gap-2.5 pt-1">
+                <input
+                  type="checkbox"
+                  id="AcceptTerms"
+                  checked={acceptTerms}
+                  onChange={(e) => setAcceptTerms(e.target.checked)}
+                  className="mt-0.5 h-4 w-4 rounded border-white/20 bg-white/10 accent-fourth-base cursor-pointer"
+                />
+                <label
+                  htmlFor="AcceptTerms"
+                  className="text-slate-400 text-sm leading-snug cursor-pointer"
+                >
+                  Acepto los{' '}
+                  <Link href="/terminos" className="text-fourth-base hover:underline">
+                    Términos y Condiciones
+                  </Link>{' '}
+                  y la{' '}
+                  <Link href="/politica-borrado-datos" className="text-fourth-base hover:underline">
+                    Política de privacidad
+                  </Link>
+                </label>
+              </div>
 
-                    <div className="mb-4">
-                      <label className="font-semibold text-white" htmlFor="RegisterEmail">
-                        Correo Electrónico:
-                      </label>
-                      <input
-                        id="RegisterEmail"
-                        type="email"
-                        value={email}
-                        onChange={(e) => setEmail(e.target.value)}
-                        className="mt-3 w-full py-2 px-3 h-10 bg-transparent border rounded text-white placeholder-gray-400"
-                        placeholder="ejemplo@correo.com"
-                        required
-                      />
-                    </div>
+              {/* Submit */}
+              <button
+                type="submit"
+                disabled={loading || googleLoading}
+                className="w-full flex items-center justify-center gap-2 rounded-xl bg-fourth-base py-2.5 text-sm font-semibold text-black transition hover:bg-fourth-300 disabled:opacity-50 disabled:cursor-not-allowed shadow-md mt-2"
+              >
+                {loading ? (
+                  <>
+                    <Loader2 size={16} className="animate-spin" />
+                    Registrando...
+                  </>
+                ) : (
+                  'Crear cuenta gratis'
+                )}
+              </button>
+            </form>
 
-                    <div className="mb-4">
-                      <label className="font-semibold text-white" htmlFor="RegisterPassword">
-                        Contraseña:
-                      </label>
-                      <div className="mt-3 relative">
-                        <input
-                          id="RegisterPassword"
-                          type={showPassword ? 'text' : 'password'}
-                          value={password}
-                          onChange={(e) => {
-                            const v = e.target.value;
-                            setPassword(v);
-                            // If requirements are shown and user fixed the password, hide checklist
-                            const passwordRegex =
-                              /^(?=.*[a-z])(?=.*[A-Z])(?=.*\d)(?=.*[\W_]).{8,}$/;
-                            if (showPasswordRequirements && passwordRegex.test(v)) {
-                              setShowPasswordRequirements(false);
-                            }
-                          }}
-                          className="w-full py-2 px-3 h-10 pr-10 bg-transparent border rounded text-white placeholder-gray-400"
-                          placeholder="********"
-                          required
-                        />
-                        <button
-                          type="button"
-                          onClick={() => setShowPassword((s) => !s)}
-                          aria-label={showPassword ? 'Ocultar contraseña' : 'Mostrar contraseña'}
-                          className="absolute right-2 top-1/2 -translate-y-1/2 text-white opacity-80 hover:opacity-100"
-                        >
-                          {showPassword ? (
-                            <svg
-                              xmlns="http://www.w3.org/2000/svg"
-                              width="18"
-                              height="18"
-                              viewBox="0 0 24 24"
-                              fill="none"
-                              stroke="currentColor"
-                              strokeWidth="2"
-                              strokeLinecap="round"
-                              strokeLinejoin="round"
-                            >
-                              <path d="M17.94 17.94A10.94 10.94 0 0 1 12 20c-9 0-11-8-11-8a17.38 17.38 0 0 1 5-5" />
-                              <path d="M1 1l22 22" />
-                            </svg>
-                          ) : (
-                            <svg
-                              xmlns="http://www.w3.org/2000/svg"
-                              width="18"
-                              height="18"
-                              viewBox="0 0 24 24"
-                              fill="none"
-                              stroke="currentColor"
-                              strokeWidth="2"
-                              strokeLinecap="round"
-                              strokeLinejoin="round"
-                            >
-                              <path d="M1 12s2-7 11-7 11 7 11 7-2 7-11 7S1 12 1 12z" />
-                              <circle cx="12" cy="12" r="3" />
-                            </svg>
-                          )}
-                        </button>
-                      </div>
-                      {/* Password policy checklist (hidden until failed submit) */}
-                      {showPasswordRequirements && (
-                        <ul className="mt-2 text-sm space-y-1">
-                          <li className={`${hasMin ? 'text-emerald-400' : 'text-slate-400'}`}>
-                            {hasMin ? '✔' : '•'} Mínimo 8 caracteres
-                          </li>
-                          <li className={`${hasUpper ? 'text-emerald-400' : 'text-slate-400'}`}>
-                            {hasUpper ? '✔' : '•'} Una letra mayúscula
-                          </li>
-                          <li className={`${hasLower ? 'text-emerald-400' : 'text-slate-400'}`}>
-                            {hasLower ? '✔' : '•'} Una letra minúscula
-                          </li>
-                          <li className={`${hasNumber ? 'text-emerald-400' : 'text-slate-400'}`}>
-                            {hasNumber ? '✔' : '•'} Un número
-                          </li>
-                          <li className={`${hasSpecial ? 'text-emerald-400' : 'text-slate-400'}`}>
-                            {hasSpecial ? '✔' : '•'} Un carácter especial (ej. !@#$%)
-                          </li>
-                        </ul>
-                      )}
-                    </div>
-
-                    <div className="mb-4">
-                      <label className="font-semibold text-white" htmlFor="RegisterConfirmPassword">
-                        Confirmar contraseña:
-                      </label>
-                      <div className="mt-3 relative">
-                        <input
-                          id="RegisterConfirmPassword"
-                          type={showPassword ? 'text' : 'password'}
-                          value={confirmPassword}
-                          onChange={(e) => setConfirmPassword(e.target.value)}
-                          className="w-full py-2 px-3 h-10 pr-10 bg-transparent border rounded text-white placeholder-gray-400"
-                          placeholder="********"
-                          required
-                        />
-                        <button
-                          type="button"
-                          onClick={() => setShowPassword((s) => !s)}
-                          aria-label={showPassword ? 'Ocultar contraseña' : 'Mostrar contraseña'}
-                          className="absolute right-2 top-1/2 -translate-y-1/2 text-white opacity-80 hover:opacity-100"
-                        >
-                          {showPassword ? (
-                            <svg
-                              xmlns="http://www.w3.org/2000/svg"
-                              width="18"
-                              height="18"
-                              viewBox="0 0 24 24"
-                              fill="none"
-                              stroke="currentColor"
-                              strokeWidth="2"
-                              strokeLinecap="round"
-                              strokeLinejoin="round"
-                            >
-                              <path d="M17.94 17.94A10.94 10.94 0 0 1 12 20c-9 0-11-8-11-8a17.38 17.38 0 0 1 5-5" />
-                              <path d="M1 1l22 22" />
-                            </svg>
-                          ) : (
-                            <svg
-                              xmlns="http://www.w3.org/2000/svg"
-                              width="18"
-                              height="18"
-                              viewBox="0 0 24 24"
-                              fill="none"
-                              stroke="currentColor"
-                              strokeWidth="2"
-                              strokeLinecap="round"
-                              strokeLinejoin="round"
-                            >
-                              <path d="M1 12s2-7 11-7 11 7 11 7-2 7-11 7S1 12 1 12z" />
-                              <circle cx="12" cy="12" r="3" />
-                            </svg>
-                          )}
-                        </button>
-                      </div>
-                    </div>
-
-                    <div className="mb-4">
-                      <div className="flex items-center">
-                        <input
-                          type="checkbox"
-                          id="AcceptT&C"
-                          checked={acceptTerms}
-                          onChange={(e) => setAcceptTerms(e.target.checked)}
-                          className="form-checkbox me-2"
-                        />
-                        <label htmlFor="AcceptT&C" className="text-slate-400">
-                          Acepto los{' '}
-                          <Link href="/terminos" className="text-fourth-base">
-                            Términos y Condiciones
-                          </Link>
-                        </label>
-                      </div>
-                    </div>
-
-                    {error && <p className="text-red-500 mb-3">{error}</p>}
-
-                    <button
-                      type="submit"
-                      disabled={loading}
-                      className="py-2 px-5 w-full bg-fourth-base text-black rounded-md disabled:opacity-50 disabled:cursor-not-allowed"
-                    >
-                      {loading ? 'Registrando...' : 'Registrar'}
-                    </button>
-
-                    <div className="py-4 text-center text-slate-400">o</div>
-
-                    {/* Google Signup Button */}
-                    <div className="flex justify-center">
-                      {googleLoading ? (
-                        <div className="py-2 px-5 w-full border rounded-md bg-white text-black flex items-center justify-center gap-2">
-                          <div className="animate-spin rounded-full h-5 w-5 border-b-2 border-gray-900"></div>
-                          <span>Procesando...</span>
-                        </div>
-                      ) : (
-                        <GoogleLogin
-                          onSuccess={onGoogleSignupSuccess}
-                          onError={onGoogleSignupError}
-                          useOneTap={false}
-                          text="signup_with"
-                          size="large"
-                          width="100%"
-                          theme="outline"
-                        />
-                      )}
-                    </div>
-
-                    <div className="text-center mt-4">
-                      <span className="text-slate-400">¿Ya tienes una cuenta?</span>{' '}
-                      <Link href="/login" className="text-white font-bold">
-                        Inicia sesión
-                      </Link>
-                    </div>
-                  </div>
-                </form>
+            {/* Divider */}
+            <div className="relative my-5">
+              <div className="absolute inset-0 flex items-center">
+                <div className="w-full border-t border-white/10" />
+              </div>
+              <div className="relative flex justify-center">
+                <span className="bg-[#0d0d0d] px-3 text-xs text-slate-500">o regístrate con</span>
               </div>
             </div>
-          </div>
-        </div>
-        <BackToHome />
-        <Switcher />
 
-        {/* Toast Success Message */}
+            {/* Google */}
+            <div className="flex justify-center">
+              {googleLoading ? (
+                <div className="flex w-full items-center justify-center gap-2 rounded-xl border border-white/10 py-2.5 text-sm text-white">
+                  <Loader2 size={16} className="animate-spin" />
+                  Procesando...
+                </div>
+              ) : (
+                <GoogleLogin
+                  onSuccess={onGoogleSignupSuccess}
+                  onError={onGoogleSignupError}
+                  useOneTap={false}
+                  text="signup_with"
+                  size="large"
+                  width="100%"
+                  theme="filled_black"
+                />
+              )}
+            </div>
+          </motion.div>
+        </div>
+      </section>
+
+      {/* Toast */}
+      <AnimatePresence>
         {showToast && (
-          <div className="fixed top-4 right-4 z-50 transform transition-all duration-500 ease-in-out">
-            <div className="bg-green-500 text-white px-6 py-4 rounded-lg shadow-lg flex items-center space-x-3 max-w-md">
-              <div className="flex-shrink-0">
-                <svg className="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                  <path
-                    strokeLinecap="round"
-                    strokeLinejoin="round"
-                    strokeWidth={2}
-                    d="M5 13l4 4L19 7"
-                  />
-                </svg>
-              </div>
-              <div className="flex-1">
-                <p className="font-medium">¡Registro exitoso!</p>
-                <p className="text-sm text-green-100">
-                  Serás redirigido para verificar tu correo electrónico con un código OTP. Por favor
-                  revisa tu bandeja de entrada y sigue las instrucciones.{' '}
+          <motion.div
+            key="toast"
+            initial={{ opacity: 0, y: -20, scale: 0.95 }}
+            animate={{ opacity: 1, y: 0, scale: 1 }}
+            exit={{ opacity: 0, y: -20, scale: 0.95 }}
+            className="fixed top-4 right-4 z-50 max-w-sm"
+          >
+            <div className="flex items-start gap-3 rounded-xl bg-green-500 px-5 py-4 text-white shadow-xl">
+              <CheckCircle2 size={20} className="shrink-0 mt-0.5" />
+              <div>
+                <p className="font-semibold text-sm">¡Registro exitoso!</p>
+                <p className="text-xs text-green-100 mt-0.5">
+                  Revisa tu bandeja de entrada para verificar tu correo con el código OTP.
                 </p>
               </div>
               <button
                 onClick={() => setShowToast(false)}
-                className="flex-shrink-0 ml-2 text-green-200 hover:text-white transition-colors"
+                className="ml-auto text-green-200 hover:text-white transition-colors"
+                aria-label="Cerrar"
               >
-                <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                  <path
-                    strokeLinecap="round"
-                    strokeLinejoin="round"
-                    strokeWidth={2}
-                    d="M6 18L18 6M6 6l12 12"
-                  />
-                </svg>
+                <span aria-hidden>✕</span>
               </button>
             </div>
-          </div>
+          </motion.div>
         )}
-      </section>
+      </AnimatePresence>
     </GoogleOAuthProvider>
   );
 }
 
 export default function Signup() {
   return (
-    <Suspense fallback={<div>Cargando...</div>}>
+    <Suspense
+      fallback={
+        <div className="min-h-screen bg-black flex items-center justify-center">
+          <Loader2 size={32} className="animate-spin text-fourth-base" />
+        </div>
+      }
+    >
       <SignupForm />
     </Suspense>
   );

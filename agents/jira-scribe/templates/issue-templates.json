@@ -1,0 +1,25 @@
+{
+  "bug": {
+    "issueType": "Bug",
+    "descriptionTemplate": "h2. Descripción\n{description}\n\nh2. Pasos para reproducir\n{steps}\n\nh2. Resultado esperado\n{expected}\n\nh2. Resultado actual\n{actual}\n\nh2. Código afectado\n{code:javascript}\n{snippet}\n{code}\n\nh2. Contexto técnico\n* Archivo: {file}\n* Módulo: {module}\n* Layer: {layer}\n* Detectado por: {detectedBy}",
+    "labels": ["bug", "auto-detected"],
+    "priorityMap": {
+      "critical": "Blocker",
+      "high": "High",
+      "medium": "Medium",
+      "low": "Low"
+    }
+  },
+  "e2eFailure": {
+    "issueType": "Bug",
+    "descriptionTemplate": "h2. Test E2E Fallido\n*Escenario:* {scenario}\n*Módulo:* {module}\n\nh2. Error\n{error}\n\nh2. Pasos ejecutados\n{steps}\n\nh2. Evidencia\n!{screenshot}|thumbnail!\n\nh2. Metadata\n* Duración: {duration}ms\n* Timestamp: {timestamp}\n* Detectado por: QA Runner Agent",
+    "labels": ["bug", "e2e", "regression", "auto-detected"],
+    "defaultPriority": "High"
+  },
+  "vulnerability": {
+    "issueType": "Bug",
+    "descriptionTemplate": "h2. Vulnerabilidad de Seguridad\n{description}\n\nh2. Paquete afectado\n{code}\n{snippet}\n{code}\n\nh2. Recomendación\nEjecutar: {{npm audit fix}} o actualizar {package} a la versión segura más reciente.\n\n*IMPORTANTE:* Este issue fue detectado automáticamente. Revisar el reporte completo en {{reports/audit.json}}",
+    "labels": ["security", "vulnerability", "auto-detected"],
+    "defaultPriority": "Blocker"
+  }
+}
