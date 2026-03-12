@@ -1,0 +1,156 @@
+name: 📋 AI Jira Scribe
+
+# Consume reports from Inspector and QA Runner → creates Jira issues
+# Triggers: after Inspector completes on main/develop, or manually
+
+on:
+  # Called from ai-full-pipeline.yml
+  workflow_call:
+
+  # Auto-trigger when Inspector finishes
+  workflow_run:
+    workflows: ['🔍 AI Inspector']
+    types: [completed]
+    branches: [main, develop]
+
+  # Also triggered by Regression via repository_dispatch
+  repository_dispatch:
+    types: [inspector-completed, regression-completed]
+
+  workflow_dispatch:
+    inputs:
+      source:
+        description: 'Source of reports to process'
+        required: false
+        default: 'both'
+        type: choice
+        options: [both, inspector, qa-runner]
+      inspector_run_number:
+        description: 'Inspector run number to fetch artifacts from (leave blank = latest)'
+        required: false
+        type: string
+      trigger_autofix:
+        description: 'Trigger auto-fix after creating issues?'
+        required: false
+        default: 'false'
+        type: boolean
+
+jobs:
+  jira-scribe:
+    name: 📋 Create Jira Issues
+    runs-on: ubuntu-latest
+    # Only run if Inspector succeeded or was triggered manually/by dispatch
+    if: |
+      github.event_name == 'workflow_dispatch' ||
+      github.event_name == 'repository_dispatch' ||
+      (github.event_name == 'workflow_run' && github.event.workflow_run.conclusion != 'cancelled')
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Setup Node.js 20
+        uses: actions/setup-node@v4
+        with:
+          node-version: 20
+          cache: npm
+
+      - name: Install dependencies
+        run: npm ci
+
+      - name: Create reports directory
+        run: mkdir -p reports
+
+      # ── Download Inspector artifacts ───────────────────────────────────
+      - name: Download Inspector report (workflow_run)
+        if: |
+          github.event_name == 'workflow_run' &&
+          (github.event.inputs.source == 'both' || github.event.inputs.source == 'inspector' || github.event.inputs.source == '')
+        uses: actions/download-artifact@v4
+        with:
+          name: inspector-report-${{ github.event.workflow_run.run_number }}
+          path: reports/
+          github-token: ${{ secrets.GITHUB_TOKEN }}
+          run-id: ${{ github.event.workflow_run.id }}
+        continue-on-error: true
+
+      - name: Download Inspector report (manual / dispatch)
+        if: |
+          github.event_name != 'workflow_run' &&
+          (github.event.inputs.source == 'both' || github.event.inputs.source == 'inspector')
+        uses: actions/download-artifact@v4
+        with:
+          pattern: inspector-report-*
+          path: reports/
+          merge-multiple: true
+        continue-on-error: true
+
+      # ── Download QA Runner artifacts ───────────────────────────────────
+      - name: Download QA Runner report
+        if: |
+          github.event_name != 'workflow_run' &&
+          (github.event.inputs.source == 'both' || github.event.inputs.source == 'qa-runner')
+        uses: actions/download-artifact@v4
+        with:
+          pattern: regression-report-*
+          path: reports/
+          merge-multiple: true
+        continue-on-error: true
+
+      # ── Run Jira Scribe Agent ──────────────────────────────────────────
+      - name: Run Jira Scribe Agent
+        env:
+          ANTHROPIC_API_KEY: ${{ secrets.ANTHROPIC_API_KEY }}
+          JIRA_MCP_URL: ${{ secrets.JIRA_MCP_URL }}
+          JIRA_PROJECT_KEY: EMPR
+          SLACK_WEBHOOK_URL: ${{ secrets.SLACK_WEBHOOK_URL }}
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        run: npx ts-node agents/jira-scribe/index.ts
+
+      # ── Optionally trigger Auto-fix ────────────────────────────────────
+      - name: Trigger Auto-fix workflow
+        if: github.event.inputs.trigger_autofix == 'true'
+        uses: actions/github-script@v7
+        with:
+          script: |
+            const result = require('./reports/jira-scribe-result.json');
+            if (!result || result.count === 0) {
+              console.log('No issues created — skipping auto-fix trigger.');
+              return;
+            }
+            await github.rest.repos.createDispatchEvent({
+              owner: context.repo.owner,
+              repo: context.repo.repo,
+              event_type: 'jira-issue-created',
+              client_payload: {
+                layer: 'both',
+                jira_key: result.lastKey || '',
+                count: result.count
+              }
+            });
+            console.log(`Triggered auto-fix for ${result.count} issue(s).`);
+        continue-on-error: true
+
+      - name: Generate step summary
+        if: always()
+        run: |
+          echo "## 📋 Jira Scribe Summary" >> $GITHUB_STEP_SUMMARY
+          echo "" >> $GITHUB_STEP_SUMMARY
+          echo "**Run:** #${{ github.run_number }} — $(date -u '+%Y-%m-%d %H:%M UTC')" >> $GITHUB_STEP_SUMMARY
+          echo "" >> $GITHUB_STEP_SUMMARY
+          if [ -f reports/jira-scribe-result.json ]; then
+            COUNT=$(node -e "const r=require('./reports/jira-scribe-result.json');console.log(r.count||0)")
+            echo "| Metric | Value |" >> $GITHUB_STEP_SUMMARY
+            echo "|--------|-------|" >> $GITHUB_STEP_SUMMARY
+            echo "| 📋 Jira issues created | ${COUNT} |" >> $GITHUB_STEP_SUMMARY
+          else
+            echo "_No result file found — check agent logs._" >> $GITHUB_STEP_SUMMARY
+          fi
+
+      - name: Upload Jira Scribe report
+        uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: jira-scribe-report-${{ github.run_number }}
+          path: reports/
+          retention-days: 14

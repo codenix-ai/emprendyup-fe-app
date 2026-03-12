@@ -32,22 +32,29 @@ jobs:
   regression:
     name: '2️⃣  Regression'
     needs: inspector
-    if: always()    # Correr aunque Inspector encuentre issues
+    if: always() # Correr aunque Inspector encuentre issues
     uses: ./.github/workflows/ai-regression.yml
     secrets: inherit
     with:
       create_jira_issues: 'true'
 
-  # ── Step 3: Auto-fix (opcional) ──────────────
+  # ── Step 3: Jira Scribe ──────────────────────
+  jira-scribe:
+    name: '3️⃣  Jira Scribe'
+    needs: [inspector, regression]
+    if: always()
+    uses: ./.github/workflows/ai-jira-scribe.yml
+    secrets: inherit
+
+  # ── Step 4: Auto-fix (opcional) ──────────────
   autofix:
-    name: '3️⃣  Auto-fix'
-    needs: regression
+    name: '4️⃣  Auto-fix'
+    needs: jira-scribe
     if: |
       always() &&
       github.event.inputs.run_autofix == 'true' &&
-      needs.regression.result != 'skipped'
+      needs.jira-scribe.result != 'skipped'
     runs-on: ubuntu-latest
-
     steps:
       - name: Checkout
         uses: actions/checkout@v4
@@ -67,7 +74,7 @@ jobs:
       - name: Configure git
         run: |
           git config user.name  "emprendy-ai-bot"
-          git config user.email "bot@emprendy.ai"
+          git config user.email "info@emprendy.ai"
 
       - name: Download regression reports
         uses: actions/download-artifact@v4
@@ -92,10 +99,10 @@ jobs:
           SLACK_WEBHOOK_URL: ${{ secrets.SLACK_WEBHOOK_URL }}
         run: npx ts-node agents/be-fixer/index.ts || true
 
-  # ── Step 4: Pipeline summary ─────────────────
+  # ── Step 5: Pipeline summary ─────────────────
   summary:
-    name: '4️⃣  Pipeline Summary'
-    needs: [inspector, regression, autofix]
+    name: '5️⃣  Pipeline Summary'
+    needs: [inspector, regression, jira-scribe, autofix]
     if: always()
     runs-on: ubuntu-latest
 
@@ -117,6 +124,7 @@ jobs:
           echo "|------|--------|" >> $GITHUB_STEP_SUMMARY
           echo "| 🔍 Inspector | ${{ needs.inspector.result }} |" >> $GITHUB_STEP_SUMMARY
           echo "| 🧪 Regression | ${{ needs.regression.result }} |" >> $GITHUB_STEP_SUMMARY
+          echo "| 📋 Jira Scribe | ${{ needs.jira-scribe.result }} |" >> $GITHUB_STEP_SUMMARY
           echo "| 🔧 Auto-fix | ${{ needs.autofix.result || 'skipped' }} |" >> $GITHUB_STEP_SUMMARY
 
       - name: Notify Slack — pipeline complete
