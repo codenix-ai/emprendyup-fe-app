@@ -6,6 +6,8 @@ import { JiraIssue, Finding, TestResult, Layer } from './types';
 
 const client = new Anthropic();
 
+const MCP_BETA = 'mcp-client-2025-04-04';
+
 const MCP_SERVER = {
   type: 'url' as const,
   url: process.env.JIRA_MCP_URL ?? '',
@@ -14,10 +16,10 @@ const MCP_SERVER = {
 
 // ── Create issue from a code Finding ──────────
 export async function createIssueFromFinding(finding: Finding): Promise<string> {
-  const response = await client.messages.create({
+  const response = await client.beta.messages.create({
+    betas: [MCP_BETA],
     model: 'claude-opus-4-5',
     max_tokens: 2000,
-    // @ts-ignore — mcp_servers is a valid param
     mcp_servers: [MCP_SERVER],
     system: `Eres el Jira Scribe de emprendy.ai.
 Crea issues en el proyecto ${process.env.JIRA_PROJECT_KEY ?? 'EMPR'}.
@@ -50,7 +52,7 @@ ${finding.codeSnippet}
 ${finding.fix ? `Fix sugerido por el linter: ${finding.fix}` : ''}`,
       },
     ],
-  });
+  } as any);
 
   const text = response.content
     .filter((b) => b.type === 'text')
@@ -62,10 +64,10 @@ ${finding.fix ? `Fix sugerido por el linter: ${finding.fix}` : ''}`,
 
 // ── Create issue from a failed test ───────────
 export async function createIssueFromTestFailure(result: TestResult): Promise<string> {
-  const response = await client.messages.create({
+  const response = await client.beta.messages.create({
+    betas: [MCP_BETA],
     model: 'claude-opus-4-5',
     max_tokens: 2000,
-    // @ts-ignore
     mcp_servers: [MCP_SERVER],
     system: `Eres el Jira Scribe de emprendy.ai.
 Crea un Bug en el proyecto ${process.env.JIRA_PROJECT_KEY ?? 'EMPR'} por falla en test E2E.
@@ -86,7 +88,7 @@ Pasos ejecutados:
 ${result.steps.map((s, i) => `${i + 1}. [${s.status.toUpperCase()}] ${s.action}${s.error ? ` → ${s.error}` : ''}`).join('\n')}`,
       },
     ],
-  });
+  } as any);
 
   const text = response.content
     .filter((b) => b.type === 'text')
@@ -98,10 +100,10 @@ ${result.steps.map((s, i) => `${i + 1}. [${s.status.toUpperCase()}] ${s.action}$
 
 // ── Transition issue status ────────────────────
 export async function transitionIssue(issueKey: string, targetStatus: string): Promise<void> {
-  await client.messages.create({
+  await client.beta.messages.create({
+    betas: [MCP_BETA],
     model: 'claude-opus-4-5',
     max_tokens: 500,
-    // @ts-ignore
     mcp_servers: [MCP_SERVER],
     messages: [
       {
@@ -109,16 +111,16 @@ export async function transitionIssue(issueKey: string, targetStatus: string): P
         content: `Transiciona el issue ${issueKey} al estado "${targetStatus}" en Jira.`,
       },
     ],
-  });
+  } as any);
   console.log(`[JIRA] ${issueKey} → ${targetStatus}`);
 }
 
 // ── Add comment to issue ──────────────────────
 export async function addComment(issueKey: string, comment: string): Promise<void> {
-  await client.messages.create({
+  await client.beta.messages.create({
+    betas: [MCP_BETA],
     model: 'claude-opus-4-5',
     max_tokens: 500,
-    // @ts-ignore
     mcp_servers: [MCP_SERVER],
     messages: [
       {
@@ -126,7 +128,7 @@ export async function addComment(issueKey: string, comment: string): Promise<voi
         content: `Agrega el siguiente comentario al issue ${issueKey} en Jira:\n\n${comment}`,
       },
     ],
-  });
+  } as any);
 }
 
 // ── Check if similar issue exists (dedup) ─────
@@ -134,10 +136,10 @@ export async function findDuplicateIssue(
   description: string,
   file: string
 ): Promise<string | null> {
-  const response = await client.messages.create({
+  const response = await client.beta.messages.create({
+    betas: [MCP_BETA],
     model: 'claude-opus-4-5',
     max_tokens: 300,
-    // @ts-ignore
     mcp_servers: [MCP_SERVER],
     messages: [
       {
@@ -149,7 +151,7 @@ Archivo: ${file}
 Si existe, responde SOLO con la clave del issue (ej: EMPR-42). Si no existe, responde: NONE`,
       },
     ],
-  });
+  } as any);
 
   const text = response.content
     .filter((b) => b.type === 'text')
