@@ -45,6 +45,7 @@ export interface UpdateFairSaleInput {
   paymentMethod?: string;
   customerName?: string;
   customerContact?: string;
+  total?: number;
 }
 
 export interface FairSale {

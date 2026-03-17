@@ -4,18 +4,19 @@ import { useEffect, useMemo, useState } from 'react';
 import Link from 'next/link';
 import { useParams, useRouter } from 'next/navigation';
 import Image from 'next/image';
-import { useQuery } from '@apollo/client';
+import { useQuery, useMutation } from '@apollo/client';
 import toast from 'react-hot-toast';
 import { ArrowLeft, Edit2, Lock, RefreshCcw, Save, ShoppingCart, Trash2, X } from 'lucide-react';
-import {
-  Fair,
-  FairSale,
-  FairSummary,
-  FairsApiError,
-  UpdateFairSaleInput,
-  fairsApi,
-} from '@/lib/api/fairs';
+import { Fair, FairSale, FairSummary, FairsApiError, fairsApi } from '@/lib/api/fairs';
 import { GET_PRODUCTS_BY_STORE } from '@/lib/graphql/queries';
+import {
+  GET_FAIR,
+  GET_FAIR_SALES,
+  GET_FAIR_SUMMARY,
+  CLOSE_FAIR as CLOSE_FAIR_MUTATION,
+  UPDATE_FAIR_SALE,
+  DELETE_FAIR_SALE,
+} from '@/lib/graphql/fairs';
 import { formatMoney, toNumber } from '@/lib/utils/money';
 
 function formatDate(value?: string): string {
@@ -120,6 +121,7 @@ interface EditForm {
   paymentMethod: string;
   customerName: string;
   customerContact: string;
+  total: string;
 }
 
 export default function FairDetailPage() {
@@ -130,7 +132,6 @@ export default function FairDetailPage() {
   const [fair, setFair] = useState<Fair | null>(null);
   const [sales, setSales] = useState<FairSale[]>([]);
   const [summary, setSummary] = useState<FairSummary | null>(null);
-  const [loading, setLoading] = useState(true);
   const [closing, setClosing] = useState(false);
   const [confirmClose, setConfirmClose] = useState(false);
   const [selectedSale, setSelectedSale] = useState<any | null>(null);
@@ -139,6 +140,7 @@ export default function FairDetailPage() {
     paymentMethod: 'CASH',
     customerName: '',
     customerContact: '',
+    total: '',
   });
   const [savingEdit, setSavingEdit] = useState(false);
   const [confirmDeleteSale, setConfirmDeleteSale] = useState(false);
@@ -146,48 +148,68 @@ export default function FairDetailPage() {
 
   const active = useMemo(() => isFairActive(fair), [fair]);
 
-  async function load() {
-    setLoading(true);
-    try {
-      const [f, s, sum] = await Promise.all([
-        fairsApi.getFairById(fairId),
-        fairsApi.listSales(fairId),
-        fairsApi.getSummary(fairId),
-      ]);
-      setFair(f);
-      setSales(Array.isArray(s) ? s : []);
-      setSummary(normalizeSummary(sum));
-    } catch (e: any) {
-      toast.error(e?.message || 'No se pudo cargar el detalle de la feria');
-    } finally {
-      setLoading(false);
-    }
-  }
+  const {
+    data: fairData,
+    loading: fairLoading,
+    refetch: refetchFair,
+  } = useQuery(GET_FAIR, { variables: { id: fairId }, skip: !fairId });
+
+  const {
+    data: salesData,
+    loading: salesLoading,
+    refetch: refetchSales,
+  } = useQuery(GET_FAIR_SALES, { variables: { fairId }, skip: !fairId });
+
+  const {
+    data: summaryData,
+    loading: summaryLoading,
+    refetch: refetchSummary,
+  } = useQuery(GET_FAIR_SUMMARY, { variables: { fairId }, skip: !fairId });
 
   useEffect(() => {
-    load();
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [fairId]);
+    const f: Fair | null = fairData?.fair ?? null;
+    setFair(f);
+  }, [fairData]);
+
+  useEffect(() => {
+    const raw = salesData?.fairSales;
+    setSales(Array.isArray(raw) ? raw : []);
+  }, [salesData]);
+
+  useEffect(() => {
+    const sum = summaryData?.fairSummary;
+    setSummary(sum ? normalizeSummary(sum) : null);
+  }, [summaryData]);
+
+  const loading = fairLoading || salesLoading || summaryLoading;
+
+  async function load() {
+    await Promise.all([refetchFair(), refetchSales(), refetchSummary()]);
+  }
+
+  const [closeFairMutation] = useMutation(CLOSE_FAIR_MUTATION);
 
   async function handleCloseFair() {
     setClosing(true);
     try {
-      await fairsApi.closeFair(fairId);
+      await closeFairMutation({ variables: { id: fairId } });
       toast.success('Feria cerrada');
       setConfirmClose(false);
       await load();
-    } catch (e: any) {
-      toast.error(e?.message || 'No se pudo cerrar la feria');
+    } catch (e: unknown) {
+      toast.error((e as Error)?.message || 'No se pudo cerrar la feria');
     } finally {
       setClosing(false);
     }
   }
 
   function openEditMode() {
+    const rawTotal = (selectedSale as any)?.total;
     setEditForm({
       paymentMethod: (selectedSale as any)?.paymentMethod || 'CASH',
       customerName: (selectedSale as any)?.customerName || '',
       customerContact: (selectedSale as any)?.customerContact || '',
+      total: rawTotal != null ? String(rawTotal) : '',
     });
     setEditMode(true);
   }
@@ -198,20 +220,27 @@ export default function FairDetailPage() {
     setConfirmDeleteSale(false);
   }
 
+  const [updateFairSaleMutation] = useMutation(UPDATE_FAIR_SALE);
+
   async function handleEditSave() {
     if (!selectedSale?.id) return;
     setSavingEdit(true);
     try {
-      const input: UpdateFairSaleInput = {
+      const input = {
         paymentMethod: editForm.paymentMethod || undefined,
         customerName: editForm.customerName || undefined,
         customerContact: editForm.customerContact || undefined,
+        total: editForm.total ? parseFloat(editForm.total) : undefined,
       };
-      const updated = await fairsApi.updateSale(fairId, selectedSale.id, input);
+      const { data } = await updateFairSaleMutation({
+        variables: { fairId, saleId: selectedSale.id, input },
+      });
+      const updated = data?.updateFairSale ?? {};
       toast.success('Venta actualizada');
       setSelectedSale({ ...selectedSale, ...updated });
       setSales((prev) => prev.map((s) => (s.id === selectedSale.id ? { ...s, ...updated } : s)));
       setEditMode(false);
+      await refetchSummary();
     } catch (e: unknown) {
       toast.error((e as Error)?.message || 'No se pudo actualizar la venta');
     } finally {
@@ -219,11 +248,13 @@ export default function FairDetailPage() {
     }
   }
 
+  const [deleteFairSaleMutation] = useMutation(DELETE_FAIR_SALE);
+
   async function handleDeleteSale() {
     if (!selectedSale?.id) return;
     setDeletingSale(true);
     try {
-      await fairsApi.deleteSale(fairId, selectedSale.id);
+      await deleteFairSaleMutation({ variables: { fairId, saleId: selectedSale.id } });
       toast.success('Venta eliminada');
       setSales((prev) => prev.filter((s) => s.id !== selectedSale.id));
       closeModal();
@@ -514,6 +545,25 @@ export default function FairDetailPage() {
                         </option>
                       ))}
                     </select>
+                  </div>
+                  <div>
+                    <label className="block text-xs font-semibold uppercase tracking-wide text-gray-500 dark:text-gray-400 mb-1.5">
+                      Total
+                    </label>
+                    <div className="relative">
+                      <span className="absolute left-3 top-1/2 -translate-y-1/2 text-sm text-gray-400 dark:text-gray-500">
+                        $
+                      </span>
+                      <input
+                        type="number"
+                        min="0"
+                        step="0.01"
+                        value={editForm.total}
+                        onChange={(e) => setEditForm((f) => ({ ...f, total: e.target.value }))}
+                        placeholder="0.00"
+                        className="w-full rounded-xl border border-gray-200 dark:border-gray-700 bg-white dark:bg-gray-800 pl-7 pr-3 py-2.5 text-sm text-gray-900 dark:text-white"
+                      />
+                    </div>
                   </div>
                   <div className="grid grid-cols-2 gap-3">
                     <div>
