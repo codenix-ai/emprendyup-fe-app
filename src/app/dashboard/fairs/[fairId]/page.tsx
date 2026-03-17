@@ -216,7 +216,7 @@ export default function FairDetailPage() {
             aria-disabled={!active}
           >
             <ShoppingCart className="h-4 w-4" />
-            Vender
+            <span className="hidden sm:inline">Vender</span>
           </Link>
 
           <button
@@ -228,7 +228,7 @@ export default function FairDetailPage() {
             }`}
           >
             <Lock className="h-4 w-4" />
-            Cerrar
+            <span className="hidden sm:inline">Cerrar</span>
           </button>
         </div>
       </div>

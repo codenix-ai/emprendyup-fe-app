@@ -371,15 +371,15 @@ export default function FairSellPage() {
           </div>
         </div>
 
-        <div className="grid md:grid-cols-2 gap-3">
-          <div className="rounded-2xl border border-gray-200 dark:border-gray-700 bg-white dark:bg-gray-800 p-4">
-            <label className="block text-sm font-medium text-gray-900 dark:text-white">
+        <div className="rounded-2xl border border-gray-200 dark:border-gray-700 bg-white dark:bg-gray-800 p-4 space-y-3">
+          <div>
+            <label className="block text-xs font-semibold uppercase tracking-wide text-gray-500 dark:text-gray-400 mb-1.5">
               Método de pago
             </label>
             <select
               value={per?.paymentMethod || 'CASH'}
               onChange={(e) => setPaymentMethod(fairId, e.target.value)}
-              className="mt-2 w-full rounded-xl border border-gray-200 dark:border-gray-700 bg-white dark:bg-gray-900 px-3 py-3 text-base text-gray-900 dark:text-white"
+              className="w-full rounded-xl border border-gray-200 dark:border-gray-700 bg-white dark:bg-gray-900 px-3 py-2.5 text-base text-gray-900 dark:text-white"
             >
               {PAYMENT_METHODS.map((m) => (
                 <option key={m.value} value={m.value}>
@@ -388,23 +388,29 @@ export default function FairSellPage() {
               ))}
             </select>
           </div>
-
-          <div className="rounded-2xl border border-gray-200 dark:border-gray-700 bg-white dark:bg-gray-800 p-4">
-            <label className="block text-sm font-medium text-gray-900 dark:text-white">
-              Cliente (opcional)
-            </label>
-            <input
-              value={per?.customerName || ''}
-              onChange={(e) => setCustomerName(fairId, e.target.value)}
-              placeholder="Nombre"
-              className="mt-2 w-full rounded-xl border border-gray-200 dark:border-gray-700 bg-white dark:bg-gray-900 px-3 py-3 text-base text-gray-900 dark:text-white"
-            />
-            <input
-              value={per?.customerContact || ''}
-              onChange={(e) => setCustomerContact(fairId, e.target.value)}
-              placeholder="Contacto (tel/email)"
-              className="mt-2 w-full rounded-xl border border-gray-200 dark:border-gray-700 bg-white dark:bg-gray-900 px-3 py-3 text-base text-gray-900 dark:text-white"
-            />
+          <div className="grid grid-cols-2 gap-2">
+            <div>
+              <label className="block text-xs font-semibold uppercase tracking-wide text-gray-500 dark:text-gray-400 mb-1.5">
+                Nombre cliente
+              </label>
+              <input
+                value={per?.customerName || ''}
+                onChange={(e) => setCustomerName(fairId, e.target.value)}
+                placeholder="Opcional"
+                className="w-full rounded-xl border border-gray-200 dark:border-gray-700 bg-white dark:bg-gray-900 px-3 py-2.5 text-base text-gray-900 dark:text-white"
+              />
+            </div>
+            <div>
+              <label className="block text-xs font-semibold uppercase tracking-wide text-gray-500 dark:text-gray-400 mb-1.5">
+                Contacto
+              </label>
+              <input
+                value={per?.customerContact || ''}
+                onChange={(e) => setCustomerContact(fairId, e.target.value)}
+                placeholder="Tel / email"
+                className="w-full rounded-xl border border-gray-200 dark:border-gray-700 bg-white dark:bg-gray-900 px-3 py-2.5 text-base text-gray-900 dark:text-white"
+              />
+            </div>
           </div>
         </div>
       </div>
@@ -434,24 +440,24 @@ export default function FairSellPage() {
             return (
               <div
                 key={p.id}
-                className="rounded-2xl border border-gray-200 dark:border-gray-700 bg-white dark:bg-gray-800 p-4"
+                className="rounded-2xl border border-gray-200 dark:border-gray-700 bg-white dark:bg-gray-800 p-3 sm:p-4"
               >
-                <div className="flex items-start justify-between gap-3">
-                  <div className="min-w-0">
-                    <p className="font-semibold text-gray-900 dark:text-white truncate">
+                <div className="flex items-center justify-between gap-2">
+                  <div className="min-w-0 flex-1">
+                    <p className="font-semibold text-gray-900 dark:text-white truncate leading-tight">
                       {p.name || p.title}
                     </p>
-                    <p className="text-sm text-gray-600 dark:text-gray-300">
+                    <p className="text-xs sm:text-sm text-gray-600 dark:text-gray-300 mt-0.5">
                       {formatMoney(toNumber(p.price), p.currency || currency)}
-                      {typeof p.stock === 'number' ? ` • Stock: ${p.stock}` : ''}
+                      {typeof p.stock === 'number' ? ` · ${p.stock} disp.` : ''}
                     </p>
                   </div>
 
-                  <div className="flex items-center gap-2 flex-shrink-0">
+                  <div className="flex items-center gap-1.5 flex-shrink-0">
                     <button
                       type="button"
                       onClick={() => decrement(fairId, p.id)}
-                      className="h-11 w-11 rounded-xl bg-gray-100 dark:bg-gray-700 text-gray-900 dark:text-white text-lg font-bold"
+                      className="h-10 w-10 sm:h-11 sm:w-11 rounded-xl bg-gray-100 dark:bg-gray-700 text-gray-900 dark:text-white text-lg font-bold flex items-center justify-center"
                       aria-label="Disminuir"
                     >
                       −
@@ -460,12 +466,12 @@ export default function FairSellPage() {
                       inputMode="numeric"
                       value={qty}
                       onChange={(e) => setQuantity(fairId, p.id, Number(e.target.value || 0))}
-                      className="w-16 h-11 text-center rounded-xl border border-gray-200 dark:border-gray-700 bg-white dark:bg-gray-900 text-base text-gray-900 dark:text-white"
+                      className="w-12 sm:w-16 h-10 sm:h-11 text-center rounded-xl border border-gray-200 dark:border-gray-700 bg-white dark:bg-gray-900 text-base text-gray-900 dark:text-white"
                     />
                     <button
                       type="button"
                       onClick={() => increment(fairId, p.id)}
-                      className="h-11 w-11 rounded-xl bg-fourth-base text-black text-lg font-bold"
+                      className="h-10 w-10 sm:h-11 sm:w-11 rounded-xl bg-fourth-base text-black text-lg font-bold flex items-center justify-center"
                       aria-label="Aumentar"
                     >
                       +
@@ -485,7 +491,7 @@ export default function FairSellPage() {
       </div>
 
       {/* Bottom CTA */}
-      <div className="sticky bottom-0 mt-6 pt-3 pb-4 bg-gradient-to-t from-white dark:from-gray-900 via-white/90 dark:via-gray-900/90 to-transparent">
+      <div className="sticky bottom-0 mt-6 pt-3 pb-4 pb-[calc(1rem+env(safe-area-inset-bottom))] bg-gradient-to-t from-white dark:from-gray-900 via-white/90 dark:via-gray-900/90 to-transparent">
         <button
           type="button"
           disabled={submitting}
