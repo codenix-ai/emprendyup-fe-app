@@ -39,7 +39,6 @@ import { useSessionStore } from '@/lib/store/dashboard';
 import { getCurrentUser } from '@/lib/utils/rbac';
 import { useAuth } from '../hooks/useAuth';
 import { toast } from 'sonner';
-import { ThemeToggle } from '../components/ThemeToggle';
 
 // Estructura de navegación agrupada para ADMIN
 const adminNavigationGroups = [
@@ -506,19 +505,15 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
                   </div>
                 </div>
 
-                <div className="flex items-center gap-2">
-                  <ThemeToggle className="hidden xl:inline-flex" />
-                  <ThemeToggle compact className="xl:hidden" />
-                  <button
-                    type="button"
-                    onClick={handleLogout}
-                    data-testid="logout-button"
-                    className="p-2 rounded-md text-red-600 hover:bg-red-50 dark:hover:bg-red-900/20 transition-colors"
-                    title="Cerrar Sesión"
-                  >
-                    <LogOut className="w-5 h-5" />
-                  </button>
-                </div>
+                <button
+                  type="button"
+                  onClick={handleLogout}
+                  data-testid="logout-button"
+                  className="p-2 rounded-md text-red-600 hover:bg-red-50 dark:hover:bg-red-900/20 transition-colors"
+                  title="Cerrar Sesión"
+                >
+                  <LogOut className="w-5 h-5" />
+                </button>
               </div>
             ) : (
               <div className="flex flex-col items-center gap-2">
@@ -537,7 +532,6 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
                   ) : null}
                 </div>
 
-                <ThemeToggle compact />
                 <button
                   type="button"
                   onClick={handleLogout}
@@ -678,21 +672,6 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
                   </div>
                 );
               })}
-
-              <div className="mt-4 flex items-center justify-between gap-3 rounded-2xl border border-gray-200 bg-gray-50 p-3 dark:border-gray-700 dark:bg-gray-900/60">
-                <div className="flex min-w-0 items-center gap-3">
-                  <div className="flex h-10 w-10 items-center justify-center rounded-full bg-blue-600 text-sm font-semibold text-white dark:bg-blue-500">
-                    {userInitials}
-                  </div>
-                  <div className="min-w-0">
-                    <div className="truncate text-sm font-medium text-gray-800 dark:text-gray-200">
-                      {displayName}
-                    </div>
-                    <div className="text-xs text-gray-500 dark:text-gray-400">Tema de la app</div>
-                  </div>
-                </div>
-                <ThemeToggle compact />
-              </div>
 
               <button
                 type="button"

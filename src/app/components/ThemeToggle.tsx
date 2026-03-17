@@ -30,15 +30,15 @@ export function ThemeToggle({ compact = false, className = '' }: ThemeToggleProp
         title={label}
         data-testid="theme-toggle-button-compact"
         className={[
-          'inline-flex h-10 w-10 items-center justify-center rounded-2xl border shadow-sm transition',
-          'border-slate-200/80 bg-white/90 text-slate-700 hover:-translate-y-0.5 hover:border-amber-300 hover:shadow-md',
-          'dark:border-slate-700/80 dark:bg-slate-900/80 dark:text-slate-100 dark:hover:border-sky-400',
+          'inline-flex h-11 w-11 items-center justify-center rounded-full border shadow-lg backdrop-blur-sm transition',
+          'border-slate-200/80 bg-white/95 text-slate-700 hover:-translate-y-0.5 hover:border-amber-300 hover:shadow-xl',
+          'dark:border-slate-700/80 dark:bg-slate-900/90 dark:text-slate-100 dark:hover:border-sky-400',
           className,
         ].join(' ')}
       >
         <span
           className={[
-            'flex h-8 w-8 items-center justify-center rounded-xl transition-colors',
+            'flex h-9 w-9 items-center justify-center rounded-full transition-colors',
             isDark
               ? 'bg-slate-800 text-amber-300 ring-1 ring-white/10'
               : 'bg-amber-100 text-amber-600 ring-1 ring-amber-200',

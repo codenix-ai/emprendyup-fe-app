@@ -38,7 +38,7 @@ export default function ScrollToTop() {
       <Link
         href="#"
         id="back-to-top"
-        className="back-to-top fixed text-lg rounded-full z-10 bottom-5 end-5 size-9 text-center bg-fourth-base text-black justify-center items-center"
+        className="back-to-top fixed text-lg rounded-full z-10 bottom-20 end-5 size-9 text-center bg-fourth-base text-black justify-center items-center"
         style={{ display: visible ? 'inline-flex' : 'none' }}
       >
         <i className="mdi mdi-arrow-up"></i>

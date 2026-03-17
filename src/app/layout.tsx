@@ -98,6 +98,7 @@ import CookieWrapper from './components/CookieWrapper';
 import { ThemeProvider } from 'next-themes';
 import GoogleOAuthProvider from './components/GoogleOAuthProvider';
 import { Toaster } from 'react-hot-toast';
+import { ThemeToggle } from './components/ThemeToggle';
 export default function RootLayout({ children }: { children: ReactNode }) {
   return (
     <html lang="es" suppressHydrationWarning>
@@ -349,6 +350,7 @@ export default function RootLayout({ children }: { children: ReactNode }) {
             <ApolloWrapper>
               {/* <ConditionalLayout> */}
               {children}
+              <ThemeToggle compact className="fixed bottom-5 end-5 z-40" />
               <Toaster position="top-right" />
               {/* </ConditionalLayout> */}
             </ApolloWrapper>
