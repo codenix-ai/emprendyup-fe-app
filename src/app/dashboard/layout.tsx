@@ -33,6 +33,7 @@ import {
   Receipt,
   UserCheck,
   ClipboardList,
+  Mail,
 } from 'lucide-react';
 import Image from 'next/image';
 import { useSessionStore } from '@/lib/store/dashboard';
@@ -77,6 +78,12 @@ const adminNavigationGroups = [
       { name: 'Mensajes', href: '/dashboard/whatsapp-messages', icon: MessageCircle },
       { name: 'Templates', href: '/dashboard/whatsapp-templates', icon: BookOpen },
     ],
+  },
+  {
+    name: 'Email Marketing',
+    icon: Mail,
+    href: '/dashboard/email-marketing',
+    isSingle: true,
   },
   {
     name: 'Otros',

@@ -236,18 +236,20 @@ export default function ImportProductsPage() {
   };
 
   return (
-    <div className="min-h-screen bg-gray-900 p-4 md:p-8">
+    <div className="min-h-screen bg-gray-50 dark:bg-gray-900 p-4 md:p-8">
       <div className="max-w-6xl mx-auto">
         {/* Header */}
         <div className="mb-8">
           <button
             onClick={() => router.push('/dashboard/products')}
-            className="flex items-center text-gray-400 hover:text-white mb-4 transition-colors"
+            className="flex items-center text-gray-600 hover:text-gray-900 dark:text-gray-400 dark:hover:text-gray-900 dark:text-white mb-4 transition-colors"
           >
             <ArrowLeft className="w-4 h-4 mr-2" />
             Volver a productos
           </button>
-          <h1 className="text-3xl font-bold text-white mb-2">Importar Productos desde CSV</h1>
+          <h1 className="text-3xl font-bold text-gray-900 dark:text-white mb-2">
+            Importar Productos desde CSV
+          </h1>
           <p className="text-gray-400">
             Importa productos en masa desde un archivo CSV exportado de Tienda Nube
           </p>
@@ -257,8 +259,8 @@ export default function ImportProductsPage() {
           {/* Panel principal - Uploader */}
           <div className="lg:col-span-2 space-y-6">
             {/* Zona de carga de archivo */}
-            <div className="bg-gray-800 border border-gray-700 rounded-xl p-6">
-              <h2 className="text-xl font-semibold text-white mb-4 flex items-center">
+            <div className="bg-white dark:bg-gray-800 border border-gray-200 dark:border-gray-700 rounded-xl p-6">
+              <h2 className="text-xl font-semibold text-gray-900 dark:text-white mb-4 flex items-center">
                 <Upload className="w-5 h-5 mr-2" />
                 Seleccionar archivo CSV
               </h2>
@@ -266,8 +268,8 @@ export default function ImportProductsPage() {
               <div
                 className={`border-2 border-dashed rounded-xl p-8 text-center transition-all ${
                   selectedFile
-                    ? 'border-green-500 bg-green-900/20'
-                    : 'border-gray-600 bg-gray-900/50 hover:border-blue-500 hover:bg-gray-900'
+                    ? 'border-green-500 bg-green-50 dark:bg-green-900/20'
+                    : 'border-gray-300 dark:border-gray-600 bg-gray-50 dark:bg-gray-900/50 hover:border-blue-500 hover:bg-gray-50 dark:bg-gray-900'
                 }`}
               >
                 <input
@@ -283,7 +285,7 @@ export default function ImportProductsPage() {
                 {!selectedFile ? (
                   <label htmlFor="csv-upload" className="cursor-pointer block">
                     <Upload className="w-16 h-16 text-gray-500 mx-auto mb-4" />
-                    <p className="text-white font-medium mb-2">
+                    <p className="text-gray-900 dark:text-white font-medium mb-2">
                       Haz clic o arrastra un archivo CSV aquí
                     </p>
                     <p className="text-sm text-gray-400 mb-4">Tamaño máximo: 20MB</p>
@@ -295,14 +297,16 @@ export default function ImportProductsPage() {
                   <div className="space-y-4">
                     <FileText className="w-16 h-16 text-green-500 mx-auto" />
                     <div>
-                      <p className="text-white font-medium mb-1">{selectedFile.name}</p>
+                      <p className="text-gray-900 dark:text-white font-medium mb-1">
+                        {selectedFile.name}
+                      </p>
                       <p className="text-sm text-gray-400">{formatFileSize(selectedFile.size)}</p>
                     </div>
 
                     <div className="flex items-center justify-center gap-3 pt-4">
                       <label
                         htmlFor="csv-upload"
-                        className="px-4 py-2 bg-gray-700 text-white rounded-lg hover:bg-gray-600 transition-colors cursor-pointer"
+                        className="px-4 py-2 bg-gray-100 dark:bg-gray-700 text-gray-900 dark:text-white rounded-lg hover:bg-gray-600 transition-colors cursor-pointer"
                       >
                         Cambiar archivo
                       </label>
@@ -326,7 +330,9 @@ export default function ImportProductsPage() {
               <div className="bg-gradient-to-r from-blue-900/50 to-purple-900/50 border border-blue-700 rounded-xl p-6">
                 <div className="flex items-center justify-between">
                   <div>
-                    <h3 className="text-lg font-semibold text-white mb-1">¿Listo para importar?</h3>
+                    <h3 className="text-lg font-semibold text-gray-900 dark:text-white mb-1">
+                      ¿Listo para importar?
+                    </h3>
                     <p className="text-sm text-gray-300">
                       Se procesará el archivo y se crearán los productos en tu tienda
                     </p>
@@ -344,12 +350,14 @@ export default function ImportProductsPage() {
 
             {/* Barra de progreso */}
             {isUploading && (
-              <div className="bg-gray-800 border border-gray-700 rounded-xl p-6">
-                <h3 className="text-lg font-semibold text-white mb-4">Importando productos...</h3>
+              <div className="bg-white dark:bg-gray-800 border border-gray-200 dark:border-gray-700 rounded-xl p-6">
+                <h3 className="text-lg font-semibold text-gray-900 dark:text-white mb-4">
+                  Importando productos...
+                </h3>
                 <div className="space-y-3">
-                  <div className="w-full bg-gray-700 rounded-full h-4 overflow-hidden">
+                  <div className="w-full bg-gray-100 dark:bg-gray-700 rounded-full h-4 overflow-hidden">
                     <div
-                      className="h-full bg-gradient-to-r from-blue-500 to-purple-500 transition-all duration-300 flex items-center justify-center text-xs font-medium text-white"
+                      className="h-full bg-gradient-to-r from-blue-500 to-purple-500 transition-all duration-300 flex items-center justify-center text-xs font-medium text-gray-900 dark:text-white"
                       style={{ width: `${uploadProgress}%` }}
                     >
                       {uploadProgress}%
@@ -367,7 +375,7 @@ export default function ImportProductsPage() {
               <div
                 className={`border rounded-xl p-6 ${
                   importResult.success
-                    ? 'bg-green-900/20 border-green-700'
+                    ? 'bg-green-50 dark:bg-green-900/20 border-green-700'
                     : 'bg-red-900/20 border-red-700'
                 }`}
               >
@@ -401,7 +409,7 @@ export default function ImportProductsPage() {
 
                     {/* Errores por fila */}
                     {importResult.errors && importResult.errors.length > 0 && (
-                      <div className="mt-4 p-3 bg-gray-800/50 rounded-lg max-h-48 overflow-y-auto">
+                      <div className="mt-4 p-3 bg-white dark:bg-gray-800/50 rounded-lg max-h-48 overflow-y-auto">
                         <p className="text-sm font-medium text-gray-300 mb-2">
                           Detalles de errores:
                         </p>
@@ -425,7 +433,7 @@ export default function ImportProductsPage() {
                       </button>
                       <button
                         onClick={handleReset}
-                        className="px-4 py-2 bg-gray-700 text-white rounded-lg hover:bg-gray-600 transition-colors"
+                        className="px-4 py-2 bg-gray-100 dark:bg-gray-700 text-gray-900 dark:text-white rounded-lg hover:bg-gray-600 transition-colors"
                       >
                         Nueva Importación
                       </button>
@@ -439,12 +447,12 @@ export default function ImportProductsPage() {
           {/* Panel lateral - Instrucciones y Logs */}
           <div className="space-y-6">
             {/* Logs */}
-            <div className="bg-gray-800 border border-gray-700 rounded-xl p-6">
-              <h3 className="text-lg font-semibold text-white mb-4 flex items-center">
+            <div className="bg-white dark:bg-gray-800 border border-gray-200 dark:border-gray-700 rounded-xl p-6">
+              <h3 className="text-lg font-semibold text-gray-900 dark:text-white mb-4 flex items-center">
                 <FileText className="w-5 h-5 mr-2 text-purple-400" />
                 Registro de Actividad
               </h3>
-              <div className="bg-gray-900 rounded-lg p-4 max-h-96 overflow-y-auto font-mono text-xs">
+              <div className="bg-gray-50 dark:bg-gray-900 rounded-lg p-4 max-h-96 overflow-y-auto font-mono text-xs">
                 {logs.length === 0 ? (
                   <p className="text-gray-500 italic">No hay actividad aún...</p>
                 ) : (
@@ -465,14 +473,14 @@ export default function ImportProductsPage() {
       {/* Modal de confirmación */}
       {showConfirmDialog && (
         <div className="fixed inset-0 bg-black/70 flex items-center justify-center z-50 p-4">
-          <div className="bg-gray-800 border border-gray-700 rounded-xl p-6 max-w-md w-full">
-            <h3 className="text-xl font-semibold text-white mb-4 flex items-center">
+          <div className="bg-white dark:bg-gray-800 border border-gray-200 dark:border-gray-700 rounded-xl p-6 max-w-md w-full">
+            <h3 className="text-xl font-semibold text-gray-900 dark:text-white mb-4 flex items-center">
               <AlertCircle className="w-6 h-6 mr-2 text-yellow-500" />
               Confirmar Importación
             </h3>
             <p className="text-gray-300 mb-6">
               ¿Estás seguro de que deseas importar los productos desde el archivo{' '}
-              <strong className="text-white">{selectedFile?.name}</strong>?
+              <strong className="text-gray-900 dark:text-white">{selectedFile?.name}</strong>?
             </p>
             <div className="flex gap-3">
               <button
@@ -483,7 +491,7 @@ export default function ImportProductsPage() {
               </button>
               <button
                 onClick={() => setShowConfirmDialog(false)}
-                className="flex-1 px-4 py-2 bg-gray-700 text-white rounded-lg hover:bg-gray-600 transition-colors"
+                className="flex-1 px-4 py-2 bg-gray-100 dark:bg-gray-700 text-gray-900 dark:text-white rounded-lg hover:bg-gray-600 transition-colors"
               >
                 Cancelar
               </button>

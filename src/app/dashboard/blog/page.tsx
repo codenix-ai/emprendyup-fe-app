@@ -154,7 +154,7 @@ export default function BlogListPage() {
           {posts.map((post) => (
             <div
               key={post.id}
-              className="bg-gray-900 rounded-xl shadow-sm border border-gray-700 hover:shadow-md transition-shadow duration-200"
+              className="bg-gray-50 dark:bg-gray-900 rounded-xl shadow-sm border border-gray-200 dark:border-gray-700 hover:shadow-md transition-shadow duration-200"
             >
               <div className="p-6">
                 <div className="flex flex-col lg:flex-row gap-6">

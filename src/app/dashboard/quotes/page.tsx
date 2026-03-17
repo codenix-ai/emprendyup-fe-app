@@ -257,7 +257,7 @@ function QuoteDetailModal({ quoteId, onClose }: { quoteId: string; onClose: () =
 
   return (
     <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/50 p-4">
-      <div className="bg-gray-900 border border-gray-700 rounded-xl shadow-2xl w-full max-w-3xl max-h-[90vh] overflow-y-auto">
+      <div className="bg-gray-50 dark:bg-gray-900 border border-gray-200 dark:border-gray-700 rounded-xl shadow-2xl w-full max-w-3xl max-h-[90vh] overflow-y-auto">
         {/* Header */}
         <div className="flex items-center justify-between p-6 bg-fourth-base text-black">
           <div className="flex items-center gap-3">
@@ -351,7 +351,7 @@ function QuoteDetailModal({ quoteId, onClose }: { quoteId: string; onClose: () =
                   <h3 className="text-sm font-medium text-gray-300 mb-1">
                     Requerimientos adicionales
                   </h3>
-                  <p className="text-sm text-gray-400 bg-gray-800 border border-gray-700 rounded-lg p-3">
+                  <p className="text-sm text-gray-400 bg-white dark:bg-gray-800 border border-gray-200 dark:border-gray-700 rounded-lg p-3">
                     {quote.requerimientosAdicionales}
                   </p>
                 </div>
@@ -361,7 +361,7 @@ function QuoteDetailModal({ quoteId, onClose }: { quoteId: string; onClose: () =
               {quote.notas && (
                 <div>
                   <h3 className="text-sm font-medium text-gray-300 mb-1">Notas</h3>
-                  <p className="text-sm text-gray-400 bg-gray-800 border border-gray-700 rounded-lg p-3">
+                  <p className="text-sm text-gray-400 bg-white dark:bg-gray-800 border border-gray-200 dark:border-gray-700 rounded-lg p-3">
                     {quote.notas}
                   </p>
                 </div>
@@ -376,7 +376,7 @@ function QuoteDetailModal({ quoteId, onClose }: { quoteId: string; onClose: () =
                   </h3>
                   <div className="overflow-x-auto rounded-lg">
                     <table className="min-w-full text-sm">
-                      <thead className="bg-gray-800">
+                      <thead className="bg-white dark:bg-gray-800">
                         <tr>
                           <th className="px-4 py-2 text-left text-xs font-semibold text-gray-300 uppercase">
                             #
@@ -398,11 +398,11 @@ function QuoteDetailModal({ quoteId, onClose }: { quoteId: string; onClose: () =
                           </th>
                         </tr>
                       </thead>
-                      <tbody className="bg-gray-900 divide-y divide-gray-800">
+                      <tbody className="bg-gray-50 dark:bg-gray-900 divide-y divide-gray-800">
                         {quote.items.map((item, idx) => (
-                          <tr key={item.id} className="hover:bg-gray-800">
+                          <tr key={item.id} className="hover:bg-white dark:bg-gray-800">
                             <td className="px-4 py-2 text-gray-400">{item.posicion ?? idx + 1}</td>
-                            <td className="px-4 py-2 font-semibold text-white">
+                            <td className="px-4 py-2 font-semibold text-gray-900 dark:text-white">
                               {item.productName}
                             </td>
                             <td className="px-4 py-2 text-gray-400">
@@ -422,8 +422,8 @@ function QuoteDetailModal({ quoteId, onClose }: { quoteId: string; onClose: () =
               )}
 
               {/* Update state form */}
-              <div className="border border-gray-700 rounded-lg overflow-hidden">
-                <div className="bg-gray-800 px-4 py-3 flex items-center gap-2">
+              <div className="border border-gray-200 dark:border-gray-700 rounded-lg overflow-hidden">
+                <div className="bg-white dark:bg-gray-800 px-4 py-3 flex items-center gap-2">
                   <RefreshCw className="w-4 h-4 text-indigo-400" />
                   <h3 className="text-sm font-semibold text-gray-200">Actualizar cotización</h3>
                 </div>
@@ -436,7 +436,7 @@ function QuoteDetailModal({ quoteId, onClose }: { quoteId: string; onClose: () =
                       <select
                         value={updateForm.estado}
                         onChange={(e) => setUpdateForm((f) => ({ ...f, estado: e.target.value }))}
-                        className="w-full px-3 py-2 bg-gray-800 border border-gray-600 rounded-lg text-sm text-white focus:outline-none focus:ring-2 focus:ring-indigo-500"
+                        className="w-full px-3 py-2 bg-white dark:bg-gray-800 border border-gray-300 dark:border-gray-600 rounded-lg text-sm text-gray-900 dark:text-white focus:outline-none focus:ring-2 focus:ring-indigo-500"
                       >
                         <option value="">— Sin cambio —</option>
                         {QUOTE_STATES.map(({ value, label }) => (
@@ -456,7 +456,7 @@ function QuoteDetailModal({ quoteId, onClose }: { quoteId: string; onClose: () =
                         placeholder="Ej: Primer contacto realizado"
                         value={updateForm.accion}
                         onChange={(e) => setUpdateForm((f) => ({ ...f, accion: e.target.value }))}
-                        className="w-full px-3 py-2 bg-gray-800 border border-gray-600 rounded-lg text-sm text-white placeholder-gray-500 focus:outline-none focus:ring-2 focus:ring-indigo-500"
+                        className="w-full px-3 py-2 bg-white dark:bg-gray-800 border border-gray-300 dark:border-gray-600 rounded-lg text-sm text-gray-900 dark:text-white placeholder-gray-500 focus:outline-none focus:ring-2 focus:ring-indigo-500"
                       />
                     </div>
                   </div>
@@ -471,7 +471,7 @@ function QuoteDetailModal({ quoteId, onClose }: { quoteId: string; onClose: () =
                       onChange={(e) =>
                         setUpdateForm((f) => ({ ...f, descripcion: e.target.value }))
                       }
-                      className="w-full px-3 py-2 bg-gray-800 border border-gray-600 rounded-lg text-sm text-white placeholder-gray-500 focus:outline-none focus:ring-2 focus:ring-indigo-500"
+                      className="w-full px-3 py-2 bg-white dark:bg-gray-800 border border-gray-300 dark:border-gray-600 rounded-lg text-sm text-gray-900 dark:text-white placeholder-gray-500 focus:outline-none focus:ring-2 focus:ring-indigo-500"
                     />
                   </div>
                   <div>
@@ -483,7 +483,7 @@ function QuoteDetailModal({ quoteId, onClose }: { quoteId: string; onClose: () =
                       placeholder="Notas visibles sólo para el equipo…"
                       value={updateForm.notas}
                       onChange={(e) => setUpdateForm((f) => ({ ...f, notas: e.target.value }))}
-                      className="w-full px-3 py-2 bg-gray-800 border border-gray-600 rounded-lg text-sm text-white placeholder-gray-500 focus:outline-none focus:ring-2 focus:ring-indigo-500 resize-none"
+                      className="w-full px-3 py-2 bg-white dark:bg-gray-800 border border-gray-300 dark:border-gray-600 rounded-lg text-sm text-gray-900 dark:text-white placeholder-gray-500 focus:outline-none focus:ring-2 focus:ring-indigo-500 resize-none"
                     />
                   </div>
 
@@ -524,11 +524,11 @@ function QuoteDetailModal({ quoteId, onClose }: { quoteId: string; onClose: () =
                     <Clock className="w-4 h-4 text-indigo-400" />
                     Historial de cambios
                   </h3>
-                  <ol className="relative border-l border-gray-700 space-y-4 ml-3">
+                  <ol className="relative border-l border-gray-200 dark:border-gray-700 space-y-4 ml-3">
                     {quote.history.map((h, idx) => (
                       <li key={h.id ?? idx} className="ml-4">
                         <div className="absolute w-2.5 h-2.5 bg-indigo-500 rounded-full -left-1.5 mt-1" />
-                        <div className="bg-gray-800 border border-gray-700 rounded-lg p-3">
+                        <div className="bg-white dark:bg-gray-800 border border-gray-200 dark:border-gray-700 rounded-lg p-3">
                           <p className="text-xs font-semibold text-indigo-400">{h.accion}</p>
                           {h.estadoAnterior && (
                             <p className="text-xs text-gray-400 mt-0.5">
@@ -717,16 +717,16 @@ export default function QuotesPage() {
           {/* ── Desktop table ── */}
           <div className="hidden lg:block overflow-x-auto rounded-2xl shadow-sm">
             <table className="min-w-full text-sm">
-              <thead className="bg-gray-800">
+              <thead className="bg-white dark:bg-gray-800">
                 <tr>
                   <th
-                    className="px-6 py-4 text-left text-xs font-semibold text-gray-300 uppercase cursor-pointer hover:text-white"
+                    className="px-6 py-4 text-left text-xs font-semibold text-gray-300 uppercase cursor-pointer hover:text-gray-900 dark:text-white"
                     onClick={() => toggleSort('referencia')}
                   >
                     Referencia <SortIcon field="referencia" />
                   </th>
                   <th
-                    className="px-6 py-4 text-left text-xs font-semibold text-gray-300 uppercase cursor-pointer hover:text-white"
+                    className="px-6 py-4 text-left text-xs font-semibold text-gray-300 uppercase cursor-pointer hover:text-gray-900 dark:text-white"
                     onClick={() => toggleSort('nombreEmpresa')}
                   >
                     Empresa <SortIcon field="nombreEmpresa" />
@@ -741,7 +741,7 @@ export default function QuotesPage() {
                     Productos
                   </th>
                   <th
-                    className="px-6 py-4 text-left text-xs font-semibold text-gray-300 uppercase cursor-pointer hover:text-white"
+                    className="px-6 py-4 text-left text-xs font-semibold text-gray-300 uppercase cursor-pointer hover:text-gray-900 dark:text-white"
                     onClick={() => toggleSort('createdAt')}
                   >
                     Fecha <SortIcon field="createdAt" />
@@ -755,7 +755,7 @@ export default function QuotesPage() {
                   <th className="px-6 py-4" />
                 </tr>
               </thead>
-              <tbody className="bg-gray-900 divide-y divide-gray-800">
+              <tbody className="bg-gray-50 dark:bg-gray-900 divide-y divide-gray-800">
                 {paginated.length === 0 ? (
                   <tr>
                     <td colSpan={9} className="px-6 py-16 text-center text-gray-500">
@@ -765,11 +765,16 @@ export default function QuotesPage() {
                   </tr>
                 ) : (
                   paginated.map((quote) => (
-                    <tr key={quote.id} className="hover:bg-gray-800 transition-colors">
+                    <tr
+                      key={quote.id}
+                      className="hover:bg-white dark:bg-gray-800 transition-colors"
+                    >
                       <td className="px-6 py-4 font-mono text-xs text-gray-300">
                         {quote.referencia}
                       </td>
-                      <td className="px-6 py-4 font-semibold text-white">{quote.nombreEmpresa}</td>
+                      <td className="px-6 py-4 font-semibold text-gray-900 dark:text-white">
+                        {quote.nombreEmpresa}
+                      </td>
                       <td className="px-6 py-4">
                         <p className="text-gray-200">{quote.nombreContacto}</p>
                         <p className="text-xs text-gray-400">{quote.correoElectronico}</p>
@@ -797,7 +802,7 @@ export default function QuotesPage() {
                       <td className="px-6 py-4">
                         <button
                           onClick={() => setSelectedQuoteId(quote.id)}
-                          className="p-2 rounded-lg hover:bg-gray-700 text-gray-300 hover:text-white transition-colors"
+                          className="p-2 rounded-lg hover:bg-gray-100 dark:bg-gray-700 text-gray-300 hover:text-gray-900 dark:text-white transition-colors"
                           title="Ver detalle"
                         >
                           <Eye className="w-4 h-4" />
@@ -823,13 +828,15 @@ export default function QuotesPage() {
                 return (
                   <div
                     key={quote.id}
-                    className="p-4 bg-gray-800 rounded-lg border border-gray-700 shadow-sm"
+                    className="p-4 bg-white dark:bg-gray-800 rounded-lg border border-gray-200 dark:border-gray-700 shadow-sm"
                   >
                     {/* Top row */}
                     <div className="flex items-start justify-between mb-3">
                       <div>
                         <p className="font-mono text-xs text-gray-400 mb-0.5">{quote.referencia}</p>
-                        <h3 className="text-sm font-semibold text-white">{quote.nombreEmpresa}</h3>
+                        <h3 className="text-sm font-semibold text-gray-900 dark:text-white">
+                          {quote.nombreEmpresa}
+                        </h3>
                         <p className="text-xs text-gray-400">{quote.nombreContacto}</p>
                       </div>
                       <StatusBadge estado={quote.estado} />
@@ -884,7 +891,7 @@ export default function QuotesPage() {
                 <button
                   onClick={() => setPage((p) => Math.max(1, p - 1))}
                   disabled={page === 1}
-                  className="p-1.5 rounded-lg hover:bg-gray-700 disabled:opacity-40 disabled:cursor-not-allowed text-gray-300"
+                  className="p-1.5 rounded-lg hover:bg-gray-100 dark:bg-gray-700 disabled:opacity-40 disabled:cursor-not-allowed text-gray-300"
                 >
                   <ChevronLeft className="w-4 h-4" />
                 </button>
@@ -894,7 +901,7 @@ export default function QuotesPage() {
                 <button
                   onClick={() => setPage((p) => Math.min(totalPages, p + 1))}
                   disabled={page === totalPages}
-                  className="p-1.5 rounded-lg hover:bg-gray-700 disabled:opacity-40 disabled:cursor-not-allowed text-gray-300"
+                  className="p-1.5 rounded-lg hover:bg-gray-100 dark:bg-gray-700 disabled:opacity-40 disabled:cursor-not-allowed text-gray-300"
                 >
                   <ChevronRight className="w-4 h-4" />
                 </button>
