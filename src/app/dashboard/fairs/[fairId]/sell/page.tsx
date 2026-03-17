@@ -13,7 +13,13 @@ import { formatMoney, toNumber } from '@/lib/utils/money';
 
 const GET_PRODUCTS_BY_STORE_FOR_FAIR = gql`
   query ProductsByStore($storeId: String!, $page: Int!, $pageSize: Int!) {
-    productsByStore(storeId: $storeId, page: $page, pageSize: $pageSize) {
+    productsByStore(
+      storeId: $storeId
+      page: $page
+      pageSize: $pageSize
+      available: "true"
+      internal: "false"
+    ) {
       items {
         id
         name
