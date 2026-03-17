@@ -41,6 +41,12 @@ export interface CreateFairSaleInput {
   customerContact?: string;
 }
 
+export interface UpdateFairSaleInput {
+  paymentMethod?: string;
+  customerName?: string;
+  customerContact?: string;
+}
+
 export interface FairSale {
   id: string;
   fairId?: string;
@@ -137,4 +143,13 @@ export const fairsApi = {
 
   getSummary: (fairId: string) =>
     fairsFetch<FairSummary>(`/fairs/${fairId}/summary`, { method: 'GET' }),
+
+  updateSale: (fairId: string, saleId: string, input: UpdateFairSaleInput) =>
+    fairsFetch<FairSale>(`/fairs/${fairId}/sales/${saleId}`, {
+      method: 'PATCH',
+      body: JSON.stringify(input),
+    }),
+
+  deleteSale: (fairId: string, saleId: string) =>
+    fairsFetch<void>(`/fairs/${fairId}/sales/${saleId}`, { method: 'DELETE' }),
 };
