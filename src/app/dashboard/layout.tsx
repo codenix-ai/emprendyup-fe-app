@@ -39,6 +39,7 @@ import { useSessionStore } from '@/lib/store/dashboard';
 import { getCurrentUser } from '@/lib/utils/rbac';
 import { useAuth } from '../hooks/useAuth';
 import { toast } from 'sonner';
+import { ThemeToggle } from '../components/ThemeToggle';
 
 // Estructura de navegación agrupada para ADMIN
 const adminNavigationGroups = [
@@ -316,6 +317,22 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
 
   const navigationGroups =
     user.role === 'ADMIN' ? adminNavigationGroups : getStoreAdminNavigationGroups(user);
+  const displayName = user.name || user.email || 'Usuario';
+  const initialsSource = displayName.trim();
+  const initialsWords = initialsSource.split(' ').filter(Boolean);
+  const userInitials =
+    initialsWords.length >= 2
+      ? `${initialsWords[0][0]}${initialsWords[1][0]}`.toUpperCase()
+      : initialsSource.substring(0, 2).toUpperCase();
+  const membershipPlan = (user.plan || user.membershipLevel) as string | undefined;
+  const membershipPlanBadgeClass =
+    membershipPlan === 'PRO'
+      ? 'bg-blue-500'
+      : membershipPlan === 'PARTNER'
+        ? 'bg-purple-600'
+        : membershipPlan === 'BASIC'
+          ? 'bg-green-600'
+          : 'bg-gray-600';
 
   return (
     <div
@@ -467,94 +484,64 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
                   {/* Avatar con iniciales y badge centrada debajo (vista expandida) */}
                   <div className="relative flex-shrink-2">
                     <div className="w-10 h-10 rounded-full bg-blue-600 dark:bg-blue-500 flex items-center justify-center text-white font-semibold text-sm">
-                      {(() => {
-                        const name = user?.name || user?.email || 'U';
-                        const words = name.trim().split(' ');
-                        if (words.length >= 2) {
-                          return (words[0][0] + words[1][0]).toUpperCase();
-                        }
-                        return name.substring(0, 2).toUpperCase();
-                      })()}
+                      {userInitials}
                     </div>
 
-                    {(() => {
-                      const plan = (user?.plan || user?.membershipLevel) as string | undefined;
-                      if (!plan) return null;
-                      const label = plan;
-                      const bgClass =
-                        plan === 'PRO'
-                          ? 'bg-blue-500'
-                          : plan === 'PARTNER'
-                            ? 'bg-purple-600'
-                            : plan === 'BASIC'
-                              ? 'bg-green-600'
-                              : 'bg-gray-600';
-                      return (
-                        <span
-                          className={`absolute left-1/2 -bottom-1 -translate-x-1/2 px-2 py-[1px] text-[10px] font-medium tracking-widetext-white rounded-full ${bgClass}`}
-                        >
-                          {label}
-                        </span>
-                      );
-                    })()}
+                    {membershipPlan ? (
+                      <span
+                        className={`absolute left-1/2 -bottom-1 -translate-x-1/2 px-2 py-[1px] text-[10px] font-medium tracking-wide text-white rounded-full ${membershipPlanBadgeClass}`}
+                      >
+                        {membershipPlan}
+                      </span>
+                    ) : null}
                   </div>
 
                   {/* badge rendered inside avatar - inline badges removed */}
 
                   <div className="min-w-0">
                     <div className="text-sm font-medium text-gray-800 dark:text-gray-200 truncate">
-                      {user?.name || user?.email || 'Usuario'}
+                      {displayName}
                     </div>
                     <div className="text-xs text-gray-500 dark:text-gray-400">Mi cuenta</div>
                   </div>
                 </div>
 
-                <button
-                  onClick={handleLogout}
-                  className="p-2 rounded-md text-red-600 hover:bg-red-50 dark:hover:bg-red-900/20 transition-colors"
-                  title="Cerrar Sesión"
-                >
-                  <LogOut className="w-5 h-5" />
-                </button>
+                <div className="flex items-center gap-2">
+                  <ThemeToggle className="hidden xl:inline-flex" />
+                  <ThemeToggle compact className="xl:hidden" />
+                  <button
+                    type="button"
+                    onClick={handleLogout}
+                    data-testid="logout-button"
+                    className="p-2 rounded-md text-red-600 hover:bg-red-50 dark:hover:bg-red-900/20 transition-colors"
+                    title="Cerrar Sesión"
+                  >
+                    <LogOut className="w-5 h-5" />
+                  </button>
+                </div>
               </div>
             ) : (
               <div className="flex flex-col items-center gap-2">
                 {/* Avatar colapsado con badge superpuesto */}
                 <div className="relative">
                   <div className="w-9 h-9 rounded-full bg-blue-600 dark:bg-blue-500 flex items-center justify-center text-white font-semibold text-xs">
-                    {(() => {
-                      const name = user?.name || user?.email || 'U';
-                      const words = name.trim().split(' ');
-                      if (words.length >= 2) {
-                        return (words[0][0] + words[1][0]).toUpperCase();
-                      }
-                      return name.substring(0, 2).toUpperCase();
-                    })()}
+                    {userInitials}
                   </div>
 
-                  {(() => {
-                    const plan = (user?.plan || user?.membershipLevel) as string | undefined;
-                    if (!plan) return null;
-                    const bgClass =
-                      plan === 'PRO'
-                        ? 'bg-blue-500'
-                        : plan === 'PARTNER'
-                          ? 'bg-purple-600'
-                          : plan === 'BASIC'
-                            ? 'bg-green-600'
-                            : 'bg-gray-600';
-                    return (
-                      <span
-                        className={`absolute -bottom-1 left-1/2 -translate-x-1/2 inline-flex items-center px-1.5 py-0.5 text-[9px] font-bold text-white rounded-full shadow-lg ${bgClass} whitespace-nowrap`}
-                      >
-                        {plan}
-                      </span>
-                    );
-                  })()}
+                  {membershipPlan ? (
+                    <span
+                      className={`absolute -bottom-1 left-1/2 -translate-x-1/2 inline-flex items-center px-1.5 py-0.5 text-[9px] font-bold text-white rounded-full shadow-lg ${membershipPlanBadgeClass} whitespace-nowrap`}
+                    >
+                      {membershipPlan}
+                    </span>
+                  ) : null}
                 </div>
 
+                <ThemeToggle compact />
                 <button
+                  type="button"
                   onClick={handleLogout}
+                  data-testid="logout-button-collapsed"
                   className="p-1 rounded-md text-red-600 hover:bg-red-50 dark:hover:bg-red-900/20 transition-colors"
                   title="Cerrar Sesión"
                 >
@@ -692,11 +679,28 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
                 );
               })}
 
+              <div className="mt-4 flex items-center justify-between gap-3 rounded-2xl border border-gray-200 bg-gray-50 p-3 dark:border-gray-700 dark:bg-gray-900/60">
+                <div className="flex min-w-0 items-center gap-3">
+                  <div className="flex h-10 w-10 items-center justify-center rounded-full bg-blue-600 text-sm font-semibold text-white dark:bg-blue-500">
+                    {userInitials}
+                  </div>
+                  <div className="min-w-0">
+                    <div className="truncate text-sm font-medium text-gray-800 dark:text-gray-200">
+                      {displayName}
+                    </div>
+                    <div className="text-xs text-gray-500 dark:text-gray-400">Tema de la app</div>
+                  </div>
+                </div>
+                <ThemeToggle compact />
+              </div>
+
               <button
+                type="button"
                 onClick={() => {
                   setMobileMenuOpen(false);
                   handleLogout();
                 }}
+                data-testid="logout-button-mobile"
                 className="group flex items-center w-full px-2 py-2 text-sm font-medium rounded-md transition-colors text-red-600 hover:bg-red-50 dark:hover:bg-red-900/20 mt-4"
               >
                 <LogOut className="mr-3 h-5 w-5 text-red-500 group-hover:text-red-600" />

@@ -344,7 +344,7 @@ export default function RootLayout({ children }: { children: ReactNode }) {
         </Script>
       </head>
       <body className={`${dm_sans.variable} dark:bg-slate-900`}>
-        <ThemeProvider attribute="class" defaultTheme="dark" enableSystem>
+        <ThemeProvider attribute="class" defaultTheme="dark" enableSystem disableTransitionOnChange>
           <GoogleOAuthProvider>
             <ApolloWrapper>
               {/* <ConditionalLayout> */}
