@@ -250,10 +250,10 @@ function CampaignDrawer({ open, campaign, onClose, onSaved }: CampaignDrawerProp
   if (!open) return null;
 
   return (
-    <div className="fixed inset-0 z-50 flex">
+    <div className="fixed inset-0 z-50 flex flex-col sm:flex-row">
       <div className="flex-1 bg-black/50" onClick={onClose} />
-      <div className="w-full max-w-lg bg-white dark:bg-gray-800 shadow-xl flex flex-col overflow-y-auto">
-        <div className="flex items-center justify-between px-6 py-4 border-b border-gray-200 dark:border-gray-700">
+      <div className="w-full sm:max-w-lg bg-white dark:bg-gray-800 shadow-xl flex flex-col overflow-y-auto max-h-[92vh] sm:max-h-full rounded-t-2xl sm:rounded-none">
+        <div className="flex items-center justify-between px-5 py-4 border-b border-gray-200 dark:border-gray-700">
           <h2 className="text-lg font-semibold text-gray-900 dark:text-white">
             {isEdit ? 'Edit Campaign' : 'New Campaign'}
           </h2>
@@ -266,7 +266,7 @@ function CampaignDrawer({ open, campaign, onClose, onSaved }: CampaignDrawerProp
           </button>
         </div>
 
-        <form onSubmit={handleSubmit} className="flex-1 px-6 py-5 space-y-4">
+        <form onSubmit={handleSubmit} className="flex-1 px-5 py-5 space-y-4 overflow-y-auto">
           {/* Name */}
           <div>
             <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">
@@ -575,17 +575,21 @@ export default function EmailMarketingPage() {
   };
 
   return (
-    <div className="p-6 max-w-full">
+    <div className="p-4 md:p-6 max-w-full">
       {/* Header */}
-      <div className="flex items-center justify-between mb-6">
-        <div className="flex items-center gap-3">
-          <Mail className="text-blue-600" size={28} />
-          <div>
-            <h1 className="text-2xl font-bold text-gray-900 dark:text-white">Email Marketing</h1>
-            <p className="text-sm text-gray-500 dark:text-gray-400">Manage SendGrid campaigns</p>
+      <div className="flex items-center justify-between gap-3 mb-5 flex-wrap">
+        <div className="flex items-center gap-3 min-w-0">
+          <Mail className="text-blue-600 flex-shrink-0" size={24} />
+          <div className="min-w-0">
+            <h1 className="text-xl md:text-2xl font-bold text-gray-900 dark:text-white">
+              Email Marketing
+            </h1>
+            <p className="text-xs md:text-sm text-gray-500 dark:text-gray-400">
+              Manage SendGrid campaigns
+            </p>
           </div>
         </div>
-        <div className="flex gap-2">
+        <div className="flex gap-2 flex-shrink-0">
           <button
             onClick={() => refetch()}
             className="p-2 rounded-lg border border-gray-200 dark:border-gray-700 text-gray-600 dark:text-gray-400 hover:bg-gray-50 dark:hover:bg-gray-700"
@@ -596,11 +600,12 @@ export default function EmailMarketingPage() {
           </button>
           <button
             onClick={openCreate}
-            className="flex items-center gap-2 px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 text-sm font-medium"
+            className="flex items-center gap-2 px-3 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 text-sm font-medium"
             data-testid="new-campaign"
           >
             <Plus size={16} />
-            New Campaign
+            <span className="hidden sm:inline">New Campaign</span>
+            <span className="sm:hidden">Nueva</span>
           </button>
         </div>
       </div>
@@ -650,129 +655,217 @@ export default function EmailMarketingPage() {
         </div>
       )}
 
-      {/* Campaigns table */}
+      {/* Campaigns — mobile cards + desktop table */}
       {!error && campaigns.length > 0 && (
-        <div className="overflow-x-auto rounded-xl border border-gray-200 dark:border-gray-700">
-          <table className="w-full text-sm">
-            <thead className="bg-gray-50 dark:bg-gray-800/60 text-gray-600 dark:text-gray-400 uppercase text-xs">
-              <tr>
-                <th className="px-4 py-3 text-left font-semibold">Name</th>
-                <th className="px-4 py-3 text-left font-semibold">Segment</th>
-                <th className="px-4 py-3 text-left font-semibold">Status</th>
-                <th className="px-4 py-3 text-left font-semibold">Interval</th>
-                <th className="px-4 py-3 text-right font-semibold">Sent</th>
-                <th className="px-4 py-3 text-right font-semibold">Open Rate</th>
-                <th className="px-4 py-3 text-right font-semibold">Click Rate</th>
-                <th className="px-4 py-3 text-left font-semibold">Next Run</th>
-                <th className="px-4 py-3 text-center font-semibold">Actions</th>
-              </tr>
-            </thead>
-            <tbody className="divide-y divide-gray-100 dark:divide-gray-700">
-              {campaigns.map((c) => (
-                <tr
-                  key={c.id}
-                  className="bg-white dark:bg-gray-800 hover:bg-gray-50 dark:hover:bg-gray-700/50 transition-colors"
-                >
-                  <td className="px-4 py-3 font-medium text-gray-900 dark:text-white max-w-[200px] truncate">
-                    {c.name}
-                  </td>
-                  <td className="px-4 py-3 text-gray-600 dark:text-gray-300">
-                    {SEGMENT_LABELS[c.segmentType]}
-                  </td>
-                  <td className="px-4 py-3">
-                    <StatusBadge status={c.status} />
-                  </td>
-                  <td className="px-4 py-3 text-gray-600 dark:text-gray-300">
-                    Every {c.intervalDays}d
-                  </td>
-                  <td className="px-4 py-3 text-right text-gray-700 dark:text-gray-300">
-                    {c.totalSent.toLocaleString()}
-                  </td>
-                  <td className="px-4 py-3 text-right text-gray-700 dark:text-gray-300">
-                    {pct(c.totalOpened, c.totalSent)}
-                  </td>
-                  <td className="px-4 py-3 text-right text-gray-700 dark:text-gray-300">
-                    {pct(c.totalClicked, c.totalSent)}
-                  </td>
-                  <td className="px-4 py-3 text-gray-500 dark:text-gray-400 text-xs whitespace-nowrap">
-                    {formatDate(c.nextRunAt)}
-                  </td>
-                  <td className="px-4 py-3">
-                    <div className="flex items-center justify-center gap-1">
-                      {/* Lifecycle */}
-                      {c.status === 'DRAFT' && (
-                        <button
-                          onClick={() => handleActivate(c.id)}
-                          title="Activate"
-                          className="p-1.5 rounded text-green-600 hover:bg-green-50 dark:hover:bg-green-900/30"
-                          data-testid={`activate-${c.id}`}
-                        >
-                          <Play size={14} />
-                        </button>
-                      )}
-                      {c.status === 'ACTIVE' && (
-                        <button
-                          onClick={() => handlePause(c.id)}
-                          title="Pause"
-                          className="p-1.5 rounded text-yellow-600 hover:bg-yellow-50 dark:hover:bg-yellow-900/30"
-                          data-testid={`pause-${c.id}`}
-                        >
-                          <Pause size={14} />
-                        </button>
-                      )}
-                      {c.status === 'PAUSED' && (
-                        <button
-                          onClick={() => handleResume(c.id)}
-                          title="Resume"
-                          className="p-1.5 rounded text-blue-600 hover:bg-blue-50 dark:hover:bg-blue-900/30"
-                          data-testid={`resume-${c.id}`}
-                        >
-                          <RotateCcw size={14} />
-                        </button>
-                      )}
-                      {/* Run Now */}
-                      <button
-                        onClick={() => setRunTarget(c)}
-                        title="Run Now"
-                        className="p-1.5 rounded text-purple-600 hover:bg-purple-50 dark:hover:bg-purple-900/30"
-                        data-testid={`run-${c.id}`}
-                      >
-                        <Zap size={14} />
-                      </button>
-                      {/* View */}
-                      <button
-                        onClick={() => router.push(`/dashboard/email-marketing/${c.id}`)}
-                        title="View"
-                        className="p-1.5 rounded text-gray-600 dark:text-gray-400 hover:bg-gray-100 dark:hover:bg-gray-700"
-                        data-testid={`view-${c.id}`}
-                      >
-                        <Eye size={14} />
-                      </button>
-                      {/* Edit */}
-                      <button
-                        onClick={() => openEdit(c)}
-                        title="Edit"
-                        className="p-1.5 rounded text-gray-600 dark:text-gray-400 hover:bg-gray-100 dark:hover:bg-gray-700"
-                        data-testid={`edit-${c.id}`}
-                      >
-                        <Edit2 size={14} />
-                      </button>
-                      {/* Delete */}
-                      <button
-                        onClick={() => setDeleteTarget(c)}
-                        title="Delete"
-                        className="p-1.5 rounded text-red-500 hover:bg-red-50 dark:hover:bg-red-900/30"
-                        data-testid={`delete-${c.id}`}
-                      >
-                        <Trash2 size={14} />
-                      </button>
-                    </div>
-                  </td>
+        <>
+          {/* ── Mobile cards (hidden on md+) ── */}
+          <div className="md:hidden space-y-3">
+            {campaigns.map((c) => (
+              <div
+                key={c.id}
+                className="rounded-2xl border border-gray-200 dark:border-gray-700 bg-white dark:bg-gray-800 p-4"
+              >
+                {/* Row 1: name + status */}
+                <div className="flex items-start justify-between gap-2 mb-2">
+                  <p className="font-semibold text-gray-900 dark:text-white truncate">{c.name}</p>
+                  <StatusBadge status={c.status} />
+                </div>
+
+                {/* Row 2: meta chips */}
+                <div className="flex flex-wrap gap-x-4 gap-y-1 text-xs text-gray-500 dark:text-gray-400 mb-3">
+                  <span>{SEGMENT_LABELS[c.segmentType]}</span>
+                  <span>Every {c.intervalDays}d</span>
+                  <span>{c.totalSent.toLocaleString()} sent</span>
+                  <span>{pct(c.totalOpened, c.totalSent)} open</span>
+                  <span>{pct(c.totalClicked, c.totalSent)} click</span>
+                </div>
+
+                {c.nextRunAt && (
+                  <p className="text-xs text-gray-400 dark:text-gray-500 mb-3">
+                    Next: {formatDate(c.nextRunAt)}
+                  </p>
+                )}
+
+                {/* Row 3: actions */}
+                <div className="flex items-center gap-2 flex-wrap">
+                  {c.status === 'DRAFT' && (
+                    <button
+                      onClick={() => handleActivate(c.id)}
+                      className="flex items-center gap-1 px-3 py-1.5 rounded-lg text-xs font-medium bg-green-100 dark:bg-green-900/30 text-green-700 dark:text-green-300"
+                      data-testid={`activate-${c.id}`}
+                    >
+                      <Play size={12} /> Activate
+                    </button>
+                  )}
+                  {c.status === 'ACTIVE' && (
+                    <button
+                      onClick={() => handlePause(c.id)}
+                      className="flex items-center gap-1 px-3 py-1.5 rounded-lg text-xs font-medium bg-yellow-100 dark:bg-yellow-900/30 text-yellow-700 dark:text-yellow-300"
+                      data-testid={`pause-${c.id}`}
+                    >
+                      <Pause size={12} /> Pause
+                    </button>
+                  )}
+                  {c.status === 'PAUSED' && (
+                    <button
+                      onClick={() => handleResume(c.id)}
+                      className="flex items-center gap-1 px-3 py-1.5 rounded-lg text-xs font-medium bg-blue-100 dark:bg-blue-900/30 text-blue-700 dark:text-blue-300"
+                      data-testid={`resume-${c.id}`}
+                    >
+                      <RotateCcw size={12} /> Resume
+                    </button>
+                  )}
+                  <button
+                    onClick={() => setRunTarget(c)}
+                    className="flex items-center gap-1 px-3 py-1.5 rounded-lg text-xs font-medium bg-purple-100 dark:bg-purple-900/30 text-purple-700 dark:text-purple-300"
+                    data-testid={`run-${c.id}`}
+                  >
+                    <Zap size={12} /> Run Now
+                  </button>
+                  <button
+                    onClick={() => router.push(`/dashboard/email-marketing/${c.id}`)}
+                    className="flex items-center gap-1 px-3 py-1.5 rounded-lg text-xs font-medium bg-gray-100 dark:bg-gray-700 text-gray-700 dark:text-gray-300"
+                    data-testid={`view-${c.id}`}
+                  >
+                    <Eye size={12} /> View
+                  </button>
+                  <button
+                    onClick={() => openEdit(c)}
+                    className="flex items-center gap-1 px-3 py-1.5 rounded-lg text-xs font-medium bg-gray-100 dark:bg-gray-700 text-gray-700 dark:text-gray-300"
+                    data-testid={`edit-${c.id}`}
+                  >
+                    <Edit2 size={12} /> Edit
+                  </button>
+                  <button
+                    onClick={() => setDeleteTarget(c)}
+                    className="flex items-center gap-1 px-3 py-1.5 rounded-lg text-xs font-medium bg-red-50 dark:bg-red-900/20 text-red-600 dark:text-red-400"
+                    data-testid={`delete-${c.id}`}
+                  >
+                    <Trash2 size={12} /> Delete
+                  </button>
+                </div>
+              </div>
+            ))}
+          </div>
+
+          {/* ── Desktop table (hidden below md) ── */}
+          <div className="hidden md:block overflow-x-auto rounded-xl border border-gray-200 dark:border-gray-700">
+            <table className="w-full text-sm">
+              <thead className="bg-gray-50 dark:bg-gray-800/60 text-gray-600 dark:text-gray-400 uppercase text-xs">
+                <tr>
+                  <th className="px-4 py-3 text-left font-semibold">Name</th>
+                  <th className="px-4 py-3 text-left font-semibold">Segment</th>
+                  <th className="px-4 py-3 text-left font-semibold">Status</th>
+                  <th className="px-4 py-3 text-left font-semibold">Interval</th>
+                  <th className="px-4 py-3 text-right font-semibold">Sent</th>
+                  <th className="px-4 py-3 text-right font-semibold">Open Rate</th>
+                  <th className="px-4 py-3 text-right font-semibold">Click Rate</th>
+                  <th className="px-4 py-3 text-left font-semibold">Next Run</th>
+                  <th className="px-4 py-3 text-center font-semibold">Actions</th>
                 </tr>
-              ))}
-            </tbody>
-          </table>
-        </div>
+              </thead>
+              <tbody className="divide-y divide-gray-100 dark:divide-gray-700">
+                {campaigns.map((c) => (
+                  <tr
+                    key={c.id}
+                    className="bg-white dark:bg-gray-800 hover:bg-gray-50 dark:hover:bg-gray-700/50 transition-colors"
+                  >
+                    <td className="px-4 py-3 font-medium text-gray-900 dark:text-white max-w-[200px] truncate">
+                      {c.name}
+                    </td>
+                    <td className="px-4 py-3 text-gray-600 dark:text-gray-300">
+                      {SEGMENT_LABELS[c.segmentType]}
+                    </td>
+                    <td className="px-4 py-3">
+                      <StatusBadge status={c.status} />
+                    </td>
+                    <td className="px-4 py-3 text-gray-600 dark:text-gray-300">
+                      Every {c.intervalDays}d
+                    </td>
+                    <td className="px-4 py-3 text-right text-gray-700 dark:text-gray-300">
+                      {c.totalSent.toLocaleString()}
+                    </td>
+                    <td className="px-4 py-3 text-right text-gray-700 dark:text-gray-300">
+                      {pct(c.totalOpened, c.totalSent)}
+                    </td>
+                    <td className="px-4 py-3 text-right text-gray-700 dark:text-gray-300">
+                      {pct(c.totalClicked, c.totalSent)}
+                    </td>
+                    <td className="px-4 py-3 text-gray-500 dark:text-gray-400 text-xs whitespace-nowrap">
+                      {formatDate(c.nextRunAt)}
+                    </td>
+                    <td className="px-4 py-3">
+                      <div className="flex items-center justify-center gap-1">
+                        {c.status === 'DRAFT' && (
+                          <button
+                            onClick={() => handleActivate(c.id)}
+                            title="Activate"
+                            className="p-1.5 rounded text-green-600 hover:bg-green-50 dark:hover:bg-green-900/30"
+                            data-testid={`activate-${c.id}`}
+                          >
+                            <Play size={14} />
+                          </button>
+                        )}
+                        {c.status === 'ACTIVE' && (
+                          <button
+                            onClick={() => handlePause(c.id)}
+                            title="Pause"
+                            className="p-1.5 rounded text-yellow-600 hover:bg-yellow-50 dark:hover:bg-yellow-900/30"
+                            data-testid={`pause-${c.id}`}
+                          >
+                            <Pause size={14} />
+                          </button>
+                        )}
+                        {c.status === 'PAUSED' && (
+                          <button
+                            onClick={() => handleResume(c.id)}
+                            title="Resume"
+                            className="p-1.5 rounded text-blue-600 hover:bg-blue-50 dark:hover:bg-blue-900/30"
+                            data-testid={`resume-${c.id}`}
+                          >
+                            <RotateCcw size={14} />
+                          </button>
+                        )}
+                        <button
+                          onClick={() => setRunTarget(c)}
+                          title="Run Now"
+                          className="p-1.5 rounded text-purple-600 hover:bg-purple-50 dark:hover:bg-purple-900/30"
+                          data-testid={`run-${c.id}`}
+                        >
+                          <Zap size={14} />
+                        </button>
+                        <button
+                          onClick={() => router.push(`/dashboard/email-marketing/${c.id}`)}
+                          title="View"
+                          className="p-1.5 rounded text-gray-600 dark:text-gray-400 hover:bg-gray-100 dark:hover:bg-gray-700"
+                          data-testid={`view-${c.id}`}
+                        >
+                          <Eye size={14} />
+                        </button>
+                        <button
+                          onClick={() => openEdit(c)}
+                          title="Edit"
+                          className="p-1.5 rounded text-gray-600 dark:text-gray-400 hover:bg-gray-100 dark:hover:bg-gray-700"
+                          data-testid={`edit-${c.id}`}
+                        >
+                          <Edit2 size={14} />
+                        </button>
+                        <button
+                          onClick={() => setDeleteTarget(c)}
+                          title="Delete"
+                          className="p-1.5 rounded text-red-500 hover:bg-red-50 dark:hover:bg-red-900/30"
+                          data-testid={`delete-${c.id}`}
+                        >
+                          <Trash2 size={14} />
+                        </button>
+                      </div>
+                    </td>
+                  </tr>
+                ))}
+              </tbody>
+            </table>
+          </div>
+        </>
       )}
 
       {/* Drawer */}

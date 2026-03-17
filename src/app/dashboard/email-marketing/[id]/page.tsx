@@ -96,7 +96,7 @@ function MetricCard({
   color: string;
 }) {
   return (
-    <div className="bg-white dark:bg-gray-800 rounded-xl border border-gray-200 dark:border-gray-700 p-5 flex items-center gap-4">
+    <div className="bg-white dark:bg-gray-800 rounded-xl border border-gray-200 dark:border-gray-700 p-3 md:p-5 flex items-center gap-3 md:gap-4">
       <div className={`p-3 rounded-xl ${color}`}>{icon}</div>
       <div>
         <p className="text-xs text-gray-500 dark:text-gray-400 font-medium uppercase tracking-wide">
@@ -276,7 +276,7 @@ export default function CampaignDetailPage() {
     return (
       <div className="p-6 space-y-4">
         <div className="h-8 w-48 bg-gray-200 dark:bg-gray-700 rounded animate-pulse" />
-        <div className="grid grid-cols-2 lg:grid-cols-4 gap-4">
+        <div className="grid grid-cols-2 lg:grid-cols-4 gap-3">
           {[...Array(4)].map((_, i) => (
             <div key={i} className="h-24 bg-gray-200 dark:bg-gray-700 rounded-xl animate-pulse" />
           ))}
@@ -325,12 +325,12 @@ export default function CampaignDetailPage() {
   }
 
   return (
-    <div className="p-6 max-w-full space-y-6">
+    <div className="p-4 md:p-6 max-w-full space-y-6">
       {/* Header */}
-      <div className="flex items-center gap-4 flex-wrap">
+      <div className="flex items-start gap-3">
         <button
           onClick={() => router.push('/dashboard/email-marketing')}
-          className="p-2 rounded-lg text-gray-500 hover:text-gray-700 dark:hover:text-gray-300 hover:bg-gray-100 dark:hover:bg-gray-700"
+          className="p-2 rounded-lg text-gray-500 hover:text-gray-700 dark:hover:text-gray-300 hover:bg-gray-100 dark:hover:bg-gray-700 flex-shrink-0 mt-0.5"
           data-testid="back-link"
         >
           <ArrowLeft size={18} />
@@ -338,7 +338,7 @@ export default function CampaignDetailPage() {
 
         <div className="flex-1 min-w-0">
           <div className="flex items-center gap-3 flex-wrap">
-            <h1 className="text-2xl font-bold text-gray-900 dark:text-white truncate">
+            <h1 className="text-xl md:text-2xl font-bold text-gray-900 dark:text-white truncate">
               {campaign.name}
             </h1>
             <StatusBadge status={campaign.status} />
@@ -348,56 +348,61 @@ export default function CampaignDetailPage() {
               {campaign.description}
             </p>
           )}
-        </div>
 
-        <div className="flex items-center gap-2">
-          {campaign.status === 'DRAFT' && (
+          {/* Actions — below title on all screens */}
+          <div className="flex items-center gap-2 flex-wrap mt-3">
+            {campaign.status === 'DRAFT' && (
+              <button
+                onClick={handleActivate}
+                className="flex items-center gap-1.5 px-3 py-1.5 text-sm rounded-lg bg-green-600 text-white hover:bg-green-700"
+                data-testid="detail-activate"
+              >
+                <Play size={14} />
+                <span className="hidden sm:inline">Activate</span>
+              </button>
+            )}
+            {campaign.status === 'ACTIVE' && (
+              <button
+                onClick={handlePause}
+                className="flex items-center gap-1.5 px-3 py-1.5 text-sm rounded-lg bg-yellow-500 text-white hover:bg-yellow-600"
+                data-testid="detail-pause"
+              >
+                <Pause size={14} />
+                <span className="hidden sm:inline">Pause</span>
+              </button>
+            )}
+            {campaign.status === 'PAUSED' && (
+              <button
+                onClick={handleResume}
+                className="flex items-center gap-1.5 px-3 py-1.5 text-sm rounded-lg bg-blue-600 text-white hover:bg-blue-700"
+                data-testid="detail-resume"
+              >
+                <RotateCcw size={14} />
+                <span className="hidden sm:inline">Resume</span>
+              </button>
+            )}
             <button
-              onClick={handleActivate}
-              className="flex items-center gap-1.5 px-3 py-1.5 text-sm rounded-lg bg-green-600 text-white hover:bg-green-700"
-              data-testid="detail-activate"
+              onClick={() => setShowRunDialog(true)}
+              className="flex items-center gap-1.5 px-3 py-1.5 text-sm rounded-lg bg-purple-600 text-white hover:bg-purple-700"
+              data-testid="detail-run"
             >
-              <Play size={14} /> Activate
+              <Zap size={14} />
+              <span className="hidden sm:inline">Run Now</span>
             </button>
-          )}
-          {campaign.status === 'ACTIVE' && (
             <button
-              onClick={handlePause}
-              className="flex items-center gap-1.5 px-3 py-1.5 text-sm rounded-lg bg-yellow-500 text-white hover:bg-yellow-600"
-              data-testid="detail-pause"
+              onClick={handleRefresh}
+              className="p-2 rounded-lg border border-gray-200 dark:border-gray-700 text-gray-600 dark:text-gray-400 hover:bg-gray-50 dark:hover:bg-gray-700"
+              title="Refresh"
+              data-testid="detail-refresh"
             >
-              <Pause size={14} /> Pause
+              <RefreshCw size={16} />
             </button>
-          )}
-          {campaign.status === 'PAUSED' && (
-            <button
-              onClick={handleResume}
-              className="flex items-center gap-1.5 px-3 py-1.5 text-sm rounded-lg bg-blue-600 text-white hover:bg-blue-700"
-              data-testid="detail-resume"
-            >
-              <RotateCcw size={14} /> Resume
-            </button>
-          )}
-          <button
-            onClick={() => setShowRunDialog(true)}
-            className="flex items-center gap-1.5 px-3 py-1.5 text-sm rounded-lg bg-purple-600 text-white hover:bg-purple-700"
-            data-testid="detail-run"
-          >
-            <Zap size={14} /> Run Now
-          </button>
-          <button
-            onClick={handleRefresh}
-            className="p-2 rounded-lg border border-gray-200 dark:border-gray-700 text-gray-600 dark:text-gray-400 hover:bg-gray-50 dark:hover:bg-gray-700"
-            title="Refresh"
-            data-testid="detail-refresh"
-          >
-            <RefreshCw size={16} />
-          </button>
+          </div>
         </div>
       </div>
 
       {/* Metrics cards */}
-      <div className="grid grid-cols-2 lg:grid-cols-4 gap-4">
+      <div className="grid grid-cols-2 lg:grid-cols-4 gap-3">
         <MetricCard
           icon={<Send size={20} className="text-white" />}
           label="Total Sent"
@@ -500,7 +505,7 @@ export default function CampaignDetailPage() {
           </h2>
 
           {/* Status filter */}
-          <div className="flex items-center gap-1 flex-wrap">
+          <div className="flex items-center gap-1 flex-wrap overflow-x-auto pb-1 -mb-1">
             {LOG_STATUS_FILTERS.map(({ value, label }) => (
               <button
                 key={value}
@@ -538,51 +543,82 @@ export default function CampaignDetailPage() {
         )}
 
         {filteredLogs.length > 0 && (
-          <div className="overflow-x-auto">
-            <table className="w-full text-sm">
-              <thead className="text-xs text-gray-500 dark:text-gray-400 uppercase border-b border-gray-100 dark:border-gray-700">
-                <tr>
-                  <th className="pb-2 text-left font-semibold">Email</th>
-                  <th className="pb-2 text-left font-semibold">Type</th>
-                  <th className="pb-2 text-left font-semibold">Status</th>
-                  <th className="pb-2 text-left font-semibold">Sent At</th>
-                  <th className="pb-2 text-left font-semibold">Opened At</th>
-                  <th className="pb-2 text-left font-semibold">Clicked At</th>
-                  <th className="pb-2 text-left font-semibold">Failure Reason</th>
-                </tr>
-              </thead>
-              <tbody className="divide-y divide-gray-50 dark:divide-gray-700/50">
-                {filteredLogs.map((log) => (
-                  <tr
-                    key={log.id}
-                    className="hover:bg-gray-50 dark:hover:bg-gray-700/30 transition-colors"
-                  >
-                    <td className="py-2.5 pr-4 text-gray-800 dark:text-gray-200 font-mono text-xs max-w-[200px] truncate">
+          <>
+            {/* Mobile log cards */}
+            <div className="md:hidden space-y-2">
+              {filteredLogs.map((log) => (
+                <div
+                  key={log.id}
+                  className="rounded-xl border border-gray-100 dark:border-gray-700 bg-gray-50 dark:bg-gray-900/40 p-3"
+                >
+                  <div className="flex items-center justify-between gap-2 mb-1">
+                    <p className="font-mono text-xs text-gray-800 dark:text-gray-200 truncate flex-1">
                       {log.email}
-                    </td>
-                    <td className="py-2.5 pr-4 text-gray-500 dark:text-gray-400 text-xs">
-                      {log.recipientType}
-                    </td>
-                    <td className="py-2.5 pr-4">
-                      <LogStatusBadge status={log.status} />
-                    </td>
-                    <td className="py-2.5 pr-4 text-gray-500 dark:text-gray-400 text-xs whitespace-nowrap">
-                      {formatDate(log.sentAt)}
-                    </td>
-                    <td className="py-2.5 pr-4 text-gray-500 dark:text-gray-400 text-xs whitespace-nowrap">
-                      {formatDate(log.openedAt)}
-                    </td>
-                    <td className="py-2.5 pr-4 text-gray-500 dark:text-gray-400 text-xs whitespace-nowrap">
-                      {formatDate(log.clickedAt)}
-                    </td>
-                    <td className="py-2.5 text-red-500 dark:text-red-400 text-xs max-w-[180px] truncate">
-                      {log.failureReason || '—'}
-                    </td>
+                    </p>
+                    <LogStatusBadge status={log.status} />
+                  </div>
+                  <div className="flex flex-wrap gap-x-3 gap-y-0.5 text-xs text-gray-500 dark:text-gray-400 mt-1">
+                    <span>{log.recipientType}</span>
+                    {log.sentAt && <span>Sent: {formatDate(log.sentAt)}</span>}
+                    {log.openedAt && <span>Opened: {formatDate(log.openedAt)}</span>}
+                    {log.clickedAt && <span>Clicked: {formatDate(log.clickedAt)}</span>}
+                  </div>
+                  {log.failureReason && (
+                    <p className="mt-1 text-xs text-red-500 dark:text-red-400 truncate">
+                      {log.failureReason}
+                    </p>
+                  )}
+                </div>
+              ))}
+            </div>
+
+            {/* Desktop table */}
+            <div className="hidden md:block overflow-x-auto">
+              <table className="w-full text-sm">
+                <thead className="text-xs text-gray-500 dark:text-gray-400 uppercase border-b border-gray-100 dark:border-gray-700">
+                  <tr>
+                    <th className="pb-2 text-left font-semibold">Email</th>
+                    <th className="pb-2 text-left font-semibold">Type</th>
+                    <th className="pb-2 text-left font-semibold">Status</th>
+                    <th className="pb-2 text-left font-semibold">Sent At</th>
+                    <th className="pb-2 text-left font-semibold">Opened At</th>
+                    <th className="pb-2 text-left font-semibold">Clicked At</th>
+                    <th className="pb-2 text-left font-semibold">Failure Reason</th>
                   </tr>
-                ))}
-              </tbody>
-            </table>
-          </div>
+                </thead>
+                <tbody className="divide-y divide-gray-50 dark:divide-gray-700/50">
+                  {filteredLogs.map((log) => (
+                    <tr
+                      key={log.id}
+                      className="hover:bg-gray-50 dark:hover:bg-gray-700/30 transition-colors"
+                    >
+                      <td className="py-2.5 pr-4 text-gray-800 dark:text-gray-200 font-mono text-xs max-w-[200px] truncate">
+                        {log.email}
+                      </td>
+                      <td className="py-2.5 pr-4 text-gray-500 dark:text-gray-400 text-xs">
+                        {log.recipientType}
+                      </td>
+                      <td className="py-2.5 pr-4">
+                        <LogStatusBadge status={log.status} />
+                      </td>
+                      <td className="py-2.5 pr-4 text-gray-500 dark:text-gray-400 text-xs whitespace-nowrap">
+                        {formatDate(log.sentAt)}
+                      </td>
+                      <td className="py-2.5 pr-4 text-gray-500 dark:text-gray-400 text-xs whitespace-nowrap">
+                        {formatDate(log.openedAt)}
+                      </td>
+                      <td className="py-2.5 pr-4 text-gray-500 dark:text-gray-400 text-xs whitespace-nowrap">
+                        {formatDate(log.clickedAt)}
+                      </td>
+                      <td className="py-2.5 text-red-500 dark:text-red-400 text-xs max-w-[180px] truncate">
+                        {log.failureReason || '—'}
+                      </td>
+                    </tr>
+                  ))}
+                </tbody>
+              </table>
+            </div>
+          </>
         )}
       </div>
 
