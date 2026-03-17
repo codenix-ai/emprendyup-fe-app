@@ -23,6 +23,17 @@ function formatDate(value?: string): string {
   }).format(d);
 }
 
+function formatDateShort(value?: string): string {
+  if (!value) return '—';
+  const d = new Date(value);
+  return new Intl.DateTimeFormat('es-CO', {
+    day: '2-digit',
+    month: 'short',
+    hour: '2-digit',
+    minute: '2-digit',
+  }).format(d);
+}
+
 function isFairActive(fair?: Fair | null): boolean {
   if (!fair) return false;
   const raw = (fair.status || '').toUpperCase();
@@ -231,14 +242,18 @@ export default function FairDetailPage() {
           {/* Summary */}
           <div className="mt-4 grid grid-cols-2 gap-3">
             <div className="rounded-2xl border border-gray-200 dark:border-gray-700 bg-white dark:bg-gray-800 p-4">
-              <p className="text-xs text-gray-500 dark:text-gray-400">Total vendido</p>
-              <p className="mt-1 text-lg font-semibold text-gray-900 dark:text-white">
+              <p className="text-xs font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wide">
+                Total vendido
+              </p>
+              <p className="mt-2 text-xl font-bold text-gray-900 dark:text-white tabular-nums">
                 {formatMoney(toNumber(summary?.totalSold), currency)}
               </p>
             </div>
             <div className="rounded-2xl border border-gray-200 dark:border-gray-700 bg-white dark:bg-gray-800 p-4">
-              <p className="text-xs text-gray-500 dark:text-gray-400">Número de ventas</p>
-              <p className="mt-1 text-lg font-semibold text-gray-900 dark:text-white">
+              <p className="text-xs font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wide">
+                Nº de ventas
+              </p>
+              <p className="mt-2 text-xl font-bold text-gray-900 dark:text-white tabular-nums">
                 {toNumber(summary?.numberOfSales)}
               </p>
             </div>
@@ -246,28 +261,39 @@ export default function FairDetailPage() {
 
           {/* Sales table */}
           <div className="mt-4 rounded-2xl border border-gray-200 dark:border-gray-700 bg-white dark:bg-gray-800 overflow-hidden">
-            <div className="p-4 border-b border-gray-200 dark:border-gray-700">
+            <div className="px-4 py-3 border-b border-gray-200 dark:border-gray-700 flex items-center justify-between gap-3">
               <h2 className="text-base font-semibold text-gray-900 dark:text-white">Ventas</h2>
-              <p className="text-sm text-gray-600 dark:text-gray-300">
-                Listado de ventas de esta feria
-              </p>
+              {sales.length > 0 && (
+                <span className="text-xs px-2 py-1 rounded-full bg-slate-100 dark:bg-slate-800 text-slate-600 dark:text-slate-300 font-medium">
+                  {sales.length} venta{sales.length !== 1 ? 's' : ''}
+                </span>
+              )}
             </div>
 
             {sales.length === 0 ? (
-              <div className="p-4 text-sm text-gray-700 dark:text-gray-200">No hay ventas aún.</div>
+              <div className="p-6 text-center text-sm text-gray-500 dark:text-gray-400">
+                No hay ventas registradas aún.
+              </div>
             ) : (
               <div className="overflow-x-auto">
-                <table className="min-w-full text-sm">
-                  <thead className="bg-gray-50 dark:bg-gray-900">
-                    <tr className="text-left text-gray-600 dark:text-gray-300">
+                <table className="w-full table-fixed text-sm">
+                  <colgroup>
+                    <col className="w-[26%]" />
+                    <col className="w-[18%]" />
+                    <col className="w-[20%]" />
+                    <col className="w-[16%]" />
+                    <col className="w-[20%]" />
+                  </colgroup>
+                  <thead>
+                    <tr className="border-b border-gray-200 dark:border-gray-700 bg-gray-50/80 dark:bg-gray-900/60 text-left text-xs font-semibold uppercase tracking-wide text-gray-500 dark:text-gray-400">
                       <th className="px-4 py-3">Fecha</th>
                       <th className="px-4 py-3">Método</th>
                       <th className="px-4 py-3">Cliente</th>
-                      <th className="px-4 py-3">Items</th>
-                      <th className="px-4 py-3">Total</th>
+                      <th className="px-4 py-3 text-center">Items</th>
+                      <th className="px-4 py-3 text-right">Total</th>
                     </tr>
                   </thead>
-                  <tbody>
+                  <tbody className="divide-y divide-gray-100 dark:divide-gray-700/60">
                     {sales.map((s) => {
                       const total = toNumber(
                         (s as any).total ?? (s as any).amount ?? (s as any).totalAmount
@@ -277,14 +303,11 @@ export default function FairDetailPage() {
                         (acc: number, it: any) => acc + toNumber(it.quantity),
                         0
                       );
-                      const itemLines = getSaleItemLines(saleItems);
-                      const preview = itemLines.slice(0, 2);
-                      const remaining = Math.max(0, itemLines.length - preview.length);
 
                       return (
                         <tr
                           key={s.id}
-                          className="border-t border-gray-200 dark:border-gray-700 hover:bg-gray-50 dark:hover:bg-gray-900/40 cursor-pointer"
+                          className="hover:bg-gray-50 dark:hover:bg-gray-900/40 cursor-pointer transition-colors"
                           onClick={() => setSelectedSale(s)}
                           role="button"
                           tabIndex={0}
@@ -292,27 +315,21 @@ export default function FairDetailPage() {
                             if (e.key === 'Enter' || e.key === ' ') setSelectedSale(s);
                           }}
                         >
-                          <td className="px-4 py-3 text-gray-900 dark:text-white">
-                            {formatDate((s as any).createdAt)}
+                          <td className="px-4 py-3 text-gray-900 dark:text-white truncate">
+                            {formatDateShort((s as any).createdAt)}
                           </td>
-                          <td className="px-4 py-3 text-gray-700 dark:text-gray-200">
+                          <td className="px-4 py-3 text-gray-700 dark:text-gray-200 truncate">
                             {formatPaymentMethod((s as any).paymentMethod)}
                           </td>
-                          <td className="px-4 py-3 text-gray-700 dark:text-gray-200">
-                            {(s as any).customerName || '—'}
+                          <td className="px-4 py-3 text-gray-700 dark:text-gray-200 truncate">
+                            {(s as any).customerName || <span className="text-gray-400">—</span>}
                           </td>
-                          <td className="px-4 py-3 text-gray-700 dark:text-gray-200">
-                            <div className="flex flex-col gap-1">
-                              <span className="font-medium">{itemsCount}</span>
-                              {preview.length > 0 && (
-                                <span className="text-xs text-gray-500 dark:text-gray-400">
-                                  {preview.join(' • ')}
-                                  {remaining ? ` • +${remaining} más` : ''}
-                                </span>
-                              )}
-                            </div>
+                          <td className="px-4 py-3 text-center">
+                            <span className="inline-flex items-center justify-center min-w-[1.75rem] h-7 rounded-full bg-slate-100 dark:bg-slate-800 text-slate-700 dark:text-slate-300 text-xs font-semibold">
+                              {itemsCount || '—'}
+                            </span>
                           </td>
-                          <td className="px-4 py-3 font-semibold text-gray-900 dark:text-white">
+                          <td className="px-4 py-3 text-right font-semibold text-gray-900 dark:text-white">
                             {total ? formatMoney(total, (s as any).currency || currency) : '—'}
                           </td>
                         </tr>

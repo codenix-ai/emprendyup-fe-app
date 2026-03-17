@@ -22,7 +22,9 @@ const GET_PRODUCTS_BY_STORE_FOR_FAIR = gql`
         stock
         inStock
         available
-        imageUrl
+        images {
+          url
+        }
       }
       total
       page
