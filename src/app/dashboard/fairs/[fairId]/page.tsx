@@ -7,6 +7,15 @@ import Image from 'next/image';
 import { useQuery, useMutation } from '@apollo/client';
 import toast from 'react-hot-toast';
 import { ArrowLeft, Edit2, Lock, RefreshCcw, Save, ShoppingCart, Trash2, X } from 'lucide-react';
+import {
+  AreaChart,
+  Area,
+  XAxis,
+  YAxis,
+  CartesianGrid,
+  Tooltip,
+  ResponsiveContainer,
+} from 'recharts';
 import { Fair, FairSale, FairSummary } from '@/lib/api/fairs';
 import { GET_PRODUCTS_BY_STORE } from '@/lib/graphql/queries';
 import {
@@ -153,6 +162,7 @@ export default function FairDetailPage() {
   const [savingEdit, setSavingEdit] = useState(false);
   const [confirmDeleteSale, setConfirmDeleteSale] = useState(false);
   const [deletingSale, setDeletingSale] = useState(false);
+  const [activeTab, setActiveTab] = useState<'sales' | 'analytics'>('sales');
 
   const active = useMemo(() => isFairActive(fair), [fair]);
 
@@ -300,6 +310,87 @@ export default function FairDetailPage() {
       (selectedSale as any)?.totalAmount
   );
 
+  // ── Chart data (sales over time + per-product totals) ──────────────────────
+  const analyticsData = useMemo(() => {
+    if (!sales.length) return null;
+
+    // Sort chronologically
+    const sorted = [...sales].sort((a, b) => {
+      const da = safeDate((a as any).createdAt)?.getTime() ?? 0;
+      const db = safeDate((b as any).createdAt)?.getTime() ?? 0;
+      return da - db;
+    });
+
+    // Detect same-day vs multi-day → bucket by hour or by date
+    const first = safeDate((sorted[0] as any).createdAt);
+    const last = safeDate((sorted[sorted.length - 1] as any).createdAt);
+    const sameDay = first && last && first.toDateString() === last.toDateString();
+
+    const bucketKey = (d: Date) =>
+      sameDay
+        ? `${String(d.getHours()).padStart(2, '0')}:00`
+        : d.toLocaleDateString('es-CO', { day: '2-digit', month: 'short' });
+
+    // Time-series buckets: { label, total, count, items }
+    const timeMap = new Map<
+      string,
+      { label: string; total: number; count: number; items: number }
+    >();
+    sorted.forEach((sale) => {
+      const d = safeDate((sale as any).createdAt);
+      if (!d) return;
+      const key = bucketKey(d);
+      const existing = timeMap.get(key) ?? { label: key, total: 0, count: 0, items: 0 };
+      const saleTotal = toNumber((sale as any).total ?? (sale as any).amount ?? 0);
+      const saleItems = Array.isArray((sale as any).items)
+        ? (sale as any).items.reduce((s: number, it: any) => s + toNumber(it?.quantity), 0)
+        : 0;
+      timeMap.set(key, {
+        label: key,
+        total: existing.total + saleTotal,
+        count: existing.count + 1,
+        items: existing.items + saleItems,
+      });
+    });
+    const overTime = Array.from(timeMap.values());
+
+    // Per-product totals
+    const prodMap = new Map<string, { name: string; qty: number; revenue: number }>();
+    sales.forEach((sale) => {
+      const items: any[] = Array.isArray((sale as any).items) ? (sale as any).items : [];
+      items.forEach((it) => {
+        const name = String(
+          it?.productName || it?.product?.name || it?.product?.title || 'Producto'
+        );
+        const qty = toNumber(it?.quantity);
+        const price = toNumber(it?.unitPrice ?? it?.product?.price);
+        const prev = prodMap.get(name) ?? { name, qty: 0, revenue: 0 };
+        prodMap.set(name, { name, qty: prev.qty + qty, revenue: prev.revenue + qty * price });
+      });
+    });
+    const topProducts = [...prodMap.values()]
+      .sort((a, b) => b.qty - a.qty || b.revenue - a.revenue)
+      .slice(0, 10);
+
+    // Payment method breakdown
+    const methodMap = new Map<string, number>();
+    sales.forEach((sale) => {
+      const m = formatPaymentMethod((sale as any).paymentMethod);
+      methodMap.set(m, (methodMap.get(m) ?? 0) + 1);
+    });
+    const byMethod = [...methodMap.entries()]
+      .map(([name, count]) => ({ name, count }))
+      .sort((a, b) => b.count - a.count);
+
+    const totalSold = sales.reduce(
+      (s, sale) => s + toNumber((sale as any).total ?? (sale as any).amount ?? 0),
+      0
+    );
+    const avgTicket = totalSold / sales.length;
+
+    return { overTime, topProducts, byMethod, totalSold, avgTicket, sameDay };
+  }, [sales]);
+
   return (
     <div className="p-4 md:p-6 max-w-5xl mx-auto">
       <div className="flex items-center justify-between gap-3">
@@ -363,8 +454,8 @@ export default function FairDetailPage() {
         </div>
       ) : (
         <>
-          {/* Summary */}
-          <div className="mt-4 grid grid-cols-2 gap-3">
+          {/* ── KPI cards ── */}
+          <div className="mt-4 grid grid-cols-2 sm:grid-cols-4 gap-3">
             <div className="rounded-2xl border border-gray-200 dark:border-gray-700 bg-white dark:bg-gray-800 p-4">
               <p className="text-xs font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wide">
                 Total vendido
@@ -381,177 +472,400 @@ export default function FairDetailPage() {
                 {toNumber(summary?.numberOfSales)}
               </p>
             </div>
+            <div className="rounded-2xl border border-gray-200 dark:border-gray-700 bg-white dark:bg-gray-800 p-4">
+              <p className="text-xs font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wide">
+                Ticket promedio
+              </p>
+              <p className="mt-2 text-xl font-bold text-gray-900 dark:text-white tabular-nums">
+                {analyticsData ? formatMoney(analyticsData.avgTicket, currency) : '—'}
+              </p>
+            </div>
+            <div className="rounded-2xl border border-gray-200 dark:border-gray-700 bg-white dark:bg-gray-800 p-4">
+              <p className="text-xs font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wide">
+                Items vendidos
+              </p>
+              <p className="mt-2 text-xl font-bold text-gray-900 dark:text-white tabular-nums">
+                {analyticsData?.topProducts.reduce((s, p) => s + p.qty, 0) ?? '—'}
+              </p>
+            </div>
           </div>
 
-          {/* Sales table */}
-          <div className="mt-4 rounded-2xl border border-gray-200 dark:border-gray-700 bg-white dark:bg-gray-800 overflow-hidden">
-            <div className="px-4 py-3 border-b border-gray-200 dark:border-gray-700 flex items-center justify-between gap-3">
-              <h2 className="text-base font-semibold text-gray-900 dark:text-white">Ventas</h2>
-              {sales.length > 0 && (
-                <span className="text-xs px-2 py-1 rounded-full bg-slate-100 dark:bg-slate-800 text-slate-600 dark:text-slate-300 font-medium">
-                  {sales.length} venta{sales.length !== 1 ? 's' : ''}
-                </span>
+          {/* ── Tab bar ── */}
+          <div className="mt-4 flex gap-1 rounded-xl bg-gray-100 dark:bg-gray-800 p-1 w-fit">
+            {(
+              [
+                { id: 'sales', label: 'Ventas' },
+                { id: 'analytics', label: 'Gráfico' },
+              ] as const
+            ).map((tab) => (
+              <button
+                key={tab.id}
+                type="button"
+                onClick={() => setActiveTab(tab.id)}
+                className={`px-4 py-1.5 text-sm font-semibold rounded-lg transition-colors ${
+                  activeTab === tab.id
+                    ? 'bg-white dark:bg-gray-900 text-gray-900 dark:text-white shadow-sm'
+                    : 'text-gray-500 dark:text-gray-400 hover:text-gray-700 dark:hover:text-gray-200'
+                }`}
+              >
+                {tab.label}
+              </button>
+            ))}
+          </div>
+
+          {/* ── Chart tab ── */}
+          {activeTab === 'analytics' && (
+            <div className="mt-4 space-y-4">
+              {!analyticsData || analyticsData.overTime.length === 0 ? (
+                <div className="rounded-2xl border border-gray-200 dark:border-gray-700 bg-white dark:bg-gray-800 p-6 text-center text-sm text-gray-500 dark:text-gray-400">
+                  No hay datos suficientes para mostrar el gráfico.
+                </div>
+              ) : (
+                <>
+                  {/* Sales over time */}
+                  <div className="rounded-2xl border border-gray-200 dark:border-gray-700 bg-white dark:bg-gray-800 p-4">
+                    <h3 className="text-sm font-semibold text-gray-700 dark:text-gray-300 mb-4">
+                      Ventas en el tiempo{' '}
+                      <span className="font-normal text-gray-400 text-xs">
+                        ({analyticsData.sameDay ? 'por hora' : 'por día'})
+                      </span>
+                    </h3>
+                    <ResponsiveContainer width="100%" height={220}>
+                      <AreaChart
+                        data={analyticsData.overTime}
+                        margin={{ top: 4, right: 4, left: 0, bottom: 0 }}
+                      >
+                        <defs>
+                          <linearGradient id="totalGrad" x1="0" y1="0" x2="0" y2="1">
+                            <stop offset="5%" stopColor="#eab308" stopOpacity={0.3} />
+                            <stop offset="95%" stopColor="#eab308" stopOpacity={0} />
+                          </linearGradient>
+                        </defs>
+                        <CartesianGrid strokeDasharray="3 3" stroke="#e5e7eb" opacity={0.4} />
+                        <XAxis
+                          dataKey="label"
+                          tick={{ fontSize: 11, fill: '#9ca3af' }}
+                          axisLine={false}
+                          tickLine={false}
+                        />
+                        <YAxis
+                          tick={{ fontSize: 11, fill: '#9ca3af' }}
+                          axisLine={false}
+                          tickLine={false}
+                          tickFormatter={(v) => formatMoney(v, currency)}
+                          width={72}
+                        />
+                        <Tooltip
+                          contentStyle={{
+                            background: 'white',
+                            border: '1px solid #e5e7eb',
+                            borderRadius: '12px',
+                            fontSize: '12px',
+                            boxShadow: '0 4px 12px rgba(0,0,0,0.08)',
+                          }}
+                          formatter={(value: number, name: string) => {
+                            if (name === 'total') return [formatMoney(value, currency), 'Total'];
+                            return [value, name === 'count' ? 'Ventas' : 'Items'];
+                          }}
+                          labelStyle={{ fontWeight: 600, color: '#111827' }}
+                        />
+                        <Area
+                          type="monotone"
+                          dataKey="total"
+                          stroke="#eab308"
+                          strokeWidth={2.5}
+                          fill="url(#totalGrad)"
+                          dot={{ fill: '#eab308', r: 4, strokeWidth: 0 }}
+                          activeDot={{ r: 6, fill: '#eab308', strokeWidth: 0 }}
+                        />
+                      </AreaChart>
+                    </ResponsiveContainer>
+
+                    {/* Mini time table */}
+                    <div className="mt-4 divide-y divide-gray-100 dark:divide-gray-700">
+                      {analyticsData.overTime.map((bucket) => (
+                        <div
+                          key={bucket.label}
+                          className="flex items-center justify-between py-2 text-xs"
+                        >
+                          <span className="font-medium text-gray-700 dark:text-gray-300 w-14">
+                            {bucket.label}
+                          </span>
+                          <div className="flex-1 mx-3">
+                            <div
+                              className="h-1.5 rounded-full bg-yellow-400"
+                              style={{
+                                width: `${Math.round((bucket.total / analyticsData.totalSold) * 100)}%`,
+                                minWidth: '4px',
+                              }}
+                            />
+                          </div>
+                          <span className="text-gray-500 dark:text-gray-400 w-8 text-center">
+                            {bucket.count}v
+                          </span>
+                          <span className="font-semibold text-gray-900 dark:text-white w-24 text-right tabular-nums">
+                            {formatMoney(bucket.total, currency)}
+                          </span>
+                        </div>
+                      ))}
+                    </div>
+                  </div>
+
+                  {/* Top products */}
+                  {analyticsData.topProducts.length > 0 && (
+                    <div className="rounded-2xl border border-gray-200 dark:border-gray-700 bg-white dark:bg-gray-800 p-4">
+                      <h3 className="text-sm font-semibold text-gray-700 dark:text-gray-300 mb-3">
+                        Productos más vendidos
+                      </h3>
+                      <div className="space-y-2">
+                        {analyticsData.topProducts.map((prod, i) => {
+                          const maxQty = analyticsData.topProducts[0].qty;
+                          return (
+                            <div key={prod.name} className="flex items-center gap-3">
+                              <span className="text-xs text-gray-400 w-4 flex-none">{i + 1}</span>
+                              <div className="min-w-0 flex-1">
+                                <div className="flex items-center justify-between mb-1">
+                                  <span className="text-xs font-medium text-gray-800 dark:text-gray-200 truncate">
+                                    {prod.name}
+                                  </span>
+                                  <span className="text-xs font-semibold text-gray-700 dark:text-gray-300 ml-2 flex-none">
+                                    ×{prod.qty}
+                                  </span>
+                                </div>
+                                <div className="h-1.5 rounded-full bg-gray-100 dark:bg-gray-700">
+                                  <div
+                                    className="h-1.5 rounded-full bg-fourth-base"
+                                    style={{ width: `${Math.round((prod.qty / maxQty) * 100)}%` }}
+                                  />
+                                </div>
+                              </div>
+                            </div>
+                          );
+                        })}
+                      </div>
+                    </div>
+                  )}
+
+                  {/* Payment method breakdown */}
+                  {analyticsData.byMethod.length > 1 && (
+                    <div className="rounded-2xl border border-gray-200 dark:border-gray-700 bg-white dark:bg-gray-800 p-4">
+                      <h3 className="text-sm font-semibold text-gray-700 dark:text-gray-300 mb-3">
+                        Métodos de pago
+                      </h3>
+                      <div className="space-y-2">
+                        {analyticsData.byMethod.map((m) => (
+                          <div key={m.name} className="flex items-center gap-3">
+                            <div className="flex-1 flex items-center gap-2">
+                              <div
+                                className="h-1.5 rounded-full bg-gray-900 dark:bg-white"
+                                style={{
+                                  width: `${Math.round((m.count / sales.length) * 100)}%`,
+                                  minWidth: '4px',
+                                  maxWidth: '100%',
+                                }}
+                              />
+                            </div>
+                            <span className="text-xs text-gray-600 dark:text-gray-400 w-28">
+                              {m.name}
+                            </span>
+                            <span className="text-xs font-semibold text-gray-800 dark:text-gray-200 w-6 text-right">
+                              {m.count}
+                            </span>
+                          </div>
+                        ))}
+                      </div>
+                    </div>
+                  )}
+                </>
               )}
             </div>
+          )}
 
-            {sales.length === 0 ? (
-              <div className="p-6 text-center text-sm text-gray-500 dark:text-gray-400">
-                No hay ventas registradas aún.
-              </div>
-            ) : (
-              <>
-                {/* ── Mobile card list ── */}
-                <div className="sm:hidden divide-y divide-gray-100 dark:divide-gray-700/60">
-                  {sales.map((s) => {
-                    const total = toNumber(
-                      (s as any).total ?? (s as any).amount ?? (s as any).totalAmount
-                    );
-                    const saleItems = Array.isArray((s as any).items) ? (s as any).items : [];
-                    return (
-                      <button
-                        key={s.id}
-                        className="w-full text-left px-4 py-3 hover:bg-gray-50 dark:hover:bg-gray-900/40 transition-colors"
-                        onClick={() => setSelectedSale(s)}
-                      >
-                        {/* Row 1: date + total */}
-                        <div className="flex items-center justify-between gap-2 mb-1">
-                          <span className="text-xs text-gray-500 dark:text-gray-400">
-                            {formatDateShort((s as any).createdAt)}
-                          </span>
-                          <span className="text-sm font-semibold text-gray-900 dark:text-white">
-                            {total ? formatMoney(total, (s as any).currency || currency) : '—'}
-                          </span>
-                        </div>
-                        {/* Row 2: products */}
-                        <div className="mb-1">
-                          {saleItems.length === 0 ? (
-                            <span className="text-xs text-gray-400">Sin productos</span>
-                          ) : (
-                            <p className="text-sm text-gray-700 dark:text-gray-200 truncate">
-                              {saleItems
-                                .slice(0, 2)
-                                .map((it: any) => {
-                                  const name = String(
-                                    it?.productName ||
-                                      it?.product?.name ||
-                                      it?.product?.title ||
-                                      'Producto'
-                                  );
-                                  const qty = toNumber(it?.quantity);
-                                  return qty > 1 ? `${name} ×${qty}` : name;
-                                })
-                                .join(', ')}
-                              {saleItems.length > 2 && (
-                                <span className="text-gray-400"> +{saleItems.length - 2} más</span>
-                              )}
-                            </p>
-                          )}
-                        </div>
-                        {/* Row 3: method + customer */}
-                        <div className="flex items-center gap-2 flex-wrap">
-                          <span className="inline-flex items-center text-xs px-2 py-0.5 rounded-full bg-gray-100 dark:bg-gray-700 text-gray-600 dark:text-gray-300 font-medium">
-                            {formatPaymentMethod((s as any).paymentMethod)}
-                          </span>
-                          {(s as any).customerName && (
-                            <span className="text-xs text-gray-500 dark:text-gray-400 truncate">
-                              {(s as any).customerName}
-                            </span>
-                          )}
-                        </div>
-                      </button>
-                    );
-                  })}
+          {/* ── Sales tab ── */}
+          {activeTab === 'sales' && (
+            <>
+              {/* Sales table */}
+              <div className="mt-4 rounded-2xl border border-gray-200 dark:border-gray-700 bg-white dark:bg-gray-800 overflow-hidden">
+                <div className="px-4 py-3 border-b border-gray-200 dark:border-gray-700 flex items-center justify-between gap-3">
+                  <h2 className="text-base font-semibold text-gray-900 dark:text-white">Ventas</h2>
+                  {sales.length > 0 && (
+                    <span className="text-xs px-2 py-1 rounded-full bg-slate-100 dark:bg-slate-800 text-slate-600 dark:text-slate-300 font-medium">
+                      {sales.length} venta{sales.length !== 1 ? 's' : ''}
+                    </span>
+                  )}
                 </div>
 
-                {/* ── Desktop table ── */}
-                <div className="hidden sm:block overflow-x-auto">
-                  <table className="w-full table-fixed text-sm">
-                    <colgroup>
-                      <col className="w-[18%]" />
-                      <col className="w-[14%]" />
-                      <col className="w-[16%]" />
-                      <col className="w-[36%]" />
-                      <col className="w-[16%]" />
-                    </colgroup>
-                    <thead>
-                      <tr className="border-b border-gray-200 dark:border-gray-700 bg-gray-50/80 dark:bg-gray-900/60 text-left text-xs font-semibold uppercase tracking-wide text-gray-500 dark:text-gray-400">
-                        <th className="px-4 py-3">Fecha</th>
-                        <th className="px-4 py-3">Método</th>
-                        <th className="px-4 py-3">Cliente</th>
-                        <th className="px-4 py-3">Productos</th>
-                        <th className="px-4 py-3 text-right">Total</th>
-                      </tr>
-                    </thead>
-                    <tbody className="divide-y divide-gray-100 dark:divide-gray-700/60">
+                {sales.length === 0 ? (
+                  <div className="p-6 text-center text-sm text-gray-500 dark:text-gray-400">
+                    No hay ventas registradas aún.
+                  </div>
+                ) : (
+                  <>
+                    {/* ── Mobile card list ── */}
+                    <div className="sm:hidden divide-y divide-gray-100 dark:divide-gray-700/60">
                       {sales.map((s) => {
                         const total = toNumber(
                           (s as any).total ?? (s as any).amount ?? (s as any).totalAmount
                         );
                         const saleItems = Array.isArray((s as any).items) ? (s as any).items : [];
-
                         return (
-                          <tr
+                          <button
                             key={s.id}
-                            className="hover:bg-gray-50 dark:hover:bg-gray-900/40 cursor-pointer transition-colors"
+                            className="w-full text-left px-4 py-3 hover:bg-gray-50 dark:hover:bg-gray-900/40 transition-colors"
                             onClick={() => setSelectedSale(s)}
-                            role="button"
-                            tabIndex={0}
-                            onKeyDown={(e) => {
-                              if (e.key === 'Enter' || e.key === ' ') setSelectedSale(s);
-                            }}
                           >
-                            <td className="px-4 py-3 text-gray-900 dark:text-white truncate">
-                              {formatDateShort((s as any).createdAt)}
-                            </td>
-                            <td className="px-4 py-3 text-gray-700 dark:text-gray-200 truncate">
-                              {formatPaymentMethod((s as any).paymentMethod)}
-                            </td>
-                            <td className="px-4 py-3 text-gray-700 dark:text-gray-200 truncate">
-                              {(s as any).customerName || <span className="text-gray-400">—</span>}
-                            </td>
-                            <td className="px-4 py-3">
+                            {/* Row 1: date + total */}
+                            <div className="flex items-center justify-between gap-2 mb-1">
+                              <span className="text-xs text-gray-500 dark:text-gray-400">
+                                {formatDateShort((s as any).createdAt)}
+                              </span>
+                              <span className="text-sm font-semibold text-gray-900 dark:text-white">
+                                {total ? formatMoney(total, (s as any).currency || currency) : '—'}
+                              </span>
+                            </div>
+                            {/* Row 2: products */}
+                            <div className="mb-1">
                               {saleItems.length === 0 ? (
-                                <span className="text-gray-400">—</span>
+                                <span className="text-xs text-gray-400">Sin productos</span>
                               ) : (
-                                <div className="space-y-0.5">
-                                  {saleItems.slice(0, 2).map((it: any, idx: number) => {
-                                    const name = String(
-                                      it?.productName ||
-                                        it?.product?.name ||
-                                        it?.product?.title ||
-                                        'Producto'
-                                    );
-                                    const qty = toNumber(it?.quantity);
-                                    return (
-                                      <p
-                                        key={idx}
-                                        className="text-xs text-gray-700 dark:text-gray-200 truncate leading-snug"
-                                      >
-                                        <span className="font-medium">{name}</span>
-                                        {qty > 0 && <span className="text-gray-400"> ×{qty}</span>}
-                                      </p>
-                                    );
-                                  })}
+                                <p className="text-sm text-gray-700 dark:text-gray-200 truncate">
+                                  {saleItems
+                                    .slice(0, 2)
+                                    .map((it: any) => {
+                                      const name = String(
+                                        it?.productName ||
+                                          it?.product?.name ||
+                                          it?.product?.title ||
+                                          'Producto'
+                                      );
+                                      const qty = toNumber(it?.quantity);
+                                      return qty > 1 ? `${name} ×${qty}` : name;
+                                    })
+                                    .join(', ')}
                                   {saleItems.length > 2 && (
-                                    <p className="text-xs text-gray-400">
+                                    <span className="text-gray-400">
+                                      {' '}
                                       +{saleItems.length - 2} más
-                                    </p>
+                                    </span>
                                   )}
-                                </div>
+                                </p>
                               )}
-                            </td>
-                            <td className="px-4 py-3 text-right font-semibold text-gray-900 dark:text-white">
-                              {total ? formatMoney(total, (s as any).currency || currency) : '—'}
-                            </td>
-                          </tr>
+                            </div>
+                            {/* Row 3: method + customer */}
+                            <div className="flex items-center gap-2 flex-wrap">
+                              <span className="inline-flex items-center text-xs px-2 py-0.5 rounded-full bg-gray-100 dark:bg-gray-700 text-gray-600 dark:text-gray-300 font-medium">
+                                {formatPaymentMethod((s as any).paymentMethod)}
+                              </span>
+                              {(s as any).customerName && (
+                                <span className="text-xs text-gray-500 dark:text-gray-400 truncate">
+                                  {(s as any).customerName}
+                                </span>
+                              )}
+                            </div>
+                          </button>
                         );
                       })}
-                    </tbody>
-                  </table>
-                </div>
-              </>
-            )}
-          </div>
+                    </div>
+
+                    {/* ── Desktop table ── */}
+                    <div className="hidden sm:block overflow-x-auto">
+                      <table className="w-full table-fixed text-sm">
+                        <colgroup>
+                          <col className="w-[18%]" />
+                          <col className="w-[14%]" />
+                          <col className="w-[16%]" />
+                          <col className="w-[36%]" />
+                          <col className="w-[16%]" />
+                        </colgroup>
+                        <thead>
+                          <tr className="border-b border-gray-200 dark:border-gray-700 bg-gray-50/80 dark:bg-gray-900/60 text-left text-xs font-semibold uppercase tracking-wide text-gray-500 dark:text-gray-400">
+                            <th className="px-4 py-3">Fecha</th>
+                            <th className="px-4 py-3">Método</th>
+                            <th className="px-4 py-3">Cliente</th>
+                            <th className="px-4 py-3">Productos</th>
+                            <th className="px-4 py-3 text-right">Total</th>
+                          </tr>
+                        </thead>
+                        <tbody className="divide-y divide-gray-100 dark:divide-gray-700/60">
+                          {sales.map((s) => {
+                            const total = toNumber(
+                              (s as any).total ?? (s as any).amount ?? (s as any).totalAmount
+                            );
+                            const saleItems = Array.isArray((s as any).items)
+                              ? (s as any).items
+                              : [];
+
+                            return (
+                              <tr
+                                key={s.id}
+                                className="hover:bg-gray-50 dark:hover:bg-gray-900/40 cursor-pointer transition-colors"
+                                onClick={() => setSelectedSale(s)}
+                                role="button"
+                                tabIndex={0}
+                                onKeyDown={(e) => {
+                                  if (e.key === 'Enter' || e.key === ' ') setSelectedSale(s);
+                                }}
+                              >
+                                <td className="px-4 py-3 text-gray-900 dark:text-white truncate">
+                                  {formatDateShort((s as any).createdAt)}
+                                </td>
+                                <td className="px-4 py-3 text-gray-700 dark:text-gray-200 truncate">
+                                  {formatPaymentMethod((s as any).paymentMethod)}
+                                </td>
+                                <td className="px-4 py-3 text-gray-700 dark:text-gray-200 truncate">
+                                  {(s as any).customerName || (
+                                    <span className="text-gray-400">—</span>
+                                  )}
+                                </td>
+                                <td className="px-4 py-3">
+                                  {saleItems.length === 0 ? (
+                                    <span className="text-gray-400">—</span>
+                                  ) : (
+                                    <div className="space-y-0.5">
+                                      {saleItems.slice(0, 2).map((it: any, idx: number) => {
+                                        const name = String(
+                                          it?.productName ||
+                                            it?.product?.name ||
+                                            it?.product?.title ||
+                                            'Producto'
+                                        );
+                                        const qty = toNumber(it?.quantity);
+                                        return (
+                                          <p
+                                            key={idx}
+                                            className="text-xs text-gray-700 dark:text-gray-200 truncate leading-snug"
+                                          >
+                                            <span className="font-medium">{name}</span>
+                                            {qty > 0 && (
+                                              <span className="text-gray-400"> ×{qty}</span>
+                                            )}
+                                          </p>
+                                        );
+                                      })}
+                                      {saleItems.length > 2 && (
+                                        <p className="text-xs text-gray-400">
+                                          +{saleItems.length - 2} más
+                                        </p>
+                                      )}
+                                    </div>
+                                  )}
+                                </td>
+                                <td className="px-4 py-3 text-right font-semibold text-gray-900 dark:text-white">
+                                  {total
+                                    ? formatMoney(total, (s as any).currency || currency)
+                                    : '—'}
+                                </td>
+                              </tr>
+                            );
+                          })}
+                        </tbody>
+                      </table>
+                    </div>
+                  </>
+                )}
+              </div>
+            </>
+          )}
         </>
       )}
 

@@ -13,7 +13,6 @@ import {
   X,
   ChevronLeft,
   ChevronRight,
-  ChevronDown,
   LogOut,
   FileText,
   Loader,
@@ -27,8 +26,6 @@ import {
   BookUser,
   UtensilsCrossed,
   Briefcase,
-  Building2,
-  ShoppingBag,
   Calendar,
   Receipt,
   UserCheck,
@@ -43,138 +40,46 @@ import { toast } from 'sonner';
 
 // Estructura de navegación agrupada para ADMIN
 const adminNavigationGroups = [
+  { name: 'Negocios', icon: Briefcase, href: '/dashboard/business', isSingle: true },
+  { name: 'Tiendas', icon: Store, href: '/dashboard/business/stores', isSingle: true },
   {
-    name: 'Emprendimientos',
-    icon: Building2,
-    items: [
-      { name: 'Negocios', href: '/dashboard/business', icon: Briefcase },
-      { name: 'Tiendas', href: '/dashboard/business/stores', icon: Store },
-      { name: 'Restaurantes', href: '/dashboard/business/restaurants', icon: UtensilsCrossed },
-      { name: 'Servicios', href: '/dashboard/business/services', icon: Briefcase },
-    ],
-  },
-  {
-    name: 'Marketplace',
-    icon: ShoppingBag,
-    items: [
-      { name: 'Pedidos', href: '/dashboard/orders', icon: ShoppingCart },
-      { name: 'Productos', href: '/dashboard/products', icon: Package },
-      { name: 'Categorias por tienda', href: '/dashboard/categoriesAdmin', icon: List },
-    ],
-  },
-  {
-    name: 'Usuarios',
-    icon: Users,
-    items: [
-      { name: 'Usuarios', href: '/dashboard/users', icon: Users },
-      { name: 'Emprendedores', href: '/dashboard/entrepeneurs', icon: Star },
-      { name: 'Asistentes', href: '/dashboard/events', icon: BookUser },
-    ],
-  },
-  {
-    name: 'WhatsApp',
-    icon: MessageCircle,
-    items: [
-      { name: 'Mensajes', href: '/dashboard/whatsapp-messages', icon: MessageCircle },
-      { name: 'Templates', href: '/dashboard/whatsapp-templates', icon: BookOpen },
-    ],
-  },
-  {
-    name: 'Email Marketing',
-    icon: Mail,
-    href: '/dashboard/email-marketing',
+    name: 'Restaurantes',
+    icon: UtensilsCrossed,
+    href: '/dashboard/business/restaurants',
     isSingle: true,
   },
-  {
-    name: 'Otros',
-    icon: Gift,
-    items: [
-      { name: 'Bonos', href: '/dashboard/bonuses', icon: Gift },
-      { name: 'Blog', href: '/dashboard/blog', icon: FileText },
-
-      { name: 'Estadísticas', href: '/dashboard/insights', icon: BarChart3 },
-    ],
-  },
-  {
-    name: 'Ferias',
-    icon: Calendar,
-    href: '/dashboard/fairs',
-    isSingle: true,
-  },
-  {
-    name: 'Pagos',
-    icon: CreditCard,
-    href: '/dashboard/payments',
-    isSingle: true,
-  },
-  {
-    name: 'Mi suscripción',
-    icon: Layers,
-    href: '/dashboard/plans',
-    isSingle: true,
-  },
+  { name: 'Servicios', icon: Briefcase, href: '/dashboard/business/services', isSingle: true },
+  { name: 'Pedidos', icon: ShoppingCart, href: '/dashboard/orders', isSingle: true },
+  { name: 'Productos', icon: Package, href: '/dashboard/products', isSingle: true },
+  { name: 'Categorías', icon: List, href: '/dashboard/categoriesAdmin', isSingle: true },
+  { name: 'Usuarios', icon: Users, href: '/dashboard/users', isSingle: true },
+  { name: 'Emprendedores', icon: Star, href: '/dashboard/entrepeneurs', isSingle: true },
+  { name: 'Asistentes', icon: BookUser, href: '/dashboard/events', isSingle: true },
+  { name: 'Mensajes', icon: MessageCircle, href: '/dashboard/whatsapp-messages', isSingle: true },
+  { name: 'Templates', icon: BookOpen, href: '/dashboard/whatsapp-templates', isSingle: true },
+  { name: 'Email Marketing', icon: Mail, href: '/dashboard/email-marketing', isSingle: true },
+  { name: 'Bonos', icon: Gift, href: '/dashboard/bonuses', isSingle: true },
+  { name: 'Blog', icon: FileText, href: '/dashboard/blog', isSingle: true },
+  { name: 'Estadísticas', icon: BarChart3, href: '/dashboard/insights', isSingle: true },
+  { name: 'Ferias', icon: Calendar, href: '/dashboard/fairs', isSingle: true },
+  { name: 'Pagos', icon: CreditCard, href: '/dashboard/payments', isSingle: true },
+  { name: 'Mi suscripción', icon: Layers, href: '/dashboard/plans', isSingle: true },
 ];
 
 // Navegación para Tiendas
 const getStoreNavigationGroups = () => {
   return [
-    {
-      name: 'Dashboard',
-      icon: BarChart3,
-      href: '/dashboard',
-      isSingle: true,
-    },
-    {
-      name: 'Tienda',
-      icon: Store,
-      items: [
-        { name: 'Mi Tienda', href: '/dashboard/store', icon: Store },
-        { name: 'Cotizaciones', href: '/dashboard/quotes', icon: ClipboardList },
-      ],
-    },
-    {
-      name: 'Pedidos',
-      icon: ShoppingCart,
-      href: '/dashboard/orders',
-      isSingle: true,
-    },
-    {
-      name: 'Productos',
-      icon: Package,
-      href: '/dashboard/products',
-      isSingle: true,
-    },
-    {
-      name: 'Categorias',
-      icon: List,
-      href: '/dashboard/categories',
-      isSingle: true,
-    },
-    {
-      name: 'Usuarios',
-      icon: Users,
-      items: [{ name: 'Usuarios por tienda', href: '/dashboard/user-by-store', icon: Users }],
-    },
-    {
-      name: 'Otros',
-      icon: Gift,
-      items: [
-        { name: 'Bonos', href: '/dashboard/bonuses', icon: Gift },
-        { name: 'Mi suscripción', href: '/dashboard/plans', icon: Layers },
-      ],
-    },
-    {
-      name: 'Ferias',
-      icon: Calendar,
-      href: '/dashboard/fairs',
-      isSingle: true,
-    },
-    {
-      name: 'Pagos',
-      icon: CreditCard,
-      href: '/dashboard/payments',
-      isSingle: true,
-    },
+    { name: 'Dashboard', icon: BarChart3, href: '/dashboard', isSingle: true },
+    { name: 'Mi Tienda', icon: Store, href: '/dashboard/store', isSingle: true },
+    { name: 'Pedidos', icon: ShoppingCart, href: '/dashboard/orders', isSingle: true },
+    { name: 'Productos', icon: Package, href: '/dashboard/products', isSingle: true },
+    { name: 'Categorías', icon: List, href: '/dashboard/categories', isSingle: true },
+    { name: 'Cotizaciones', icon: ClipboardList, href: '/dashboard/quotes', isSingle: true },
+    { name: 'Usuarios', icon: Users, href: '/dashboard/user-by-store', isSingle: true },
+    { name: 'Bonos', icon: Gift, href: '/dashboard/bonuses', isSingle: true },
+    { name: 'Ferias', icon: Calendar, href: '/dashboard/fairs', isSingle: true },
+    { name: 'Pagos', icon: CreditCard, href: '/dashboard/payments', isSingle: true },
+    { name: 'Mi suscripción', icon: Layers, href: '/dashboard/plans', isSingle: true },
   ];
 };
 
@@ -182,36 +87,20 @@ const getStoreNavigationGroups = () => {
 const getServiceNavigationGroups = () => {
   return [
     {
-      name: 'Servicio',
-      icon: Briefcase,
-      items: [
-        { name: 'Panel de Control', href: '/dashboard/service-dashboard', icon: BarChart3 },
-        { name: 'Mi Servicio', href: '/dashboard/service', icon: Briefcase },
-        { name: 'Calendario', href: '/dashboard/service-calendar', icon: Calendar },
-        { name: 'Gastos', href: '/dashboard/service-expenses', icon: Receipt },
-        { name: 'Clientes CRM', href: '/dashboard/service-crm', icon: UserCheck },
-        { name: 'Imágenes', href: '/dashboard/service-images', icon: Package },
-      ],
-    },
-    {
-      name: 'Usuarios',
-      icon: Users,
-      items: [{ name: 'Usuarios', href: '/dashboard/user-by-service', icon: Users }],
-    },
-    {
-      name: 'Otros',
-      icon: Gift,
-      items: [
-        { name: 'Bonos', href: '/dashboard/bonuses', icon: Gift },
-        { name: 'Mi suscripción', href: '/dashboard/plans', icon: Layers },
-      ],
-    },
-    {
-      name: 'Ferias',
-      icon: Calendar,
-      href: '/dashboard/fairs',
+      name: 'Panel de Control',
+      icon: BarChart3,
+      href: '/dashboard/service-dashboard',
       isSingle: true,
     },
+    { name: 'Mi Servicio', icon: Briefcase, href: '/dashboard/service', isSingle: true },
+    { name: 'Calendario', icon: Calendar, href: '/dashboard/service-calendar', isSingle: true },
+    { name: 'Gastos', icon: Receipt, href: '/dashboard/service-expenses', isSingle: true },
+    { name: 'Clientes CRM', icon: UserCheck, href: '/dashboard/service-crm', isSingle: true },
+    { name: 'Imágenes', icon: Package, href: '/dashboard/service-images', isSingle: true },
+    { name: 'Usuarios', icon: Users, href: '/dashboard/user-by-service', isSingle: true },
+    { name: 'Bonos', icon: Gift, href: '/dashboard/bonuses', isSingle: true },
+    { name: 'Ferias', icon: Calendar, href: '/dashboard/fairs', isSingle: true },
+    { name: 'Mi suscripción', icon: Layers, href: '/dashboard/plans', isSingle: true },
   ];
 };
 
@@ -219,35 +108,24 @@ const getServiceNavigationGroups = () => {
 const getRestaurantNavigationGroups = () => {
   return [
     {
-      name: 'Restaurante',
+      name: 'Mi Restaurante',
       icon: UtensilsCrossed,
-      items: [
-        { name: 'Mi Restaurante', href: '/dashboard/restaurant', icon: UtensilsCrossed },
-        { name: 'Reservaciones', href: '/dashboard/reservaciones', icon: Calendar },
-        { name: 'Gastos y Ganancias', href: '/dashboard/restaurant-expenses', icon: Receipt },
-        { name: 'Nómina', href: '/dashboard/restaurant-payroll', icon: Users },
-        { name: 'Imágenes del Menú', href: '/dashboard/menu-images', icon: Package },
-      ],
-    },
-    {
-      name: 'Usuarios',
-      icon: Users,
-      items: [{ name: 'Usuarios', href: '/dashboard/user-by-restaurant', icon: Users }],
-    },
-    {
-      name: 'Otros',
-      icon: Gift,
-      items: [
-        { name: 'Bonos', href: '/dashboard/bonuses', icon: Gift },
-        { name: 'Mi suscripción', href: '/dashboard/plans', icon: Layers },
-      ],
-    },
-    {
-      name: 'Ferias',
-      icon: Calendar,
-      href: '/dashboard/fairs',
+      href: '/dashboard/restaurant',
       isSingle: true,
     },
+    { name: 'Reservaciones', icon: Calendar, href: '/dashboard/reservaciones', isSingle: true },
+    {
+      name: 'Gastos y Ganancias',
+      icon: Receipt,
+      href: '/dashboard/restaurant-expenses',
+      isSingle: true,
+    },
+    { name: 'Nómina', icon: Users, href: '/dashboard/restaurant-payroll', isSingle: true },
+    { name: 'Imágenes del Menú', icon: Package, href: '/dashboard/menu-images', isSingle: true },
+    { name: 'Usuarios', icon: Users, href: '/dashboard/user-by-restaurant', isSingle: true },
+    { name: 'Bonos', icon: Gift, href: '/dashboard/bonuses', isSingle: true },
+    { name: 'Ferias', icon: Calendar, href: '/dashboard/fairs', isSingle: true },
+    { name: 'Mi suscripción', icon: Layers, href: '/dashboard/plans', isSingle: true },
   ];
 };
 
@@ -269,7 +147,6 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
   const [mounted, setMounted] = useState(false);
   const [collapsed, setCollapsed] = useState(false);
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
-  const [expandedGroups, setExpandedGroups] = useState<Record<string, boolean>>({});
 
   const hideDashboardChrome = Boolean(pathname && pathname.includes('/dashboard/store/new'));
 
@@ -293,27 +170,6 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
     setTimeout(() => {
       window.location.href = '/';
     }, 1500);
-  };
-
-  const toggleGroup = (groupName: string) => {
-    // Si el sidebar está colapsado, primero lo expandimos
-    if (collapsed) {
-      setCollapsed(false);
-    }
-
-    // Cerramos todos los grupos excepto el que se está abriendo
-    setExpandedGroups((prev) => {
-      const isCurrentlyExpanded = prev[groupName];
-      const newState: Record<string, boolean> = {};
-
-      // Si el grupo actual está expandido, lo cerramos
-      // Si está cerrado, cerramos todos los demás y abrimos este
-      if (!isCurrentlyExpanded) {
-        newState[groupName] = true;
-      }
-
-      return newState;
-    });
   };
 
   if (!user) {
@@ -402,104 +258,35 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
             </button>
           </div>
 
-          {/* Navegación agrupada */}
+          {/* Navegación */}
           <div className="flex-1 px-4 py-4 space-y-1 overflow-y-auto">
             {navigationGroups.map((group) => {
-              const isGroupExpanded = expandedGroups[group.name];
-              const hasActiveItem = group.items
-                ? group.items
-                    .filter(Boolean)
-                    .some((item) => pathname === item.href || pathname.startsWith(item.href + '/'))
-                : (group as any).href &&
-                  (pathname === (group as any).href ||
-                    pathname.startsWith((group as any).href + '/'));
-
-              // Si es un item único (single), renderizar como enlace directo
-              if ((group as any).isSingle && (group as any).href) {
-                const isActive =
-                  pathname === (group as any).href ||
-                  pathname.startsWith((group as any).href + '/');
-                return (
-                  <Link
-                    key={group.name}
-                    href={(group as any).href}
-                    className={`group flex items-center w-full px-2 py-2 text-sm font-medium rounded-md transition-colors ${
-                      isActive
-                        ? 'bg-fourth-base/10 text-white'
-                        : 'text-gray-700 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-gray-700'
-                    }`}
-                  >
-                    <group.icon
-                      className={`mr-0 pl-3 md:mr-3 h-8 w-8 flex-shrink-0 ${
-                        isActive
-                          ? 'text-black dark:text-white'
-                          : 'text-gray-400 group-hover:text-gray-500'
-                      }`}
-                    />
-                    {!collapsed && <span className="truncate flex-1 text-left">{group.name}</span>}
-                  </Link>
-                );
-              }
-
+              const g = group as {
+                name: string;
+                icon: React.ElementType;
+                href: string;
+                isSingle: boolean;
+              };
+              const isActive = pathname === g.href || pathname.startsWith(g.href + '/');
               return (
-                <div key={group.name}>
-                  {/* Encabezado del grupo */}
-                  <button
-                    onClick={() => toggleGroup(group.name)}
-                    className={`group flex items-center w-full px-2 py-2 text-sm font-medium rounded-md transition-colors ${
-                      hasActiveItem
-                        ? 'bg-fourth-base/10 text-black dark:text-white'
-                        : 'text-gray-700 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-gray-700'
+                <Link
+                  key={g.name}
+                  href={g.href}
+                  className={`group flex items-center w-full px-2 py-2 text-sm font-medium rounded-md transition-colors ${
+                    isActive
+                      ? 'bg-fourth-base/10 text-black dark:text-white'
+                      : 'text-gray-700 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-gray-700'
+                  }`}
+                >
+                  <g.icon
+                    className={`mr-0 pl-3 md:mr-3 h-8 w-8 flex-shrink-0 ${
+                      isActive
+                        ? 'text-black dark:text-white'
+                        : 'text-gray-400 group-hover:text-gray-500'
                     }`}
-                  >
-                    <group.icon
-                      className={`mr-0 pl-3 md:mr-3 h-8 w-8 flex-shrink-0 ${
-                        hasActiveItem
-                          ? 'text-black dark:text-white'
-                          : 'text-gray-400 group-hover:text-gray-500'
-                      }`}
-                    />
-                    {!collapsed && (
-                      <>
-                        <span className="truncate flex-1 text-left">{group.name}</span>
-                        {isGroupExpanded ? (
-                          <ChevronDown className="h-4 w-4 ml-auto" />
-                        ) : (
-                          <ChevronRight className="h-4 w-4 ml-auto" />
-                        )}
-                      </>
-                    )}
-                  </button>
-
-                  {/* Items del grupo (solo si no está colapsado y el grupo está expandido) */}
-                  {!collapsed && isGroupExpanded && group.items && (
-                    <div className="ml-6 mt-1 space-y-1">
-                      {group.items.filter(Boolean).map((item) => {
-                        const isActive =
-                          pathname === item.href || pathname.startsWith(item.href + '/');
-                        return (
-                          <Link
-                            key={item.name}
-                            href={item.href}
-                            onClick={() => setCollapsed(true)}
-                            className={`group flex items-center px-2 py-2 text-sm font-medium rounded-md transition-colors ${
-                              isActive
-                                ? 'bg-fourth-base text-black'
-                                : 'text-gray-600 dark:text-gray-400 hover:bg-gray-100 dark:hover:bg-gray-700'
-                            }`}
-                          >
-                            <item.icon
-                              className={`mr-3 h-5 w-5 ${
-                                isActive ? 'text-black' : 'text-gray-400 group-hover:text-gray-500'
-                              }`}
-                            />
-                            <span className="truncate">{item.name}</span>
-                          </Link>
-                        );
-                      })}
-                    </div>
-                  )}
-                </div>
+                  />
+                  {!collapsed && <span className="truncate flex-1 text-left">{g.name}</span>}
+                </Link>
               );
             })}
           </div>
@@ -603,101 +390,28 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
 
             <div className="flex-1 px-4 py-4 space-y-1 overflow-y-auto max-h-[calc(100vh-8rem)]">
               {navigationGroups.map((group) => {
-                const isGroupExpanded = expandedGroups[group.name];
-                const hasActiveItem = group.items
-                  ? group.items
-                      .filter(Boolean)
-                      .some(
-                        (item) => pathname === item.href || pathname.startsWith(item.href + '/')
-                      )
-                  : (group as any).href &&
-                    (pathname === (group as any).href ||
-                      pathname.startsWith((group as any).href + '/'));
-
-                // Si es un item único (single), renderizar como enlace directo
-                if ((group as any).isSingle && (group as any).href) {
-                  const isActive =
-                    pathname === (group as any).href ||
-                    pathname.startsWith((group as any).href + '/');
-                  return (
-                    <Link
-                      key={group.name}
-                      href={(group as any).href}
-                      onClick={() => setMobileMenuOpen(false)}
-                      className={`group flex items-center w-full px-2 py-2 text-sm font-medium rounded-md transition-colors ${
-                        isActive
-                          ? 'bg-fourth-base text-black'
-                          : 'text-gray-700 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-gray-700'
-                      }`}
-                    >
-                      <group.icon
-                        className={`mr-3 h-5 w-5 flex-shrink-0 ${
-                          isActive
-                            ? 'text-black dark:text-white'
-                            : 'text-gray-400 group-hover:text-gray-500'
-                        }`}
-                      />
-                      <span className="truncate flex-1 text-left">{group.name}</span>
-                    </Link>
-                  );
-                }
-
+                const g = group as { name: string; icon: React.ElementType; href: string };
+                const isActive = pathname === g.href || pathname.startsWith(g.href + '/');
                 return (
-                  <div key={group.name}>
-                    <button
-                      onClick={() => toggleGroup(group.name)}
-                      className={`group flex items-center w-full px-2 py-2 text-sm font-medium rounded-md transition-colors ${
-                        hasActiveItem
-                          ? 'bg-fourth-base/10 text-black dark:text-white'
-                          : 'text-gray-700 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-gray-700'
+                  <Link
+                    key={g.name}
+                    href={g.href}
+                    onClick={() => setMobileMenuOpen(false)}
+                    className={`group flex items-center w-full px-2 py-2 text-sm font-medium rounded-md transition-colors ${
+                      isActive
+                        ? 'bg-fourth-base text-black'
+                        : 'text-gray-700 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-gray-700'
+                    }`}
+                  >
+                    <g.icon
+                      className={`mr-3 h-5 w-5 flex-shrink-0 ${
+                        isActive
+                          ? 'text-black dark:text-white'
+                          : 'text-gray-400 group-hover:text-gray-500'
                       }`}
-                    >
-                      <group.icon
-                        className={`mr-3 h-5 w-5 ${
-                          hasActiveItem
-                            ? 'text-black dark:text-white'
-                            : 'text-gray-400 group-hover:text-gray-500'
-                        }`}
-                      />
-                      <span className="truncate flex-1 text-left">{group.name}</span>
-                      {isGroupExpanded ? (
-                        <ChevronDown className="h-4 w-4 ml-auto" />
-                      ) : (
-                        <ChevronRight className="h-4 w-4 ml-auto" />
-                      )}
-                    </button>
-
-                    {isGroupExpanded && (
-                      <div className="ml-6 mt-1 space-y-1">
-                        {group.items &&
-                          group.items.filter(Boolean).map((item) => {
-                            const isActive =
-                              pathname === item.href || pathname.startsWith(item.href + '/');
-                            return (
-                              <Link
-                                key={item.name}
-                                href={item.href}
-                                onClick={() => setMobileMenuOpen(false)}
-                                className={`group flex items-center px-2 py-2 text-sm font-medium rounded-md transition-colors ${
-                                  isActive
-                                    ? 'bg-fourth-base text-black'
-                                    : 'text-gray-600 dark:text-gray-400 hover:bg-gray-100 dark:hover:bg-gray-700'
-                                }`}
-                              >
-                                <item.icon
-                                  className={`mr-3 h-5 w-5 ${
-                                    isActive
-                                      ? 'text-black'
-                                      : 'text-gray-400 group-hover:text-gray-500'
-                                  }`}
-                                />
-                                <span className="truncate">{item.name}</span>
-                              </Link>
-                            );
-                          })}
-                      </div>
-                    )}
-                  </div>
+                    />
+                    <span className="truncate flex-1 text-left">{g.name}</span>
+                  </Link>
                 );
               })}
 
