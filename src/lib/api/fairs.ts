@@ -30,7 +30,9 @@ export interface CreateFairInput {
 }
 
 export interface FairSaleItemInput {
-  productId: string;
+  productId?: string; // omit for custom (non-catalog) items
+  productName?: string; // required when productId is absent
+  unitPrice?: number; // required when productId is absent
   quantity: number;
 }
 
