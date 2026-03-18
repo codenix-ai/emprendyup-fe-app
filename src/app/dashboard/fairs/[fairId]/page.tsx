@@ -19,9 +19,15 @@ import {
 } from '@/lib/graphql/fairs';
 import { formatMoney, toNumber } from '@/lib/utils/money';
 
-function formatDate(value?: string): string {
-  if (!value) return '';
+function safeDate(value?: string | null): Date | null {
+  if (!value) return null;
   const d = new Date(value);
+  return isNaN(d.getTime()) ? null : d;
+}
+
+function formatDate(value?: string | null): string {
+  const d = safeDate(value);
+  if (!d) return '—';
   return new Intl.DateTimeFormat('es-CO', {
     year: 'numeric',
     month: 'short',
@@ -31,9 +37,9 @@ function formatDate(value?: string): string {
   }).format(d);
 }
 
-function formatDateShort(value?: string): string {
-  if (!value) return '—';
-  const d = new Date(value);
+function formatDateShort(value?: string | null): string {
+  const d = safeDate(value);
+  if (!d) return '—';
   return new Intl.DateTimeFormat('es-CO', {
     day: '2-digit',
     month: 'short',
@@ -50,8 +56,8 @@ function isFairActive(fair?: Fair | null): boolean {
   if (raw.includes('CLOSED')) return false;
   if (fair.closedAt) return false;
   const now = Date.now();
-  const start = fair.startsAt ? new Date(fair.startsAt).getTime() : 0;
-  const end = fair.endsAt ? new Date(fair.endsAt).getTime() : 0;
+  const start = safeDate(fair.startsAt)?.getTime() ?? 0;
+  const end = safeDate(fair.endsAt)?.getTime() ?? 0;
   return start <= now && now <= end;
 }
 
