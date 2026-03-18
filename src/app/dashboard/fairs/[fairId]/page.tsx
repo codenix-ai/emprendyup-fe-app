@@ -7,7 +7,7 @@ import Image from 'next/image';
 import { useQuery, useMutation } from '@apollo/client';
 import toast from 'react-hot-toast';
 import { ArrowLeft, Edit2, Lock, RefreshCcw, Save, ShoppingCart, Trash2, X } from 'lucide-react';
-import { Fair, FairSale, FairSummary, FairsApiError, fairsApi } from '@/lib/api/fairs';
+import { Fair, FairSale, FairSummary } from '@/lib/api/fairs';
 import { GET_PRODUCTS_BY_STORE } from '@/lib/graphql/queries';
 import {
   GET_FAIR,
@@ -89,17 +89,6 @@ function getProductImageUrl(product: any): string | null {
 
 function getSaleItems(items: any): any[] {
   return Array.isArray(items) ? items : [];
-}
-
-function getSaleItemLines(items: any[]): string[] {
-  if (!Array.isArray(items)) return [];
-  return items
-    .map((it) => {
-      const name = String(it?.productName || it?.product?.name || it?.product?.title || 'Producto');
-      const qty = toNumber(it?.quantity);
-      return qty ? `${name} x${qty}` : name;
-    })
-    .filter(Boolean);
 }
 
 function calcLineTotal(item: any): number {
@@ -410,61 +399,38 @@ export default function FairDetailPage() {
                 No hay ventas registradas aún.
               </div>
             ) : (
-              <div className="overflow-x-auto">
-                <table className="w-full table-fixed text-sm">
-                  <colgroup>
-                    <col className="w-[18%]" />
-                    <col className="w-[14%]" />
-                    <col className="w-[16%]" />
-                    <col className="w-[36%]" />
-                    <col className="w-[16%]" />
-                  </colgroup>
-                  <thead>
-                    <tr className="border-b border-gray-200 dark:border-gray-700 bg-gray-50/80 dark:bg-gray-900/60 text-left text-xs font-semibold uppercase tracking-wide text-gray-500 dark:text-gray-400">
-                      <th className="px-4 py-3">Fecha</th>
-                      <th className="px-4 py-3">Método</th>
-                      <th className="px-4 py-3">Cliente</th>
-                      <th className="px-4 py-3">Productos</th>
-                      <th className="px-4 py-3 text-right">Total</th>
-                    </tr>
-                  </thead>
-                  <tbody className="divide-y divide-gray-100 dark:divide-gray-700/60">
-                    {sales.map((s) => {
-                      const total = toNumber(
-                        (s as any).total ?? (s as any).amount ?? (s as any).totalAmount
-                      );
-                      const saleItems = Array.isArray((s as any).items) ? (s as any).items : [];
-                      const itemsCount = saleItems.reduce(
-                        (acc: number, it: any) => acc + toNumber(it.quantity),
-                        0
-                      );
-
-                      return (
-                        <tr
-                          key={s.id}
-                          className="hover:bg-gray-50 dark:hover:bg-gray-900/40 cursor-pointer transition-colors"
-                          onClick={() => setSelectedSale(s)}
-                          role="button"
-                          tabIndex={0}
-                          onKeyDown={(e) => {
-                            if (e.key === 'Enter' || e.key === ' ') setSelectedSale(s);
-                          }}
-                        >
-                          <td className="px-4 py-3 text-gray-900 dark:text-white truncate">
+              <>
+                {/* ── Mobile card list ── */}
+                <div className="sm:hidden divide-y divide-gray-100 dark:divide-gray-700/60">
+                  {sales.map((s) => {
+                    const total = toNumber(
+                      (s as any).total ?? (s as any).amount ?? (s as any).totalAmount
+                    );
+                    const saleItems = Array.isArray((s as any).items) ? (s as any).items : [];
+                    return (
+                      <button
+                        key={s.id}
+                        className="w-full text-left px-4 py-3 hover:bg-gray-50 dark:hover:bg-gray-900/40 transition-colors"
+                        onClick={() => setSelectedSale(s)}
+                      >
+                        {/* Row 1: date + total */}
+                        <div className="flex items-center justify-between gap-2 mb-1">
+                          <span className="text-xs text-gray-500 dark:text-gray-400">
                             {formatDateShort((s as any).createdAt)}
-                          </td>
-                          <td className="px-4 py-3 text-gray-700 dark:text-gray-200 truncate">
-                            {formatPaymentMethod((s as any).paymentMethod)}
-                          </td>
-                          <td className="px-4 py-3 text-gray-700 dark:text-gray-200 truncate">
-                            {(s as any).customerName || <span className="text-gray-400">—</span>}
-                          </td>
-                          <td className="px-4 py-3">
-                            {saleItems.length === 0 ? (
-                              <span className="text-gray-400">—</span>
-                            ) : (
-                              <div className="space-y-0.5">
-                                {saleItems.slice(0, 2).map((it: any, idx: number) => {
+                          </span>
+                          <span className="text-sm font-semibold text-gray-900 dark:text-white">
+                            {total ? formatMoney(total, (s as any).currency || currency) : '—'}
+                          </span>
+                        </div>
+                        {/* Row 2: products */}
+                        <div className="mb-1">
+                          {saleItems.length === 0 ? (
+                            <span className="text-xs text-gray-400">Sin productos</span>
+                          ) : (
+                            <p className="text-sm text-gray-700 dark:text-gray-200 truncate">
+                              {saleItems
+                                .slice(0, 2)
+                                .map((it: any) => {
                                   const name = String(
                                     it?.productName ||
                                       it?.product?.name ||
@@ -472,33 +438,118 @@ export default function FairDetailPage() {
                                       'Producto'
                                   );
                                   const qty = toNumber(it?.quantity);
-                                  return (
-                                    <p
-                                      key={idx}
-                                      className="text-xs text-gray-700 dark:text-gray-200 truncate leading-snug"
-                                    >
-                                      <span className="font-medium">{name}</span>
-                                      {qty > 0 && <span className="text-gray-400"> ×{qty}</span>}
+                                  return qty > 1 ? `${name} ×${qty}` : name;
+                                })
+                                .join(', ')}
+                              {saleItems.length > 2 && (
+                                <span className="text-gray-400"> +{saleItems.length - 2} más</span>
+                              )}
+                            </p>
+                          )}
+                        </div>
+                        {/* Row 3: method + customer */}
+                        <div className="flex items-center gap-2 flex-wrap">
+                          <span className="inline-flex items-center text-xs px-2 py-0.5 rounded-full bg-gray-100 dark:bg-gray-700 text-gray-600 dark:text-gray-300 font-medium">
+                            {formatPaymentMethod((s as any).paymentMethod)}
+                          </span>
+                          {(s as any).customerName && (
+                            <span className="text-xs text-gray-500 dark:text-gray-400 truncate">
+                              {(s as any).customerName}
+                            </span>
+                          )}
+                        </div>
+                      </button>
+                    );
+                  })}
+                </div>
+
+                {/* ── Desktop table ── */}
+                <div className="hidden sm:block overflow-x-auto">
+                  <table className="w-full table-fixed text-sm">
+                    <colgroup>
+                      <col className="w-[18%]" />
+                      <col className="w-[14%]" />
+                      <col className="w-[16%]" />
+                      <col className="w-[36%]" />
+                      <col className="w-[16%]" />
+                    </colgroup>
+                    <thead>
+                      <tr className="border-b border-gray-200 dark:border-gray-700 bg-gray-50/80 dark:bg-gray-900/60 text-left text-xs font-semibold uppercase tracking-wide text-gray-500 dark:text-gray-400">
+                        <th className="px-4 py-3">Fecha</th>
+                        <th className="px-4 py-3">Método</th>
+                        <th className="px-4 py-3">Cliente</th>
+                        <th className="px-4 py-3">Productos</th>
+                        <th className="px-4 py-3 text-right">Total</th>
+                      </tr>
+                    </thead>
+                    <tbody className="divide-y divide-gray-100 dark:divide-gray-700/60">
+                      {sales.map((s) => {
+                        const total = toNumber(
+                          (s as any).total ?? (s as any).amount ?? (s as any).totalAmount
+                        );
+                        const saleItems = Array.isArray((s as any).items) ? (s as any).items : [];
+
+                        return (
+                          <tr
+                            key={s.id}
+                            className="hover:bg-gray-50 dark:hover:bg-gray-900/40 cursor-pointer transition-colors"
+                            onClick={() => setSelectedSale(s)}
+                            role="button"
+                            tabIndex={0}
+                            onKeyDown={(e) => {
+                              if (e.key === 'Enter' || e.key === ' ') setSelectedSale(s);
+                            }}
+                          >
+                            <td className="px-4 py-3 text-gray-900 dark:text-white truncate">
+                              {formatDateShort((s as any).createdAt)}
+                            </td>
+                            <td className="px-4 py-3 text-gray-700 dark:text-gray-200 truncate">
+                              {formatPaymentMethod((s as any).paymentMethod)}
+                            </td>
+                            <td className="px-4 py-3 text-gray-700 dark:text-gray-200 truncate">
+                              {(s as any).customerName || <span className="text-gray-400">—</span>}
+                            </td>
+                            <td className="px-4 py-3">
+                              {saleItems.length === 0 ? (
+                                <span className="text-gray-400">—</span>
+                              ) : (
+                                <div className="space-y-0.5">
+                                  {saleItems.slice(0, 2).map((it: any, idx: number) => {
+                                    const name = String(
+                                      it?.productName ||
+                                        it?.product?.name ||
+                                        it?.product?.title ||
+                                        'Producto'
+                                    );
+                                    const qty = toNumber(it?.quantity);
+                                    return (
+                                      <p
+                                        key={idx}
+                                        className="text-xs text-gray-700 dark:text-gray-200 truncate leading-snug"
+                                      >
+                                        <span className="font-medium">{name}</span>
+                                        {qty > 0 && <span className="text-gray-400"> ×{qty}</span>}
+                                      </p>
+                                    );
+                                  })}
+                                  {saleItems.length > 2 && (
+                                    <p className="text-xs text-gray-400">
+                                      +{saleItems.length - 2} más
                                     </p>
-                                  );
-                                })}
-                                {saleItems.length > 2 && (
-                                  <p className="text-xs text-gray-400">
-                                    +{saleItems.length - 2} más
-                                  </p>
-                                )}
-                              </div>
-                            )}
-                          </td>
-                          <td className="px-4 py-3 text-right font-semibold text-gray-900 dark:text-white">
-                            {total ? formatMoney(total, (s as any).currency || currency) : '—'}
-                          </td>
-                        </tr>
-                      );
-                    })}
-                  </tbody>
-                </table>
-              </div>
+                                  )}
+                                </div>
+                              )}
+                            </td>
+                            <td className="px-4 py-3 text-right font-semibold text-gray-900 dark:text-white">
+                              {total ? formatMoney(total, (s as any).currency || currency) : '—'}
+                            </td>
+                          </tr>
+                        );
+                      })}
+                    </tbody>
+                  </table>
+                </div>
+              </>
             )}
           </div>
         </>
