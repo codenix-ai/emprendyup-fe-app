@@ -119,13 +119,24 @@ const adminNavigationGroups = [
 const getStoreNavigationGroups = () => {
   return [
     {
+      name: 'Dashboard',
+      icon: BarChart3,
+      href: '/dashboard',
+      isSingle: true,
+    },
+    {
       name: 'Tienda',
       icon: Store,
       items: [
         { name: 'Mi Tienda', href: '/dashboard/store', icon: Store },
-        { name: 'Pedidos', href: '/dashboard/orders', icon: ShoppingCart },
         { name: 'Cotizaciones', href: '/dashboard/quotes', icon: ClipboardList },
       ],
+    },
+    {
+      name: 'Pedidos',
+      icon: ShoppingCart,
+      href: '/dashboard/orders',
+      isSingle: true,
     },
     {
       name: 'Productos',
