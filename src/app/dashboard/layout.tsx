@@ -125,9 +125,19 @@ const getStoreNavigationGroups = () => {
         { name: 'Mi Tienda', href: '/dashboard/store', icon: Store },
         { name: 'Pedidos', href: '/dashboard/orders', icon: ShoppingCart },
         { name: 'Cotizaciones', href: '/dashboard/quotes', icon: ClipboardList },
-        { name: 'Productos', href: '/dashboard/products', icon: Package },
-        { name: 'Categorias', href: '/dashboard/categories', icon: List },
       ],
+    },
+    {
+      name: 'Productos',
+      icon: Package,
+      href: '/dashboard/products',
+      isSingle: true,
+    },
+    {
+      name: 'Categorias',
+      icon: List,
+      href: '/dashboard/categories',
+      isSingle: true,
     },
     {
       name: 'Usuarios',
