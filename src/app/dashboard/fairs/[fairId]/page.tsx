@@ -413,18 +413,18 @@ export default function FairDetailPage() {
               <div className="overflow-x-auto">
                 <table className="w-full table-fixed text-sm">
                   <colgroup>
-                    <col className="w-[26%]" />
                     <col className="w-[18%]" />
-                    <col className="w-[20%]" />
+                    <col className="w-[14%]" />
                     <col className="w-[16%]" />
-                    <col className="w-[20%]" />
+                    <col className="w-[36%]" />
+                    <col className="w-[16%]" />
                   </colgroup>
                   <thead>
                     <tr className="border-b border-gray-200 dark:border-gray-700 bg-gray-50/80 dark:bg-gray-900/60 text-left text-xs font-semibold uppercase tracking-wide text-gray-500 dark:text-gray-400">
                       <th className="px-4 py-3">Fecha</th>
                       <th className="px-4 py-3">Método</th>
                       <th className="px-4 py-3">Cliente</th>
-                      <th className="px-4 py-3 text-center">Items</th>
+                      <th className="px-4 py-3">Productos</th>
                       <th className="px-4 py-3 text-right">Total</th>
                     </tr>
                   </thead>
@@ -459,10 +459,36 @@ export default function FairDetailPage() {
                           <td className="px-4 py-3 text-gray-700 dark:text-gray-200 truncate">
                             {(s as any).customerName || <span className="text-gray-400">—</span>}
                           </td>
-                          <td className="px-4 py-3 text-center">
-                            <span className="inline-flex items-center justify-center min-w-[1.75rem] h-7 rounded-full bg-slate-100 dark:bg-slate-800 text-slate-700 dark:text-slate-300 text-xs font-semibold">
-                              {itemsCount || '—'}
-                            </span>
+                          <td className="px-4 py-3">
+                            {saleItems.length === 0 ? (
+                              <span className="text-gray-400">—</span>
+                            ) : (
+                              <div className="space-y-0.5">
+                                {saleItems.slice(0, 2).map((it: any, idx: number) => {
+                                  const name = String(
+                                    it?.productName ||
+                                      it?.product?.name ||
+                                      it?.product?.title ||
+                                      'Producto'
+                                  );
+                                  const qty = toNumber(it?.quantity);
+                                  return (
+                                    <p
+                                      key={idx}
+                                      className="text-xs text-gray-700 dark:text-gray-200 truncate leading-snug"
+                                    >
+                                      <span className="font-medium">{name}</span>
+                                      {qty > 0 && <span className="text-gray-400"> ×{qty}</span>}
+                                    </p>
+                                  );
+                                })}
+                                {saleItems.length > 2 && (
+                                  <p className="text-xs text-gray-400">
+                                    +{saleItems.length - 2} más
+                                  </p>
+                                )}
+                              </div>
+                            )}
                           </td>
                           <td className="px-4 py-3 text-right font-semibold text-gray-900 dark:text-white">
                             {total ? formatMoney(total, (s as any).currency || currency) : '—'}
