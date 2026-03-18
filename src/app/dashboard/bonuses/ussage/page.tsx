@@ -4,6 +4,7 @@ import React, { useState } from 'react';
 import { Calendar, Tag, DollarSign } from 'lucide-react';
 import { gql, useQuery } from '@apollo/client';
 import toast from 'react-hot-toast';
+import { SectionLoader } from '@/app/components/Loader';
 
 // =======================
 // GraphQL QUERY
@@ -52,7 +53,7 @@ export default function CouponHistoryPage() {
   if (loading)
     return (
       <div className="min-h-screen bg-gray-50 dark:bg-slate-900 p-6">
-        <p className="text-gray-500 dark:text-slate-400">Cargando historial de cupones...</p>
+        <SectionLoader text="Cargando historial..." />
       </div>
     );
 

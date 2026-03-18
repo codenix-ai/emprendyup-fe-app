@@ -27,6 +27,7 @@ import {
   DELETE_FAIR_SALE,
 } from '@/lib/graphql/fairs';
 import { formatMoney, toNumber } from '@/lib/utils/money';
+import { SectionLoader } from '@/app/components/Loader';
 
 function safeDate(value?: string | number | null): Date | null {
   if (value === null || value === undefined || value === '') return null;
@@ -450,7 +451,7 @@ export default function FairDetailPage() {
 
       {loading ? (
         <div className="mt-4 rounded-2xl border border-gray-200 dark:border-gray-700 bg-white dark:bg-gray-800 p-4">
-          Cargando...
+          <SectionLoader text="Cargando ventas..." />
         </div>
       ) : (
         <>

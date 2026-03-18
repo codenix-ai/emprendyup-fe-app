@@ -3,6 +3,7 @@ import React, { useState, useEffect } from 'react';
 import { Shield, Save, AlertCircle, CheckCircle, Key, Globe, DollarSign } from 'lucide-react';
 import { useStorePaymentConfiguration } from '@/lib/hooks/useStorePaymentConfiguration';
 import toast from 'react-hot-toast';
+import { SectionLoader } from '@/app/components/Loader';
 
 interface PaymentConfigurationProps {
   storeId?: string;
@@ -165,7 +166,7 @@ export default function PaymentConfiguration({ storeId }: PaymentConfigurationPr
       <div className="min-h-screen bg-gray-900 py-8 flex items-center justify-center">
         <div className="text-center">
           <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-blue-400 mx-auto mb-4"></div>
-          <p className="text-gray-400">Cargando configuración...</p>
+          <SectionLoader text="Cargando configuración..." />
         </div>
       </div>
     );

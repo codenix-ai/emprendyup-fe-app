@@ -18,6 +18,7 @@ import { gql, useQuery, useMutation } from '@apollo/client';
 import toast from 'react-hot-toast';
 import { useRouter } from 'next/navigation';
 import { getUserFromLocalStorage } from '@/lib/utils/localAuth';
+import { SectionLoader } from '@/app/components/Loader';
 
 // =======================
 // GraphQL QUERIES / MUTATIONS
@@ -254,7 +255,7 @@ export default function CouponsPage() {
   if (loading)
     return (
       <div className="min-h-screen bg-gray-50 dark:bg-slate-900 p-6">
-        <p className="text-gray-500 dark:text-slate-400">Cargando cupones...</p>
+        <SectionLoader text="Cargando cupones..." />
       </div>
     );
   if (error)

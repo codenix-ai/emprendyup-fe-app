@@ -3,6 +3,7 @@
 import React, { useState } from 'react';
 import { Search, Phone, Clock, CheckCircle, XCircle } from 'lucide-react';
 import { useQuery, gql } from '@apollo/client';
+import { InlineLoader } from '@/app/components/Loader';
 
 const GET_SENT_WHATSAPP_MESSAGES = gql`
   query GetSentWhatsAppMessages($phoneNumber: String) {
@@ -185,7 +186,7 @@ const WhatsAppMessages = () => {
         <div className="hidden md:block bg-white/80 dark:bg-slate-800/50 backdrop-blur-sm rounded-xl border border-gray-200/70 dark:border-slate-700/50 overflow-hidden">
           {loading ? (
             <div className="p-12 text-center text-gray-500 dark:text-slate-400">
-              <div className="animate-pulse">Cargando mensajes...</div>
+              <InlineLoader text="Cargando mensajes..." />
             </div>
           ) : (
             <table className="w-full">
@@ -262,7 +263,7 @@ const WhatsAppMessages = () => {
         <div className="md:hidden space-y-4">
           {loading ? (
             <div className="p-12 text-center text-gray-500 dark:text-slate-400">
-              <div className="animate-pulse">Cargando mensajes...</div>
+              <InlineLoader text="Cargando mensajes..." />
             </div>
           ) : (
             <>

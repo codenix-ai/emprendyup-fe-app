@@ -22,6 +22,7 @@ import { useMemo, useState, useEffect, JSX } from 'react';
 import toast from 'react-hot-toast';
 import FileUpload from '@/app/components/FileUpload';
 import Image from 'next/image';
+import { SectionLoader } from '@/app/components/Loader';
 
 const GET_ALL_CATEGORIES = gql`
   query GetAllCategories {
@@ -1451,7 +1452,7 @@ export default function CategoriesPage() {
       <div className="min-h-screen bg-gray-50 dark:bg-gray-900 p-4 sm:p-6 flex items-center justify-center">
         <div className="text-center">
           <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-blue-600 mx-auto mb-4"></div>
-          <p className="text-gray-600 dark:text-gray-400">Cargando categorías...</p>
+          <SectionLoader text="Cargando categorías..." />
         </div>
       </div>
     );

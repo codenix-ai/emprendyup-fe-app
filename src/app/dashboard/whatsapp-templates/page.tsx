@@ -4,6 +4,7 @@ import React, { useState, useMemo } from 'react';
 import { Search, Plus, ArrowUpDown, MessageSquare, Edit2, Trash2, X } from 'lucide-react';
 import { useQuery, useMutation, gql } from '@apollo/client';
 import toast from 'react-hot-toast';
+import { InlineLoader } from '@/app/components/Loader';
 
 const GET_TEMPLATES = gql`
   query {
@@ -202,7 +203,7 @@ const WhatsAppTemplatesPage = () => {
         <div className="hidden md:block bg-white/80 dark:bg-slate-800/50 backdrop-blur-sm rounded-xl border border-gray-200/70 dark:border-slate-700/50 overflow-hidden">
           {loading ? (
             <div className="p-12 text-center text-gray-500 dark:text-slate-400">
-              <div className="animate-pulse">Cargando plantillas...</div>
+              <InlineLoader text="Cargando plantillas..." />
             </div>
           ) : (
             <table className="w-full">
@@ -293,7 +294,7 @@ const WhatsAppTemplatesPage = () => {
         <div className="md:hidden space-y-4">
           {loading ? (
             <div className="p-12 text-center text-gray-500 dark:text-slate-400">
-              <div className="animate-pulse">Cargando plantillas...</div>
+              <InlineLoader text="Cargando plantillas..." />
             </div>
           ) : (
             <>

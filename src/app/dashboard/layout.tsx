@@ -37,6 +37,7 @@ import { useSessionStore } from '@/lib/store/dashboard';
 import { getCurrentUser } from '@/lib/utils/rbac';
 import { useAuth } from '../hooks/useAuth';
 import { toast } from 'sonner';
+import { PageLoader } from '@/app/components/Loader';
 
 // Estructura de navegación agrupada para ADMIN
 const adminNavigationGroups = [
@@ -173,7 +174,7 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
   };
 
   if (!user) {
-    return <div>Cargando...</div>;
+    return <PageLoader />;
   }
 
   if (isLoading) {

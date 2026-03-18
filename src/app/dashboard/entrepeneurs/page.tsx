@@ -17,6 +17,7 @@ import {
   Download,
 } from 'lucide-react';
 import toast from 'react-hot-toast';
+import { SectionLoader } from '@/app/components/Loader';
 
 // 🔹 Query GraphQL
 const GET_ENTREPRENEURS = gql`
@@ -319,7 +320,7 @@ const WhatsappCampaignPage = () => {
   if (loading)
     return (
       <div className="p-8 text-center text-gray-500 dark:text-gray-400">
-        Cargando emprendedores...
+        <SectionLoader text="Cargando emprendedores..." />
       </div>
     );
 

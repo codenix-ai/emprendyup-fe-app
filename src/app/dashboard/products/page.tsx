@@ -22,6 +22,7 @@ import { useSearchProducts } from '@/lib/hooks/useSearchProducts';
 import toast from 'react-hot-toast';
 import { ProductFormWizard } from '@/app/components/Product/ProductFromWizard';
 import Image from 'next/image';
+import { SectionLoader } from '@/app/components/Loader';
 
 // GraphQL Queries and Mutations
 const GET_PRODUCTS_BY_STORE = gql`
@@ -812,7 +813,7 @@ export default function ProductsPage() {
       {displayedLoading ? (
         <div className="text-center py-12">
           <div className="w-8 h-8 border-2 border-gray-300 dark:border-gray-600 border-t-slate-400 rounded-full animate-spin mx-auto mb-4" />
-          <p className="text-gray-400">Cargando productos...</p>
+          <SectionLoader text="Cargando productos..." />
         </div>
       ) : filteredProducts.length > 0 ? (
         <>

@@ -17,6 +17,7 @@ import KPICard from '../components/KPICard';
 import LineChart from '../components/LineChart';
 import BarChart from '../components/BarChart';
 import { useSessionStore } from '@/lib/store/dashboard';
+import { SectionLoader } from '@/app/components/Loader';
 
 // GraphQL Queries for appointments
 const GET_APPOINTMENTS = gql`
@@ -612,7 +613,7 @@ export default function ServiceDashboard() {
         </div>
         <div className="overflow-x-auto">
           {isLoading ? (
-            <div className="p-6 text-center text-gray-500">Cargando citas...</div>
+            <SectionLoader text="Cargando citas..." />
           ) : upcomingAppointmentsList.length === 0 ? (
             <div className="p-6 text-center text-gray-500">No hay citas próximas programadas.</div>
           ) : (

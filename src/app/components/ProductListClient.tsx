@@ -5,6 +5,7 @@ import Link from 'next/link';
 import Image from 'next/image';
 import { FiHeart, FiEye, FiBookmark, FiChevronLeft, FiChevronRight } from '../assets/icons/vander';
 import { Product } from '../utils/types';
+import { SectionLoader } from '@/app/components/Loader';
 
 const PAGINATED_PRODUCTS_QUERY = gql`
   query GetPaginatedProducts($page: Int, $pageSize: Int) {
@@ -59,7 +60,7 @@ export default function ProductListClient({
     // Use pageSize from props or default value
   });
 
-  if (loading) return <div className="text-center py-10">Cargando productos...</div>;
+  if (loading) return <SectionLoader text="Cargando productos..." />;
   if (error) return <div className="text-center py-10 text-red-500">Error: {error.message}</div>;
 
   const products = data?.paginatedProducts?.items || [];

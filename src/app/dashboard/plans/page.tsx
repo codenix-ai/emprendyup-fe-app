@@ -7,6 +7,7 @@ import PricingPlans, { Plan } from '../components/PricingPlans';
 import { getUserFromLocalStorage } from '@/lib/utils/localAuth';
 import OrderCreationModal from '../components/OrderCreationModal';
 import { GET_SUBSCRIPTION_PRODUCTS } from '@/lib/graphql/queries';
+import { SectionLoader } from '@/app/components/Loader';
 
 interface PlanConfig {
   planId: string;
@@ -348,7 +349,7 @@ export default function PlansPage() {
           <div className="flex items-center justify-center min-h-screen">
             <div className="text-center space-y-4">
               <div className="w-16 h-16 border-4 border-fourth-base border-t-transparent rounded-full animate-spin mx-auto"></div>
-              <p className="text-gray-400">Cargando planes...</p>
+              <SectionLoader text="Cargando planes..." />
             </div>
           </div>
         ) : (

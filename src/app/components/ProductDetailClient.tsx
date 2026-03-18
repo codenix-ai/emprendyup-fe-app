@@ -1,6 +1,7 @@
 'use client';
 import { gql, useQuery } from '@apollo/client';
 import { useSearchParams } from 'next/navigation';
+import { SectionLoader } from '@/app/components/Loader';
 
 const GET_PRODUCT_QUERY = gql`
   query GetProduct($id: String!) {
@@ -47,7 +48,7 @@ export default function ProductDetailClient() {
   const id = searchParams.get('id');
   const { data, loading, error } = useQuery(GET_PRODUCT_QUERY, { variables: { id } });
 
-  if (loading) return <div className="text-center py-10">Cargando producto...</div>;
+  if (loading) return <SectionLoader text="Cargando producto..." />;
   if (error) return <div className="text-center py-10 text-red-500">Error: {error.message}</div>;
   if (!data?.product) return <div className="text-center py-10">Producto no encontrado</div>;
 

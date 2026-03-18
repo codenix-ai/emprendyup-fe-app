@@ -9,6 +9,7 @@ import LineChart from '../components/LineChart';
 import BarChart from '../components/BarChart';
 import { KPI, ChartData, Customer } from '@/lib/schemas/dashboard';
 import { useSessionStore } from '@/lib/store/dashboard';
+import { SectionLoader } from '@/app/components/Loader';
 
 // Queries GraphQL
 const TOTAL_PRODUCTS_QUERY = gql`
@@ -499,7 +500,7 @@ export default function InsightsPage() {
         </div>
         <div className="overflow-x-auto">
           {loadingLeads ? (
-            <div className="p-6 text-center text-gray-500">Cargando leads...</div>
+            <SectionLoader text="Cargando leads..." />
           ) : leads.length === 0 ? (
             <div className="p-6 text-center text-gray-500">No hay leads disponibles.</div>
           ) : (

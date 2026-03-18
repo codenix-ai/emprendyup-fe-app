@@ -22,6 +22,7 @@ import { useParams } from 'next/navigation';
 import ShipmentFormModal from '@/app/components/ShipmentFormModal';
 import { Shipment } from '@/app/utils/types/types';
 import { GET_PAYMENTS } from '@/lib/graphql/queries';
+import { SectionLoader } from '@/app/components/Loader';
 
 const GET_ORDERS_BY_STORE = gql`
   query OrdersByStore($storeId: String!) {
@@ -426,7 +427,7 @@ export default function OrderPage() {
         <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4">
           <div>
             <h1 className="text-2xl font-bold text-gray-900 dark:text-white">Pedidos</h1>
-            <p className="text-gray-400">Cargando pedidos...</p>
+            <SectionLoader text="Cargando pedidos..." />
           </div>
         </div>
         <div className="animate-pulse space-y-4 p-6">

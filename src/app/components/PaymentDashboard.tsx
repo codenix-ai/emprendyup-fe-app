@@ -17,6 +17,7 @@ import { useStorePaymentConfiguration } from '@/lib/hooks/useStorePaymentConfigu
 import { usePayments, usePaymentSummary } from '@/lib/hooks/usePayments';
 import { Payment, PaymentMethod, PaymentProvider, PaymentStatus } from '../utils/types/payment';
 import Layout from './layout';
+import { SectionLoader } from '@/app/components/Loader';
 
 export default function PaymentDashboard() {
   const [dateRange, setDateRange] = useState({
@@ -100,7 +101,7 @@ export default function PaymentDashboard() {
       <div className="min-h-screen bg-gray-900 py-8 flex items-center justify-center">
         <div className="text-center">
           <RefreshCw className="w-8 h-8 animate-spin text-blue-400 mx-auto mb-4" />
-          <p className="text-gray-400">Cargando dashboard de pagos...</p>
+          <SectionLoader text="Cargando pagos..." />
         </div>
       </div>
     );
