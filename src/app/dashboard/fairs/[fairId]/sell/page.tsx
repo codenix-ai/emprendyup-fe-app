@@ -5,9 +5,20 @@ import Link from 'next/link';
 import { useParams, useRouter } from 'next/navigation';
 import { gql, useQuery } from '@apollo/client';
 import toast from 'react-hot-toast';
-import { ArrowLeft, CheckCircle2, Plus, Search, ShoppingCart, Trash2, X } from 'lucide-react';
+import {
+  ArrowLeft,
+  CheckCircle2,
+  ChevronDown,
+  ChevronUp,
+  Plus,
+  Search,
+  ShoppingCart,
+  Trash2,
+  User,
+  X,
+} from 'lucide-react';
 
-import { fairsApi, Fair, FairsApiError } from '@/lib/api/fairs';
+import { fairsApi, Fair } from '@/lib/api/fairs';
 import { useFairCartStore } from '@/lib/store/fairCart';
 import { formatMoney, toNumber } from '@/lib/utils/money';
 
@@ -106,6 +117,7 @@ export default function FairSellPage() {
 
   // Custom item form state
   const [showCustomForm, setShowCustomForm] = useState(false);
+  const [showCustomerForm, setShowCustomerForm] = useState(false);
   const [customName, setCustomName] = useState('');
   const [customPrice, setCustomPrice] = useState('');
   const [customQty, setCustomQty] = useState('1');
@@ -219,14 +231,18 @@ export default function FairSellPage() {
     });
   }, [data, effectiveStoreId, fetchMore, isFetchingMore, loadingProducts]);
 
-  const products = (data?.productsByStore?.items || []) as Array<{
-    id: string;
-    name?: string;
-    title?: string;
-    price?: number;
-    currency?: string;
-    stock?: number;
-  }>;
+  const products = useMemo(
+    () =>
+      (data?.productsByStore?.items || []) as Array<{
+        id: string;
+        name?: string;
+        title?: string;
+        price?: number;
+        currency?: string;
+        stock?: number;
+      }>,
+    [data?.productsByStore?.items]
+  );
 
   const filtered = useMemo(() => {
     const q = search.trim().toLowerCase();
@@ -239,8 +255,8 @@ export default function FairSellPage() {
   }, [products, search]);
 
   const currency = (products[0]?.currency as string) || 'COP';
-  const quantities = per?.quantities || {};
-  const customItems = per?.customItems ?? [];
+  const quantities = useMemo(() => per?.quantities || {}, [per?.quantities]);
+  const customItems = useMemo(() => per?.customItems ?? [], [per?.customItems]);
 
   const catalogTotal = useMemo(() => {
     let sum = 0;
@@ -330,6 +346,10 @@ export default function FairSellPage() {
     }
   }
 
+  const totalItems =
+    selectedCatalogItems.reduce((a, it) => a + it.quantity, 0) +
+    customItems.reduce((a, it) => a + it.quantity, 0);
+
   if (loadingFair) {
     return (
       <div className="p-4 md:p-6 max-w-5xl mx-auto">
@@ -341,60 +361,70 @@ export default function FairSellPage() {
   }
 
   return (
-    <div className="p-4 md:p-6 max-w-5xl mx-auto">
-      {/* Header */}
-      <div className="flex items-center justify-between gap-3">
-        <div className="flex items-center gap-3 min-w-0">
-          <button
-            type="button"
-            onClick={() => router.back()}
-            className="inline-flex items-center justify-center rounded-lg p-2 bg-gray-100 dark:bg-gray-800 text-gray-900 dark:text-white"
-          >
-            <ArrowLeft className="h-5 w-5" />
-          </button>
-          <div className="min-w-0">
-            <h1 className="text-xl md:text-2xl font-semibold text-gray-900 dark:text-white truncate">
-              Vender en: {fair?.name || 'Feria'}
-            </h1>
-            <p className="text-sm text-gray-600 dark:text-gray-300">
-              {active ? 'Activa' : 'No activa'} •
-              {!effectiveStoreId
-                ? ' Cargando tienda…'
-                : loadingProducts
-                  ? ' Cargando productos…'
-                  : ` ${products.length} producto${products.length === 1 ? '' : 's'}`}
-            </p>
+    <div className="flex flex-col bg-gray-50 dark:bg-gray-950" style={{ minHeight: '100dvh' }}>
+      {/* ── Header ── */}
+      <div className="sticky top-0 z-20 flex-none bg-white dark:bg-gray-900 border-b border-gray-200 dark:border-gray-800 px-3 py-2 flex items-center gap-2 shadow-sm">
+        <button
+          type="button"
+          onClick={() => router.back()}
+          className="p-2 rounded-lg bg-gray-100 dark:bg-gray-800 text-gray-800 dark:text-white flex-none"
+          aria-label="Volver"
+        >
+          <ArrowLeft className="h-5 w-5" />
+        </button>
+        <div className="min-w-0 flex-1">
+          <p className="text-sm font-semibold truncate text-gray-900 dark:text-white leading-tight">
+            {fair?.name || 'Feria'}
+          </p>
+          <p className="text-[11px] text-gray-500 dark:text-gray-400 leading-tight">
+            {active ? (
+              <span className="text-emerald-600 dark:text-emerald-400">Activa</span>
+            ) : (
+              <span className="text-red-500">No activa</span>
+            )}
+            {' · '}
+            {!effectiveStoreId || loadingProducts
+              ? 'Cargando…'
+              : `${products.length} producto${products.length === 1 ? '' : 's'}`}
+          </p>
+        </div>
+        {/* Cart badge */}
+        <div className="flex-none relative">
+          <div className="h-9 w-9 rounded-xl bg-gray-100 dark:bg-gray-800 flex items-center justify-center">
+            <ShoppingCart className="h-5 w-5 text-gray-700 dark:text-gray-300" />
           </div>
+          {totalItems > 0 && (
+            <span className="absolute -top-1 -right-1 h-5 w-5 rounded-full bg-fourth-base text-black text-[10px] font-bold flex items-center justify-center leading-none">
+              {totalItems > 99 ? '99+' : totalItems}
+            </span>
+          )}
         </div>
         <Link
           href={`/dashboard/fairs/${fairId}`}
-          className="inline-flex items-center justify-center rounded-lg px-3 py-2 text-sm font-medium bg-gray-100 dark:bg-gray-800 text-gray-900 dark:text-white"
+          className="flex-none text-xs px-2.5 py-1.5 rounded-lg bg-gray-100 dark:bg-gray-800 text-gray-700 dark:text-gray-300 font-medium"
         >
           Detalle
         </Link>
       </div>
 
-      {/* Success banner */}
+      {/* ── Success banner ── */}
       {lastSuccess && (
-        <div className="mt-4 rounded-2xl border border-emerald-200 dark:border-emerald-900 bg-emerald-50/70 dark:bg-emerald-900/20 p-4">
-          <div className="flex items-start gap-3">
-            <CheckCircle2 className="h-6 w-6 text-emerald-600 flex-shrink-0" />
-            <div className="min-w-0">
-              <p className="font-semibold text-emerald-900 dark:text-emerald-200">
-                Venta registrada
+        <div className="mx-3 mt-3 rounded-2xl border border-emerald-200 dark:border-emerald-900 bg-emerald-50/70 dark:bg-emerald-900/20 p-3">
+          <div className="flex items-start gap-2.5">
+            <CheckCircle2 className="h-5 w-5 text-emerald-600 flex-none mt-0.5" />
+            <div className="min-w-0 flex-1">
+              <p className="text-sm font-semibold text-emerald-900 dark:text-emerald-200">
+                Venta registrada —{' '}
+                <span className="font-bold">{formatMoney(lastSuccess.total, currency)}</span>
               </p>
-              <p className="text-sm text-emerald-900/80 dark:text-emerald-200/80">
-                Total:{' '}
-                <span className="font-semibold">{formatMoney(lastSuccess.total, currency)}</span>
-              </p>
-              <p className="text-xs text-emerald-900/70 dark:text-emerald-200/70">
-                Items: {lastSuccess.itemCount}
+              <p className="text-xs text-emerald-700 dark:text-emerald-300 mt-0.5">
+                {lastSuccess.itemCount} item{lastSuccess.itemCount !== 1 ? 's' : ''}
               </p>
             </div>
             <button
               type="button"
               onClick={() => setLastSuccess(null)}
-              className="ml-auto text-sm font-semibold text-emerald-800 dark:text-emerald-200"
+              className="text-xs font-semibold text-emerald-800 dark:text-emerald-200 flex-none"
             >
               Ok
             </button>
@@ -402,308 +432,325 @@ export default function FairSellPage() {
         </div>
       )}
 
-      {/* Payment + customer */}
-      <div className="mt-4 rounded-2xl border border-gray-200 dark:border-gray-700 bg-white dark:bg-gray-800 p-4 space-y-3">
-        <div>
-          <label className="block text-xs font-semibold uppercase tracking-wide text-gray-500 dark:text-gray-400 mb-1.5">
-            Método de pago
-          </label>
-          <select
-            value={per?.paymentMethod || 'CASH'}
-            onChange={(e) => setPaymentMethod(fairId, e.target.value)}
-            className="w-full rounded-xl border border-gray-200 dark:border-gray-700 bg-white dark:bg-gray-900 px-3 py-2.5 text-base text-gray-900 dark:text-white"
-          >
-            {PAYMENT_METHODS.map((m) => (
-              <option key={m.value} value={m.value}>
-                {m.label}
-              </option>
-            ))}
-          </select>
-        </div>
-        <div className="grid grid-cols-2 gap-2">
-          <div>
-            <label className="block text-xs font-semibold uppercase tracking-wide text-gray-500 dark:text-gray-400 mb-1.5">
-              Nombre cliente
-            </label>
-            <input
-              value={per?.customerName || ''}
-              onChange={(e) => setCustomerName(fairId, e.target.value)}
-              placeholder="Opcional"
-              className="w-full rounded-xl border border-gray-200 dark:border-gray-700 bg-white dark:bg-gray-900 px-3 py-2.5 text-base text-gray-900 dark:text-white"
-            />
-          </div>
-          <div>
-            <label className="block text-xs font-semibold uppercase tracking-wide text-gray-500 dark:text-gray-400 mb-1.5">
-              Contacto
-            </label>
-            <input
-              value={per?.customerContact || ''}
-              onChange={(e) => setCustomerContact(fairId, e.target.value)}
-              placeholder="Tel / email"
-              className="w-full rounded-xl border border-gray-200 dark:border-gray-700 bg-white dark:bg-gray-900 px-3 py-2.5 text-base text-gray-900 dark:text-white"
-            />
-          </div>
-        </div>
-      </div>
-
-      {/* ── Custom items section ── */}
-      <div className="mt-4">
-        <div className="flex items-center justify-between mb-2">
-          <h2 className="text-sm font-semibold text-gray-700 dark:text-gray-300">
-            Productos personalizados
-          </h2>
-          <button
-            type="button"
-            onClick={() => setShowCustomForm((v) => !v)}
-            className="inline-flex items-center gap-1.5 rounded-xl px-3 py-1.5 text-sm font-semibold bg-fourth-base text-black"
-          >
-            {showCustomForm ? <X className="h-4 w-4" /> : <Plus className="h-4 w-4" />}
-            {showCustomForm ? 'Cancelar' : 'Agregar'}
-          </button>
-        </div>
-
-        {/* Inline add form */}
-        {showCustomForm && (
-          <div className="rounded-2xl border border-fourth-base/40 bg-amber-50/50 dark:bg-amber-900/10 p-4 mb-3 space-y-3">
-            <p className="text-xs font-semibold uppercase tracking-wide text-gray-500 dark:text-gray-400">
-              Nuevo producto personalizado
-            </p>
-            <input
-              ref={customNameRef}
-              value={customName}
-              onChange={(e) => setCustomName(e.target.value)}
-              onKeyDown={(e) => e.key === 'Enter' && handleAddCustomItem()}
-              placeholder="Nombre del producto *"
-              className="w-full rounded-xl border border-gray-200 dark:border-gray-700 bg-white dark:bg-gray-900 px-3 py-2.5 text-base text-gray-900 dark:text-white"
-            />
-            <div className="grid grid-cols-2 gap-2">
-              <div>
-                <label className="block text-xs font-semibold uppercase tracking-wide text-gray-500 dark:text-gray-400 mb-1">
-                  Precio *
-                </label>
-                <div className="relative">
-                  <span className="absolute left-3 top-1/2 -translate-y-1/2 text-sm text-gray-400">
-                    $
-                  </span>
-                  <input
-                    type="number"
-                    min="0"
-                    step="0.01"
-                    value={customPrice}
-                    onChange={(e) => setCustomPrice(e.target.value)}
-                    onKeyDown={(e) => e.key === 'Enter' && handleAddCustomItem()}
-                    placeholder="0.00"
-                    className="w-full rounded-xl border border-gray-200 dark:border-gray-700 bg-white dark:bg-gray-900 pl-7 pr-3 py-2.5 text-base text-gray-900 dark:text-white"
-                  />
-                </div>
-              </div>
-              <div>
-                <label className="block text-xs font-semibold uppercase tracking-wide text-gray-500 dark:text-gray-400 mb-1">
-                  Cantidad
-                </label>
-                <input
-                  type="number"
-                  min="1"
-                  value={customQty}
-                  onChange={(e) => setCustomQty(e.target.value)}
-                  onKeyDown={(e) => e.key === 'Enter' && handleAddCustomItem()}
-                  className="w-full rounded-xl border border-gray-200 dark:border-gray-700 bg-white dark:bg-gray-900 px-3 py-2.5 text-base text-gray-900 dark:text-white"
-                />
-              </div>
-            </div>
-            <button
-              type="button"
-              onClick={handleAddCustomItem}
-              className="w-full inline-flex items-center justify-center gap-2 rounded-2xl px-4 py-3 text-sm font-semibold bg-fourth-base text-black"
-            >
-              <Plus className="h-4 w-4" />
-              Agregar producto
-            </button>
-          </div>
-        )}
-
-        {/* Custom items list */}
-        {customItems.length > 0 && (
-          <div className="space-y-2">
-            {customItems.map((it) => (
-              <div
-                key={it.id}
-                className="rounded-2xl border border-amber-200 dark:border-amber-900/50 bg-amber-50/40 dark:bg-amber-900/10 p-3 sm:p-4"
-              >
-                <div className="flex items-center justify-between gap-2">
-                  <div className="min-w-0 flex-1">
-                    <p className="font-semibold text-gray-900 dark:text-white truncate leading-tight">
-                      {it.name}
-                    </p>
-                    <p className="text-xs sm:text-sm text-gray-600 dark:text-gray-300 mt-0.5">
-                      {formatMoney(it.unitPrice, currency)} · subtotal{' '}
-                      <span className="font-medium">
-                        {formatMoney(it.unitPrice * it.quantity, currency)}
-                      </span>
-                    </p>
-                  </div>
-                  <div className="flex items-center gap-1.5 flex-shrink-0">
-                    <button
-                      type="button"
-                      onClick={() => updateCustomItemQty(fairId, it.id, it.quantity - 1)}
-                      className="h-10 w-10 rounded-xl bg-gray-100 dark:bg-gray-700 text-gray-900 dark:text-white text-lg font-bold flex items-center justify-center"
-                    >
-                      −
-                    </button>
-                    <input
-                      inputMode="numeric"
-                      value={it.quantity}
-                      onChange={(e) =>
-                        updateCustomItemQty(fairId, it.id, Number(e.target.value || 1))
-                      }
-                      className="w-12 sm:w-14 h-10 text-center rounded-xl border border-gray-200 dark:border-gray-700 bg-white dark:bg-gray-900 text-base text-gray-900 dark:text-white"
-                    />
-                    <button
-                      type="button"
-                      onClick={() => updateCustomItemQty(fairId, it.id, it.quantity + 1)}
-                      className="h-10 w-10 rounded-xl bg-fourth-base text-black text-lg font-bold flex items-center justify-center"
-                    >
-                      +
-                    </button>
-                    <button
-                      type="button"
-                      onClick={() => removeCustomItem(fairId, it.id)}
-                      className="h-10 w-10 rounded-xl bg-red-50 dark:bg-red-900/20 text-red-600 flex items-center justify-center"
-                      aria-label="Eliminar"
-                    >
-                      <Trash2 className="h-4 w-4" />
-                    </button>
-                  </div>
-                </div>
-              </div>
-            ))}
-          </div>
-        )}
-
-        {customItems.length === 0 && !showCustomForm && (
-          <p className="text-sm text-gray-400 dark:text-gray-600 italic">
-            Sin productos personalizados.
-          </p>
-        )}
-      </div>
-
-      {/* Catalog search */}
-      <div className="mt-4 rounded-2xl border border-gray-200 dark:border-gray-700 bg-white dark:bg-gray-800 p-4">
-        <div className="flex items-center gap-2">
-          <Search className="h-4 w-4 text-gray-400" />
+      {/* ── Search bar ── */}
+      <div className="flex-none bg-white dark:bg-gray-900 px-3 pt-2 pb-2 border-b border-gray-200 dark:border-gray-800">
+        <div className="flex items-center gap-2 rounded-xl bg-gray-100 dark:bg-gray-800 px-3 py-2">
+          <Search className="h-4 w-4 text-gray-400 flex-none" />
           <input
             value={search}
             onChange={(e) => setSearch(e.target.value)}
-            placeholder="Buscar en catálogo..."
-            className="w-full bg-transparent outline-none text-base text-gray-900 dark:text-white"
+            placeholder="Buscar en catálogo…"
+            className="flex-1 bg-transparent text-sm outline-none text-gray-900 dark:text-white placeholder-gray-400"
           />
+          {search && (
+            <button onClick={() => setSearch('')} className="text-gray-400 flex-none">
+              <X className="h-4 w-4" />
+            </button>
+          )}
         </div>
       </div>
 
-      {/* Catalog products */}
-      <div className="mt-3 space-y-3">
+      {/* ── Scrollable content ── */}
+      <div className="flex-1 overflow-y-auto pb-2">
+        {/* Catalog products */}
         {!effectiveStoreId || loadingProducts ? (
-          <div className="rounded-2xl border border-gray-200 dark:border-gray-700 bg-white dark:bg-gray-800 p-4">
-            Cargando productos...
+          <div className="m-3 rounded-2xl border border-gray-200 dark:border-gray-700 bg-white dark:bg-gray-800 p-4 text-sm text-gray-500 dark:text-gray-400">
+            Cargando productos…
           </div>
         ) : productsError ? (
-          <div className="rounded-2xl border border-red-200 dark:border-red-900 bg-red-50/70 dark:bg-red-900/20 p-4">
-            <p className="font-semibold text-red-900 dark:text-red-200">
+          <div className="m-3 rounded-2xl border border-red-200 dark:border-red-900 bg-red-50 dark:bg-red-900/20 p-4">
+            <p className="font-semibold text-red-900 dark:text-red-200 text-sm">
               No se pudieron cargar los productos
             </p>
-            <p className="mt-1 text-sm text-red-900/80 dark:text-red-200/80">
-              {productsError.message}
-            </p>
+            <p className="mt-1 text-xs text-red-700 dark:text-red-300">{productsError.message}</p>
           </div>
         ) : filtered.length === 0 ? (
-          <div className="rounded-2xl border border-gray-200 dark:border-gray-700 bg-white dark:bg-gray-800 p-4">
-            No hay productos para mostrar.
+          <div className="m-3 rounded-2xl border border-gray-200 dark:border-gray-700 bg-white dark:bg-gray-800 p-4 text-sm text-gray-500 dark:text-gray-400">
+            No hay productos.
           </div>
         ) : (
-          filtered.map((p) => {
-            const qty = quantities[p.id] || 0;
-            return (
-              <div
-                key={p.id}
-                className="rounded-2xl border border-gray-200 dark:border-gray-700 bg-white dark:bg-gray-800 p-3 sm:p-4"
-              >
-                <div className="flex items-center justify-between gap-2">
+          <div className="bg-white dark:bg-gray-900 divide-y divide-gray-100 dark:divide-gray-800 mt-2 mx-3 rounded-2xl border border-gray-200 dark:border-gray-800 overflow-hidden">
+            {filtered.map((p) => {
+              const qty = quantities[p.id] || 0;
+              return (
+                <div key={p.id} className="flex items-center gap-3 px-3 py-2.5">
+                  {/* Name + price */}
                   <div className="min-w-0 flex-1">
-                    <p className="font-semibold text-gray-900 dark:text-white truncate leading-tight">
+                    <p className="text-sm font-medium text-gray-900 dark:text-white leading-snug truncate">
                       {p.name || p.title}
                     </p>
-                    <p className="text-xs sm:text-sm text-gray-600 dark:text-gray-300 mt-0.5">
+                    <p className="text-xs text-gray-500 dark:text-gray-400 mt-0.5">
                       {formatMoney(toNumber(p.price), p.currency || currency)}
-                      {typeof p.stock === 'number' ? ` · ${p.stock} disp.` : ''}
+                      {qty > 0 && (
+                        <span className="ml-1.5 font-semibold text-gray-700 dark:text-gray-200">
+                          = {formatMoney(toNumber(p.price) * qty, p.currency || currency)}
+                        </span>
+                      )}
                     </p>
                   </div>
-                  <div className="flex items-center gap-1.5 flex-shrink-0">
-                    <button
-                      type="button"
-                      onClick={() => decrement(fairId, p.id)}
-                      className="h-10 w-10 sm:h-11 sm:w-11 rounded-xl bg-gray-100 dark:bg-gray-700 text-gray-900 dark:text-white text-lg font-bold flex items-center justify-center"
-                      aria-label="Disminuir"
-                    >
-                      −
-                    </button>
-                    <input
-                      inputMode="numeric"
-                      value={qty}
-                      onChange={(e) => setQuantity(fairId, p.id, Number(e.target.value || 0))}
-                      className="w-12 sm:w-16 h-10 sm:h-11 text-center rounded-xl border border-gray-200 dark:border-gray-700 bg-white dark:bg-gray-900 text-base text-gray-900 dark:text-white"
-                    />
-                    <button
-                      type="button"
-                      onClick={() => increment(fairId, p.id)}
-                      className="h-10 w-10 sm:h-11 sm:w-11 rounded-xl bg-fourth-base text-black text-lg font-bold flex items-center justify-center"
-                      aria-label="Aumentar"
-                    >
-                      +
-                    </button>
+                  {/* Stepper */}
+                  <div className="flex items-center gap-1 flex-none">
+                    {qty > 0 ? (
+                      <>
+                        <button
+                          type="button"
+                          onClick={() => decrement(fairId, p.id)}
+                          className="h-8 w-8 rounded-lg bg-gray-100 dark:bg-gray-700 text-gray-800 dark:text-white font-bold text-base flex items-center justify-center"
+                          aria-label="Disminuir"
+                        >
+                          −
+                        </button>
+                        <input
+                          inputMode="numeric"
+                          value={qty}
+                          onChange={(e) => setQuantity(fairId, p.id, Number(e.target.value || 0))}
+                          className="w-9 h-8 text-center text-sm font-semibold rounded-lg border border-gray-200 dark:border-gray-700 bg-white dark:bg-gray-900 text-gray-900 dark:text-white"
+                        />
+                        <button
+                          type="button"
+                          onClick={() => increment(fairId, p.id)}
+                          className="h-8 w-8 rounded-lg bg-fourth-base text-black font-bold text-base flex items-center justify-center"
+                          aria-label="Aumentar"
+                        >
+                          +
+                        </button>
+                      </>
+                    ) : (
+                      <button
+                        type="button"
+                        onClick={() => increment(fairId, p.id)}
+                        className="h-8 w-8 rounded-xl bg-fourth-base text-black font-bold text-xl flex items-center justify-center"
+                        aria-label="Agregar"
+                      >
+                        +
+                      </button>
+                    )}
                   </div>
                 </div>
-              </div>
-            );
-          })
-        )}
-
-        {isFetchingMore && (
-          <div className="rounded-2xl border border-gray-200 dark:border-gray-700 bg-white dark:bg-gray-800 p-4 text-sm text-gray-600 dark:text-gray-300">
-            Cargando más productos...
+              );
+            })}
           </div>
         )}
+
+        {isFetchingMore && <p className="text-center text-xs text-gray-400 py-2">Cargando más…</p>}
+
+        {/* ── Custom items ── */}
+        <div className="mt-3 mx-3">
+          <div className="rounded-2xl border border-amber-200 dark:border-amber-900/50 bg-amber-50/40 dark:bg-amber-900/10 overflow-hidden">
+            {/* Toggle header */}
+            <button
+              type="button"
+              onClick={() => setShowCustomForm((v) => !v)}
+              className="w-full flex items-center justify-between px-4 py-3 text-left"
+            >
+              <div className="flex items-center gap-2">
+                <Plus className="h-4 w-4 text-amber-700 dark:text-amber-400" />
+                <span className="text-sm font-semibold text-amber-900 dark:text-amber-300">
+                  Producto personalizado
+                </span>
+                {customItems.length > 0 && (
+                  <span className="text-xs px-1.5 py-0.5 rounded-full bg-amber-200 dark:bg-amber-800 text-amber-900 dark:text-amber-200 font-medium">
+                    {customItems.length}
+                  </span>
+                )}
+              </div>
+              {showCustomForm ? (
+                <ChevronUp className="h-4 w-4 text-amber-600 dark:text-amber-400" />
+              ) : (
+                <ChevronDown className="h-4 w-4 text-amber-600 dark:text-amber-400" />
+              )}
+            </button>
+
+            {/* Add form */}
+            {showCustomForm && (
+              <div className="px-4 pb-4 space-y-3 border-t border-amber-200 dark:border-amber-900/50 pt-3">
+                <input
+                  ref={customNameRef}
+                  value={customName}
+                  onChange={(e) => setCustomName(e.target.value)}
+                  onKeyDown={(e) => e.key === 'Enter' && handleAddCustomItem()}
+                  placeholder="Nombre del producto *"
+                  className="w-full rounded-xl border border-gray-200 dark:border-gray-700 bg-white dark:bg-gray-900 px-3 py-2.5 text-sm text-gray-900 dark:text-white"
+                />
+                <div className="grid grid-cols-2 gap-2">
+                  <div className="relative">
+                    <span className="absolute left-3 top-1/2 -translate-y-1/2 text-xs text-gray-400">
+                      $
+                    </span>
+                    <input
+                      type="number"
+                      min="0"
+                      step="0.01"
+                      value={customPrice}
+                      onChange={(e) => setCustomPrice(e.target.value)}
+                      onKeyDown={(e) => e.key === 'Enter' && handleAddCustomItem()}
+                      placeholder="Precio *"
+                      className="w-full rounded-xl border border-gray-200 dark:border-gray-700 bg-white dark:bg-gray-900 pl-6 pr-3 py-2.5 text-sm text-gray-900 dark:text-white"
+                    />
+                  </div>
+                  <input
+                    type="number"
+                    min="1"
+                    value={customQty}
+                    onChange={(e) => setCustomQty(e.target.value)}
+                    onKeyDown={(e) => e.key === 'Enter' && handleAddCustomItem()}
+                    placeholder="Cantidad"
+                    className="w-full rounded-xl border border-gray-200 dark:border-gray-700 bg-white dark:bg-gray-900 px-3 py-2.5 text-sm text-gray-900 dark:text-white"
+                  />
+                </div>
+                <button
+                  type="button"
+                  onClick={handleAddCustomItem}
+                  className="w-full rounded-xl py-2.5 text-sm font-semibold bg-fourth-base text-black flex items-center justify-center gap-2"
+                >
+                  <Plus className="h-4 w-4" /> Agregar
+                </button>
+              </div>
+            )}
+
+            {/* Custom items list */}
+            {customItems.length > 0 && (
+              <div className="divide-y divide-amber-100 dark:divide-amber-900/30 border-t border-amber-200 dark:border-amber-900/50">
+                {customItems.map((it) => (
+                  <div key={it.id} className="px-3 py-2.5 flex items-center gap-2">
+                    <div className="min-w-0 flex-1">
+                      <p className="text-sm font-medium text-gray-900 dark:text-white truncate">
+                        {it.name}
+                      </p>
+                      <p className="text-xs text-gray-500 dark:text-gray-400">
+                        {formatMoney(it.unitPrice, currency)}
+                        {it.quantity > 1 && (
+                          <span className="ml-1 font-semibold text-gray-700 dark:text-gray-200">
+                            = {formatMoney(it.unitPrice * it.quantity, currency)}
+                          </span>
+                        )}
+                      </p>
+                    </div>
+                    <div className="flex items-center gap-1 flex-none">
+                      <button
+                        type="button"
+                        onClick={() => updateCustomItemQty(fairId, it.id, it.quantity - 1)}
+                        className="h-8 w-8 rounded-lg bg-amber-100 dark:bg-amber-900/30 text-amber-900 dark:text-amber-200 font-bold flex items-center justify-center"
+                      >
+                        −
+                      </button>
+                      <input
+                        inputMode="numeric"
+                        value={it.quantity}
+                        onChange={(e) =>
+                          updateCustomItemQty(fairId, it.id, Number(e.target.value || 1))
+                        }
+                        className="w-9 h-8 text-center text-sm font-semibold rounded-lg border border-amber-200 dark:border-amber-700 bg-white dark:bg-gray-900 text-gray-900 dark:text-white"
+                      />
+                      <button
+                        type="button"
+                        onClick={() => updateCustomItemQty(fairId, it.id, it.quantity + 1)}
+                        className="h-8 w-8 rounded-lg bg-fourth-base text-black font-bold flex items-center justify-center"
+                      >
+                        +
+                      </button>
+                      <button
+                        type="button"
+                        onClick={() => removeCustomItem(fairId, it.id)}
+                        className="h-8 w-8 rounded-lg text-red-500 flex items-center justify-center"
+                        aria-label="Eliminar"
+                      >
+                        <Trash2 className="h-4 w-4" />
+                      </button>
+                    </div>
+                  </div>
+                ))}
+              </div>
+            )}
+          </div>
+        </div>
+
+        {/* Bottom spacer */}
+        <div className="h-4" />
       </div>
 
-      {/* Bottom CTA */}
-      <div className="sticky bottom-0 mt-6 pt-3 pb-[calc(1rem+env(safe-area-inset-bottom))] bg-gradient-to-t from-white dark:from-gray-900 via-white/90 dark:via-gray-900/90 to-transparent">
-        {(customItems.length > 0 || selectedCatalogItems.length > 0) && (
-          <div className="mb-2 flex items-center justify-between text-xs text-gray-500 dark:text-gray-400 px-1">
-            {selectedCatalogItems.length > 0 && (
-              <span>
-                Catálogo: {selectedCatalogItems.reduce((a, it) => a + it.quantity, 0)} item(s)
-              </span>
-            )}
-            {customItems.length > 0 && (
-              <span>
-                Personalizados: {customItems.reduce((a, it) => a + it.quantity, 0)} item(s)
-              </span>
-            )}
+      {/* ── Sticky bottom bar ── */}
+      <div className="flex-none sticky bottom-0 bg-white dark:bg-gray-900 border-t border-gray-200 dark:border-gray-800 shadow-[0_-4px_12px_rgba(0,0,0,0.06)]">
+        {/* Payment method pills */}
+        <div className="px-3 pt-3">
+          <div
+            className="flex gap-1.5 overflow-x-auto pb-1"
+            style={{ scrollbarWidth: 'none', msOverflowStyle: 'none' }}
+          >
+            {PAYMENT_METHODS.map((m) => {
+              const selected = (per?.paymentMethod || 'CASH') === m.value;
+              return (
+                <button
+                  key={m.value}
+                  type="button"
+                  onClick={() => setPaymentMethod(fairId, m.value)}
+                  className={`flex-none px-3 py-1.5 rounded-full text-xs font-semibold whitespace-nowrap transition-colors ${
+                    selected
+                      ? 'bg-gray-900 dark:bg-white text-white dark:text-gray-900'
+                      : 'bg-gray-100 dark:bg-gray-800 text-gray-600 dark:text-gray-300'
+                  }`}
+                >
+                  {m.label}
+                </button>
+              );
+            })}
           </div>
-        )}
-        <button
-          type="button"
-          disabled={submitting}
-          onClick={submitSale}
-          className="w-full inline-flex items-center justify-center gap-3 rounded-2xl px-4 py-4 text-base font-semibold bg-fourth-base text-black disabled:opacity-60"
-        >
-          <ShoppingCart className="h-5 w-5" />
-          {submitting ? 'Registrando…' : `Registrar venta · ${formatMoney(total, currency)}`}
-        </button>
-        {!active && (
-          <p className="mt-2 text-xs text-red-600 text-center">
-            Feria no activa: no se puede registrar venta.
-          </p>
-        )}
+        </div>
+
+        {/* Customer info toggle */}
+        <div className="px-3 pt-2">
+          <button
+            type="button"
+            onClick={() => setShowCustomerForm((v) => !v)}
+            className="flex items-center gap-1.5 text-xs text-gray-500 dark:text-gray-400 font-medium"
+          >
+            <User className="h-3.5 w-3.5" />
+            {showCustomerForm ? 'Ocultar datos de cliente' : 'Agregar datos de cliente'}
+            {showCustomerForm ? (
+              <ChevronUp className="h-3 w-3" />
+            ) : (
+              <ChevronDown className="h-3 w-3" />
+            )}
+          </button>
+          {showCustomerForm && (
+            <div className="mt-2 grid grid-cols-2 gap-2">
+              <input
+                value={per?.customerName || ''}
+                onChange={(e) => setCustomerName(fairId, e.target.value)}
+                placeholder="Nombre"
+                className="w-full rounded-xl border border-gray-200 dark:border-gray-700 bg-gray-50 dark:bg-gray-800 px-3 py-2 text-sm text-gray-900 dark:text-white"
+              />
+              <input
+                value={per?.customerContact || ''}
+                onChange={(e) => setCustomerContact(fairId, e.target.value)}
+                placeholder="Tel / email"
+                className="w-full rounded-xl border border-gray-200 dark:border-gray-700 bg-gray-50 dark:bg-gray-800 px-3 py-2 text-sm text-gray-900 dark:text-white"
+              />
+            </div>
+          )}
+        </div>
+
+        {/* Submit */}
+        <div className="px-3 pt-2 pb-[calc(0.75rem+env(safe-area-inset-bottom))]">
+          {!active && (
+            <p className="text-xs text-red-500 text-center mb-1">
+              Feria no activa · no se puede registrar venta
+            </p>
+          )}
+          <button
+            type="button"
+            disabled={submitting || totalItems === 0 || !active}
+            onClick={submitSale}
+            className="w-full inline-flex items-center justify-center gap-2 rounded-2xl py-3.5 text-base font-semibold bg-fourth-base text-black disabled:opacity-50 transition-opacity"
+          >
+            <ShoppingCart className="h-5 w-5" />
+            {submitting
+              ? 'Registrando…'
+              : total > 0
+                ? `Registrar · ${formatMoney(total, currency)}`
+                : 'Selecciona productos'}
+          </button>
+        </div>
       </div>
     </div>
   );
