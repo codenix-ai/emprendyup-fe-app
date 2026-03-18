@@ -19,13 +19,26 @@ import {
 } from '@/lib/graphql/fairs';
 import { formatMoney, toNumber } from '@/lib/utils/money';
 
-function safeDate(value?: string | null): Date | null {
-  if (!value) return null;
-  const d = new Date(value);
+function safeDate(value?: string | number | null): Date | null {
+  if (value === null || value === undefined || value === '') return null;
+  // Handle Unix timestamps (ms or s) passed as number or numeric string
+  const num =
+    typeof value === 'number'
+      ? value
+      : /^\d{10,13}$/.test(String(value).trim())
+        ? Number(value)
+        : NaN;
+  if (!isNaN(num)) {
+    // If 10 digits it's seconds, 13 digits it's milliseconds
+    const ms = num < 1e12 ? num * 1000 : num;
+    const d = new Date(ms);
+    return isNaN(d.getTime()) ? null : d;
+  }
+  const d = new Date(value as string);
   return isNaN(d.getTime()) ? null : d;
 }
 
-function formatDate(value?: string | null): string {
+function formatDate(value?: string | number | null): string {
   const d = safeDate(value);
   if (!d) return '—';
   return new Intl.DateTimeFormat('es-CO', {
@@ -37,7 +50,7 @@ function formatDate(value?: string | null): string {
   }).format(d);
 }
 
-function formatDateShort(value?: string | null): string {
+function formatDateShort(value?: string | number | null): string {
   const d = safeDate(value);
   if (!d) return '—';
   return new Intl.DateTimeFormat('es-CO', {
