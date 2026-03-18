@@ -14,7 +14,6 @@ import {
   Copy,
   Upload,
   Layout,
-  EyeOff,
   Loader,
 } from 'lucide-react';
 import { gql, useMutation, useQuery, useApolloClient } from '@apollo/client';
@@ -355,8 +354,6 @@ export default function ProductsPage() {
   // Use server-side search hook when the search term has 2+ characters
   const {
     products: searchedProducts,
-    page: searchPage,
-    pageSize: searchPageSize,
     total: searchTotal,
     totalPages: searchTotalPages,
     loading: searchLoading,
@@ -665,7 +662,7 @@ export default function ProductsPage() {
         throw new Error(errorData.message || 'Error al generar la landing page');
       }
 
-      const data = await response.json();
+      await response.json();
 
       // Update the Apollo cache to reflect the change
       apolloClient.cache.modify({
@@ -868,7 +865,12 @@ export default function ProductsPage() {
                         />
                       </td>
                       <td className="px-6 py-4">
-                        <div className="flex items-center">
+                        <button
+                          type="button"
+                          onClick={() => handleEditProduct(product)}
+                          className="flex items-center gap-0 text-left group"
+                          title="Editar producto"
+                        >
                           <div className="flex-shrink-0 w-12 h-12">
                             {product.images && product.images.length > 0 ? (
                               <Image
@@ -876,26 +878,26 @@ export default function ProductsPage() {
                                 alt={product.name}
                                 width={32}
                                 height={32}
-                                className="w-12 h-12 rounded-xl object-cover shadow-sm"
+                                className="w-12 h-12 rounded-xl object-cover shadow-sm group-hover:ring-2 group-hover:ring-slate-400 transition-all"
                                 style={{
                                   border: `2px solid ${primaryColor}40`,
                                 }}
                               />
                             ) : (
-                              <div className="w-12 h-12 rounded-xl bg-gray-100 dark:bg-gray-700 border-2 border-gray-300 dark:border-gray-600 flex items-center justify-center">
+                              <div className="w-12 h-12 rounded-xl bg-gray-100 dark:bg-gray-700 border-2 border-gray-300 dark:border-gray-600 flex items-center justify-center group-hover:border-slate-400 transition-colors">
                                 <Package className="w-6 h-6 text-gray-500 dark:text-slate-400" />
                               </div>
                             )}
                           </div>
                           <div className="ml-4">
-                            <div className="text-sm font-semibold text-gray-900 dark:text-white">
+                            <div className="text-sm font-semibold text-gray-900 dark:text-white group-hover:text-slate-600 dark:group-hover:text-slate-300 transition-colors">
                               {product.name}
                             </div>
                             <div className="text-sm text-gray-400 truncate max-w-xs">
                               {product.title}
                             </div>
                           </div>
-                        </div>
+                        </button>
                       </td>
                       <td className="px-6 py-4">
                         <div className="text-sm font-medium text-gray-900 dark:text-white">
@@ -1002,20 +1004,25 @@ export default function ProductsPage() {
                       }
                     />
 
-                    {/* Image */}
-                    <div className="flex-shrink-0">
+                    {/* Image — click to edit */}
+                    <button
+                      type="button"
+                      onClick={() => handleEditProduct(product)}
+                      className="flex-shrink-0 focus:outline-none"
+                      title="Editar producto"
+                    >
                       {product.images && product.images.length > 0 ? (
                         <Image
                           src={`https://emprendyup-images.s3.us-east-1.amazonaws.com/${product.images[0].url}`}
                           alt={product.name}
                           width={64}
                           height={64}
-                          className="w-16 h-16 rounded-lg object-cover shadow-sm"
+                          className="w-16 h-16 rounded-lg object-cover shadow-sm hover:ring-2 hover:ring-slate-400 transition-all"
                           style={{ border: `2px solid ${primaryColor}40` }}
                         />
                       ) : (
                         <div
-                          className="w-16 h-16 rounded-lg flex items-center justify-center"
+                          className="w-16 h-16 rounded-lg flex items-center justify-center hover:ring-2 hover:ring-slate-400 transition-all"
                           style={{
                             backgroundColor: `${primaryColor}20`,
                             border: `2px solid ${primaryColor}40`,
@@ -1024,14 +1031,21 @@ export default function ProductsPage() {
                           <Package className="w-8 h-8" style={{ color: primaryColor }} />
                         </div>
                       )}
-                    </div>
+                    </button>
 
-                    {/* Product Info */}
+                    {/* Product Info — title click to edit */}
                     <div className="flex-1 min-w-0">
-                      <h4 className="text-sm font-semibold text-gray-900 dark:text-white truncate">
-                        {product.name}
-                      </h4>
-                      <p className="text-xs text-gray-400 truncate">{product.title}</p>
+                      <button
+                        type="button"
+                        onClick={() => handleEditProduct(product)}
+                        className="text-left w-full"
+                        title="Editar producto"
+                      >
+                        <h4 className="text-sm font-semibold text-gray-900 dark:text-white truncate hover:text-slate-600 dark:hover:text-slate-300 transition-colors">
+                          {product.name}
+                        </h4>
+                        <p className="text-xs text-gray-400 truncate">{product.title}</p>
+                      </button>
                       <div className="flex items-center space-x-2 mt-1">
                         <span className="text-sm font-medium text-gray-900 dark:text-white">
                           ${product.price.toLocaleString()} {product.currency}
