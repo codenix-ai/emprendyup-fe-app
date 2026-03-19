@@ -1,17 +1,6 @@
 'use client';
 
 import React from 'react';
-import {
-  BarChart as RechartsBarChart,
-  Bar,
-  XAxis,
-  YAxis,
-  CartesianGrid,
-  Tooltip,
-  ResponsiveContainer,
-  LabelList,
-  Cell,
-} from 'recharts';
 
 interface BarChartInternalProps {
   data: Array<{ [key: string]: any }>;
@@ -20,6 +9,7 @@ interface BarChartInternalProps {
   title?: string;
   color?: string;
   height?: number;
+  containerClassName?: string;
 }
 
 export default function BarChartInternal({
@@ -29,11 +19,15 @@ export default function BarChartInternal({
   title,
   color = '#3b82f6',
   height = 300,
+  containerClassName,
 }: BarChartInternalProps) {
+  const defaultContainerClass =
+    'bg-white dark:bg-gray-800 rounded-lg shadow-sm border border-gray-200 dark:border-gray-700 p-6';
+  const wrapClass = containerClassName ?? defaultContainerClass;
   // Validate data before rendering
   if (!data || !Array.isArray(data) || data.length === 0) {
     return (
-      <div className="bg-white dark:bg-gray-800 rounded-lg shadow-sm border border-gray-200 dark:border-gray-700 p-6">
+      <div className={wrapClass}>
         {title && (
           <h3 className="text-lg font-semibold text-gray-900 dark:text-white mb-4">{title}</h3>
         )}
@@ -49,13 +43,12 @@ export default function BarChartInternal({
 
   // Compute max value to add padding to Y domain (based on displayed data)
   const maxValue = Math.max(...displayedData.map((d: any) => Number(d[yKey] || 0)));
-  const yDomainMax = maxValue > 0 ? Math.ceil(maxValue * 1.2) : 10;
 
   // Check if all values are zero
   const allZero = displayedData.every((d: any) => Number(d[yKey] || 0) === 0);
 
   return (
-    <div className="bg-white dark:bg-gray-800 rounded-lg shadow-sm border border-gray-200 dark:border-gray-700 p-6">
+    <div className={wrapClass}>
       {title && (
         <h3 className="text-lg font-semibold text-gray-900 dark:text-white mb-4">{title}</h3>
       )}

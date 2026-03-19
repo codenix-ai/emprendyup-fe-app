@@ -84,7 +84,7 @@ export default function Navbar({ navClass, navlight }: NavbarProps) {
             width={48}
             height={48}
             className="h-12 w-12 min-w-[48px] min-h-[48px] object-contain"
-            alt="EmprendyUp Logo"
+            alt="Emprendy.ai Logo"
             priority
           />
         </Link>

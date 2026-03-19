@@ -205,8 +205,8 @@ function SignupForm() {
               className="inline-flex items-center gap-2 mb-8"
               aria-label="Volver al inicio"
             >
-              <Image src="/images/logo.svg" width={40} height={40} alt="EmprendyUp" />
-              <span className="text-white font-bold text-xl">EmprendyUp</span>
+              <Image src="/images/logo.svg" width={40} height={40} alt="Emprendy.ai" />
+              <span className="text-white font-bold text-xl">Emprendy.ai</span>
             </Link>
             <blockquote className="text-white">
               <p className="text-2xl font-semibold leading-snug max-w-sm">
@@ -238,7 +238,7 @@ function SignupForm() {
           >
             {/* Mobile logo */}
             <div className="md:hidden flex justify-center mb-6">
-              <Image src="/images/logo.svg" width={44} height={44} alt="EmprendyUp" />
+              <Image src="/images/logo.svg" width={44} height={44} alt="Emprendy.ai" />
             </div>
 
             <h1 className="text-2xl font-bold text-white mb-1">Crea tu cuenta gratis</h1>

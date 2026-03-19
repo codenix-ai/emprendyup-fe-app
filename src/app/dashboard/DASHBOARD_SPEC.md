@@ -1,6 +1,6 @@
-# EmprendyUp Dashboard Module
+# Emprendy.ai Dashboard Module
 
-This document defines the **Dashboard module** for EmprendyUp.  
+This document defines the **Dashboard module** for Emprendy.ai.  
 The dashboard will support **users** and **admins**, and will be integrated as a separate module into the existing **Next.js + Tailwind CSS** project.
 
 ## 🎯 Goal

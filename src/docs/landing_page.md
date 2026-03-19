@@ -1,5 +1,5 @@
 You are a frontend developer assistant using Vibe Coding.
-Your task is to **improve the landing page of EmprendyUp (https://www.emprendyup.com/)** keeping the current styles (colors, fonts, Tailwind classes) but enhancing the layout with modern sections, smooth animations, and lead capture actions.
+Your task is to **improve the landing page of Emprendy.ai (https://www.emprendyup.com/)** keeping the current styles (colors, fonts, Tailwind classes) but enhancing the layout with modern sections, smooth animations, and lead capture actions.
 
 ### Requirements:
 
@@ -56,4 +56,4 @@ Your task is to **improve the landing page of EmprendyUp (https://www.emprendyup
 
 ### Goal:
 
-The final landing must look modern, interactive, and optimized to convert visitors into leads without losing EmprendyUp’s brand identity, using **Framer Motion** as the animation framework.
+The final landing must look modern, interactive, and optimized to convert visitors into leads without losing Emprendy.ai’s brand identity, using **Framer Motion** as the animation framework.

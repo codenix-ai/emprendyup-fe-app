@@ -20,7 +20,7 @@ export default function Terms() {
         <div className="absolute text-center z-10 bottom-5 start-0 end-0 mx-3">
           <ul className="tracking-[0.5px] mb-0 inline-block">
             <li className="inline-block uppercase text-[13px] font-bold duration-500 ease-in-out hover:text-fourth-base">
-              <Link href="/">EmprendyUp</Link>
+              <Link href="/">Emprendy.ai</Link>
             </li>
             <li className="inline-block text-base text-slate-950 dark:text-white mx-0.5 ltr:rotate-0 rtl:rotate-180">
               <i className="mdi mdi-chevron-right"></i>
@@ -46,7 +46,7 @@ export default function Terms() {
 
                 <h5 className="text-xl font-semibold mb-4 mt-8">1. Introducción</h5>
                 <p className="text-slate-400">
-                  Bienvenido a <b className="text-fourth-400">EmprendyUp</b>. Al acceder y utilizar
+                  Bienvenido a <b className="text-fourth-400">Emprendy.ai</b>. Al acceder y utilizar
                   nuestro sitio web, servicios o productos, aceptas cumplir con los siguientes
                   Términos de Servicio. Si no estás de acuerdo con alguno de ellos, por favor
                   abstente de usar la plataforma.
@@ -75,7 +75,7 @@ export default function Terms() {
                 <h5 className="text-xl font-semibold mb-4 mt-8">4. Uso Aceptable</h5>
                 <p className="text-slate-400">Está estrictamente prohibido:</p>
                 <ul className="list-disc list-inside text-slate-400 mt-2">
-                  <li>Usar EmprendyUp con fines ilegales o no autorizados.</li>
+                  <li>Usar Emprendy.ai con fines ilegales o no autorizados.</li>
                   <li>Distribuir virus, spam o software malicioso.</li>
                   <li>Violar los derechos de propiedad intelectual de terceros.</li>
                   <li>Manipular el contenido o servicios de la plataforma sin autorización.</li>
@@ -84,7 +84,7 @@ export default function Terms() {
                 <h5 className="text-xl font-semibold mb-4 mt-8">5. Propiedad Intelectual</h5>
                 <p className="text-slate-400">
                   Todo el contenido, incluyendo textos, imágenes, logotipos, marcas y código fuente,
-                  es propiedad de EmprendyUp o de sus respectivos propietarios y está protegido por
+                  es propiedad de Emprendy.ai o de sus respectivos propietarios y está protegido por
                   las leyes de propiedad intelectual.
                 </p>
 
@@ -92,7 +92,7 @@ export default function Terms() {
                 <ul className="list-disc list-inside text-slate-400">
                   <li>Los precios y tarifas se encuentran claramente especificados.</li>
                   <li>Todas las transacciones son seguras y están protegidas mediante cifrado.</li>
-                  <li>EmprendyUp no almacena información confidencial de tarjetas de pago.</li>
+                  <li>Emprendy.ai no almacena información confidencial de tarjetas de pago.</li>
                 </ul>
 
                 <h5 className="text-xl font-semibold mb-4 mt-8">7. Cancelaciones y Reembolsos</h5>
@@ -109,7 +109,7 @@ export default function Terms() {
                   8. Limitación de Responsabilidad
                 </h5>
                 <p className="text-slate-400">
-                  EmprendyUp no será responsable por daños indirectos, pérdida de ingresos o
+                  Emprendy.ai no será responsable por daños indirectos, pérdida de ingresos o
                   interrupciones causadas por terceros, fallos técnicos o mal uso de la plataforma.
                 </p>
 

@@ -1,6 +1,6 @@
-# EmprendyUp Dashboard – README
+# Emprendy.ai Dashboard – README
 
-This README describes how to integrate and run the **Dashboard Module** for EmprendyUp inside a **Next.js 15 + Tailwind CSS** project.
+This README describes how to integrate and run the **Dashboard Module** for Emprendy.ai inside a **Next.js 15 + Tailwind CSS** project.
 
 ---
 

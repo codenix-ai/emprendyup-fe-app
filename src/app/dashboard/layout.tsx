@@ -238,12 +238,12 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
                 width={48}
                 height={48}
                 className="h-12 w-12 min-w-[48px] min-h-[48px] object-contain"
-                alt="Logo de EmprendyUp"
+                alt="Logo de Emprendy.ai"
                 priority
               />
               {!collapsed && (
                 <span className="text-lg font-semibold text-gray-900 dark:text-white">
-                  EmprendyUp
+                  Emprendy.ai
                 </span>
               )}
             </Link>
@@ -374,11 +374,11 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
                   width={48}
                   height={48}
                   className="h-12 w-12 min-w-[48px] min-h-[48px] object-contain"
-                  alt="Logo de EmprendyUp"
+                  alt="Logo de Emprendy.ai"
                   priority
                 />
                 <span className="text-lg font-semibold text-gray-900 dark:text-white">
-                  EmprendyUp
+                  Emprendy.ai
                 </span>
               </Link>
               <button

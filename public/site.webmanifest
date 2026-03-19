@@ -1,6 +1,6 @@
 {
-  "name": "EmprendyUp",
-  "short_name": "EmprendyUp",
+  "name": "Emprendy.ai",
+  "short_name": "Emprendy.ai",
   "description": "Ecommerce para emprendedores locales.",
   "start_url": "/",
   "display": "standalone",

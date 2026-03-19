@@ -147,7 +147,7 @@ export default function Footer() {
           <div className="grid md:grid-cols-2 items-center">
             <div className="md:text-start text-center">
               <p className="mb-0">
-                © {new Date().getFullYear()} EmprendyUp. Design & Develop with{' '}
+                © {new Date().getFullYear()} Emprendy.ai. Design & Develop with{' '}
                 <i className="mdi mdi-heart text-red-600"></i> by{' '}
                 <Link href="https://shreethemes.in/" target="_blank" className="text-reset">
                   Shreethemes

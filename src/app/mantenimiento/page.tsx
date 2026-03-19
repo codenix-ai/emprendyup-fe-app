@@ -42,7 +42,7 @@ export default function Maintenance() {
               Volvemos pronto..
             </h1>
             <p className="text-white/70 text-lg max-w-xl mx-auto">
-              Comienza a trabajar con EmprendyUp, la plataforma que te ofrece todo lo que necesitas
+              Comienza a trabajar con Emprendy.ai, la plataforma que te ofrece todo lo que necesitas
               para hacer crecer tu tienda: genera visibilidad, atrae tráfico y conecta con tu
               comunidad.
             </p>

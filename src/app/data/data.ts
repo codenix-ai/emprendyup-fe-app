@@ -220,7 +220,7 @@ export const popularProduct = [
 export const footerSocial = [
   {
     icon: FiShoppingCart,
-    link: 'https://1.envato.market/EmprendyUp-next',
+    link: 'https://1.envato.market/Emprendy.ai-next',
   },
   {
     icon: FiDribbble,
@@ -314,13 +314,13 @@ export const clientData = [
     image: '/images/client/01.jpg',
     name: 'Christa Smith',
     possition: 'Manager',
-    desc: '" EmprendyUp made the processes so easy. EmprendyUp instantly increased the amount of interest and ultimately saved us over $10,000. "',
+    desc: '" Emprendy.ai made the processes so easy. Emprendy.ai instantly increased the amount of interest and ultimately saved us over $10,000. "',
   },
   {
     image: '/images/client/02.jpg',
     name: 'Christa Smith',
     possition: 'Manager',
-    desc: '" I highly recommend EmprendyUp as the new way to sell your home "by owner". My home sold in 24 hours for the asking price. Best $400 you could spend to sell your home. "',
+    desc: '" I highly recommend Emprendy.ai as the new way to sell your home "by owner". My home sold in 24 hours for the asking price. Best $400 you could spend to sell your home. "',
   },
   {
     image: '/images/client/03.jpg',
@@ -338,13 +338,13 @@ export const clientData = [
     image: '/images/client/05.jpg',
     name: 'Christa Smith',
     possition: 'Manager',
-    desc: '" EmprendyUp made selling my home easy and stress free. They went above and beyond what is expected.. "',
+    desc: '" Emprendy.ai made selling my home easy and stress free. They went above and beyond what is expected.. "',
   },
   {
     image: '/images/client/06.jpg',
     name: 'Christa Smith',
     possition: 'Manager',
-    desc: '" EmprendyUp is fair priced, quick to respond, and easy to use. I highly recommend their services! "',
+    desc: '" Emprendy.ai is fair priced, quick to respond, and easy to use. I highly recommend their services! "',
   },
 ];
 
@@ -480,7 +480,7 @@ export const brand = [
       'Doucals',
       'Dr. Martens',
       'Logitech',
-      'EmprendyUp',
+      'Emprendy.ai',
     ],
   },
 ];
@@ -714,7 +714,7 @@ export const faqAbout = [
   {
     icon: FiHelpCircle,
     title: 'Preguntas Frecuentes',
-    desc: 'Resuelve rápidamente tus dudas sobre cómo usar EmprendyUp, conectar tu tienda, y aprovechar las recompensas.',
+    desc: 'Resuelve rápidamente tus dudas sobre cómo usar Emprendy.ai, conectar tu tienda, y aprovechar las recompensas.',
   },
   {
     icon: FiBookmark,
@@ -753,7 +753,7 @@ export const guidenceData = [
       'Actualizar tu publicación',
       'Barrios y zonas',
       'Fotos y fotografía del anuncio',
-      'EmprendyUp Plus',
+      'Emprendy.ai Plus',
       'Software conectado por API',
     ],
   },
@@ -770,8 +770,8 @@ export const guidenceData = [
   {
     name: 'Tus reservas',
     features: [
-      'Seguridad en EmprendyUp',
-      'Experiencias y Aventuras de EmprendyUp',
+      'Seguridad en Emprendy.ai',
+      'Experiencias y Aventuras de Emprendy.ai',
       'Modificar una reserva',
       'Cancelar una reserva',
       'Reservas a largo plazo',
@@ -796,12 +796,12 @@ export const guidenceData = [
 export const faqData = [
   {
     id: 1,
-    title: '¿Cómo funciona EmprendyUp?',
+    title: '¿Cómo funciona Emprendy.ai?',
     desc: 'Conectas tu tienda o creas un catálogo, publicas tus productos y accedes a herramientas que te ayudan a crecer, conectar y ganar recompensas.',
   },
   {
     id: 2,
-    title: '¿Necesito un diseñador para usar EmprendyUp?',
+    title: '¿Necesito un diseñador para usar Emprendy.ai?',
     desc: 'No. Nuestra plataforma está diseñada para que cualquier persona pueda usarla fácilmente, sin conocimientos técnicos ni experiencia en diseño.',
   },
   {
@@ -857,13 +857,13 @@ export const commentsData = [
     image: '/images/client/01.jpg',
     name: 'Laura Martínez',
     time: '13 de marzo de 2025 a la 1:00 p.m.',
-    desc: '"EmprendyUp me ayudó a lanzar mi tienda sin complicaciones. La comunidad y las herramientas son justo lo que necesitaba."',
+    desc: '"Emprendy.ai me ayudó a lanzar mi tienda sin complicaciones. La comunidad y las herramientas son justo lo que necesitaba."',
   },
   {
     image: '/images/client/02.jpg',
     name: 'Andrés Gómez',
     time: '5 de mayo de 2025 a las 10:00 a.m.',
-    desc: '"Gracias a EmprendyUp he podido organizar mi catálogo, conectar con clientes y aumentar mis ventas en pocos meses."',
+    desc: '"Gracias a Emprendy.ai he podido organizar mi catálogo, conectar con clientes y aumentar mis ventas en pocos meses."',
   },
   {
     image: '/images/client/03.jpg',
@@ -875,6 +875,6 @@ export const commentsData = [
     image: '/images/client/04.jpg',
     name: 'Julián Torres',
     time: '20 de junio de 2025 a la 1:30 p.m.',
-    desc: '"La interfaz es súper fácil de usar, incluso sin experiencia técnica. Todo emprendedor debería probar EmprendyUp."',
+    desc: '"La interfaz es súper fácil de usar, incluso sin experiencia técnica. Todo emprendedor debería probar Emprendy.ai."',
   },
 ];

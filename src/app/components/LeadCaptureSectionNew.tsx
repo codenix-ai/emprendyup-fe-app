@@ -110,7 +110,7 @@ const LeadCaptureSectionNew = () => {
                 transition={{ duration: 0.7, delay: 0.5 }}
                 viewport={{ once: true }}
               >
-                Únete a la comunidad EmprendyUp y accede a beneficios exclusivos, soporte IA y
+                Únete a la comunidad Emprendy.ai y accede a beneficios exclusivos, soporte IA y
                 crecimiento acelerado.
               </motion.p>
               <div className="grid grid-cols-2 gap-4 mt-4">

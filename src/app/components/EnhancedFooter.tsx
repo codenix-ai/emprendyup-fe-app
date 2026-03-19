@@ -29,7 +29,7 @@ const EnhancedFooter = () => {
               src="/images/logo.svg"
               width={50}
               height={40}
-              alt="EmprendyUp"
+              alt="Emprendy.au"
               className="mb-4"
             />
             <p className="text-slate-300 mb-6 max-w-md">
@@ -147,7 +147,7 @@ const EnhancedFooter = () => {
               </div>
             </div>
             <p className="text-slate-400 text-sm">
-              © 2025 EmprendyUp. Desarrollado en 🇨🇴 - Todos los derechos reservados.
+              © 2025 Emprendy.au. Desarrollado en 🇨🇴 - Todos los derechos reservados.
             </p>
           </div>
         </div>

@@ -69,7 +69,7 @@ interface StoreData {
 // Datos de ejemplo
 const mockStore: StoreData = {
   id: 'store-1',
-  name: 'EmprendyUp Fashion',
+  name: 'Emprendy.ai Fashion',
   description: 'Productos de moda y estilo de vida premium para emprendedores modernos',
   subdomain: 'emprendyup-fashion',
   customDomain: 'fashion.emprendyup.com',

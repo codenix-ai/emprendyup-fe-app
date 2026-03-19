@@ -280,7 +280,7 @@ export default function PlansPage() {
       // Datos del checkout - usando el formato correcto de ePayco
       const checkoutData = {
         // Información del comercio
-        name: 'EmprendyUp',
+        name: 'Emprendy.ai',
         description: planConfig.description,
         invoice: reference,
         currency: 'cop',
@@ -334,7 +334,7 @@ export default function PlansPage() {
       <div className="min-h-screen bg-gray-50 dark:bg-slate-900">
         {(user?.planStatus === 'ACTIVE' || user?.membershipLevel || user?.plan) && (
           <div className="rounded-xl bg-green-500/10 p-4 text-green-400 mx-4 my-4">
-            🙌 Gracias por confiar en <b>EmprendyUp</b> y ser parte de la comunidad.
+            🙌 Gracias por confiar en <b>Emprendy.ai</b> y ser parte de la comunidad.
             <br />
             Tu plan actual es <b>{user?.plan || user?.membershipLevel || 'N/A'}</b> (
             {(user as any)?.planPeriod === 'MONTHLY'

@@ -30,7 +30,7 @@ export default function About() {
                 Impulsamos Emprendimientos <br /> con Propósito y Potencial
               </h5>
               <p className="text-slate-400 max-w-xl">
-                En EmprendyUp creemos que cada idea tiene el poder de transformar realidades. Nos
+                En Emprendy.ai creemos que cada idea tiene el poder de transformar realidades. Nos
                 enfocamos en brindar herramientas, formación y visibilidad a emprendedores
                 comprometidos con generar impacto. Diseñamos soluciones con propósito, pensando
                 siempre en el crecimiento sostenible y auténtico de nuestra comunidad.

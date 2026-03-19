@@ -33,7 +33,7 @@ const SEOHomepage = () => {
             '@type': 'WebPage',
             '@id': 'https://www.emprendyup.com/#webpage',
             url: 'https://www.emprendyup.com/',
-            name: 'EmprendyUp - Herramientas ideales para emprendedores que buscan crecer.',
+            name: 'Emprendy.ai - Herramientas ideales para emprendedores que buscan crecer.',
             description:
               'Plataforma todo-en-uno para emprendedores: tienda online, marketplace colaborativo, CRM, IA para contenido, chatbot WhatsApp y comunidad',
             inLanguage: 'es-ES',
@@ -41,7 +41,7 @@ const SEOHomepage = () => {
               '@type': 'WebSite',
               '@id': 'https://www.emprendyup.com/#website',
               url: 'https://www.emprendyup.com/',
-              name: 'EmprendyUp',
+              name: 'Emprendy.ai',
               publisher: {
                 '@type': 'Organization',
                 '@id': 'https://www.emprendyup.com/#organization',
@@ -113,12 +113,12 @@ const SEOHomepage = () => {
           __html: JSON.stringify({
             '@context': 'https://schema.org',
             '@type': 'Product',
-            name: 'Plataforma EmprendyUp',
+            name: 'Plataforma Emprendy.ai',
             description:
               'Herramientas integrales para emprendedores: tienda online + marketplace colaborativo + CRM + IA + chatbot WhatsApp + comunidad',
             brand: {
               '@type': 'Brand',
-              name: 'EmprendyUp',
+              name: 'Emprendy.ai',
             },
             category: 'Software de Emprendimiento',
             offers: {
@@ -149,7 +149,7 @@ const SEOHomepage = () => {
                   name: 'María González',
                 },
                 reviewBody:
-                  'EmprendyUp me ayudó a crear mi tienda online en minutos y conectarme con una comunidad increíble de emprendedores.',
+                  'Emprendy.ai me ayudó a crear mi tienda online en minutos y conectarme con una comunidad increíble de emprendedores.',
               },
             ],
           }),
@@ -164,7 +164,7 @@ const SEOHomepage = () => {
             '@context': 'https://schema.org',
             '@type': 'LocalBusiness',
             '@id': 'https://www.emprendyup.com/#business',
-            name: 'EmprendyUp',
+            name: 'Emprendy.ai',
             description:
               'Plataforma integral para emprendedores con herramientas de tecnología, marketplace colaborativo y comunidad de apoyo',
             url: 'https://www.emprendyup.com',

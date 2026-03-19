@@ -35,14 +35,14 @@ export function AppErrorState({
                     width={114}
                     height={22}
                     className="mx-auto block dark:hidden"
-                    alt="Logo de EmprendyUp"
+                    alt="Logo de Emprendy.ai"
                   />
                   <Image
                     src="/images/logo.svg"
                     width={114}
                     height={22}
                     className="mx-auto hidden dark:block"
-                    alt="Logo de EmprendyUp"
+                    alt="Logo de Emprendy.ai"
                   />
                 </Link>
               </div>
@@ -81,7 +81,7 @@ export function AppErrorState({
               </div>
 
               <div className="text-center">
-                <p className="mb-0 text-slate-400">© {new Date().getFullYear()} EmprendyUp.</p>
+                <p className="mb-0 text-slate-400">© {new Date().getFullYear()} Emprendy.ai.</p>
               </div>
             </div>
           </div>

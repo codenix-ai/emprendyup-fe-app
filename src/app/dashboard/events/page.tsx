@@ -1041,7 +1041,7 @@ const EventsPage = () => {
                       onChange={handleInputChange}
                       required
                       className="w-full px-4 py-2 border border-gray-300 dark:border-gray-600 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 bg-white dark:bg-gray-700 text-gray-900 dark:text-white"
-                      placeholder="Ej: Gran Lanzamiento EmprendyUp"
+                      placeholder="Ej: Gran Lanzamiento Emprendy.ai"
                     />
                   </div>
 
@@ -1314,7 +1314,7 @@ const EventsPage = () => {
                       onChange={handleInputChange}
                       required
                       className="w-full px-4 py-2 border border-gray-300 dark:border-gray-600 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 bg-white dark:bg-gray-700 text-gray-900 dark:text-white"
-                      placeholder="EmprendyUp"
+                      placeholder="Emprendy.ai"
                     />
                   </div>
 

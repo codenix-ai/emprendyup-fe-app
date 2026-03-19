@@ -2,16 +2,133 @@
 
 import React, { useEffect, useState } from 'react';
 import { gql, useQuery } from '@apollo/client';
-import { Users, ShoppingCart, DollarSign, TrendingUp, Package } from 'lucide-react';
+import {
+  Users,
+  ShoppingCart,
+  DollarSign,
+  Package,
+  ArrowUpRight,
+  ArrowDownRight,
+  Minus,
+  Store,
+} from 'lucide-react';
 import { useRouter } from 'next/navigation';
-import KPICard from '../components/KPICard';
+import { Barlow_Condensed, Outfit } from 'next/font/google';
+import { motion } from 'framer-motion';
 import LineChart from '../components/LineChart';
 import BarChart from '../components/BarChart';
-import { KPI, ChartData, Customer } from '@/lib/schemas/dashboard';
+import { ChartData, Customer } from '@/lib/schemas/dashboard';
 import { useSessionStore } from '@/lib/store/dashboard';
 import { SectionLoader } from '@/app/components/Loader';
 
-// Queries GraphQL
+// ─── Fonts ───────────────────────────────────────────────────────────────────
+const barlowCondensed = Barlow_Condensed({
+  subsets: ['latin'],
+  weight: ['400', '600', '700', '800', '900'],
+  variable: '--font-barlow',
+  display: 'swap',
+});
+
+const outfit = Outfit({
+  subsets: ['latin'],
+  weight: ['300', '400', '500', '600'],
+  variable: '--font-outfit',
+  display: 'swap',
+});
+
+// ─── StatCard sub-component ───────────────────────────────────────────────────
+interface StatCardProps {
+  label: string;
+  value: string | number;
+  trend?: number;
+  isPositive?: boolean;
+  loading?: boolean;
+  accent: string;
+  icon: React.ComponentType<{ size?: number; strokeWidth?: number }>;
+  index: number;
+}
+
+function StatCard({
+  label,
+  value,
+  trend,
+  isPositive,
+  loading,
+  accent,
+  icon: Icon,
+  index,
+}: StatCardProps) {
+  const hasTrend = trend !== undefined && trend !== 0;
+  const TrendIcon = !hasTrend ? Minus : isPositive ? ArrowUpRight : ArrowDownRight;
+  const trendColor = !hasTrend ? 'rgba(240,238,233,0.25)' : isPositive ? '#00B077' : '#F04E23';
+
+  return (
+    <motion.div
+      initial={{ opacity: 0, y: 24 }}
+      animate={{ opacity: 1, y: 0 }}
+      transition={{ delay: 0.08 + index * 0.07, duration: 0.45, ease: [0.22, 1, 0.36, 1] }}
+      className="relative bg-[#13151F] border border-white/[0.07] overflow-hidden group cursor-default"
+      style={{ borderLeftWidth: 3, borderLeftColor: accent }}
+    >
+      {loading ? (
+        <div className="p-6 animate-pulse space-y-4">
+          <div className="flex justify-between">
+            <div className="h-2.5 bg-white/10 rounded w-28" />
+            <div className="h-5 w-5 bg-white/10 rounded" />
+          </div>
+          <div className="h-12 bg-white/10 rounded w-36" />
+          <div className="h-2.5 bg-white/10 rounded w-24" />
+        </div>
+      ) : (
+        <div className="p-6">
+          <div className="flex items-start justify-between mb-4">
+            <p
+              className="text-[10.5px] font-semibold tracking-[0.18em] uppercase select-none"
+              style={{ fontFamily: 'var(--font-outfit)', color: 'rgba(240,238,233,0.38)' }}
+            >
+              {label}
+            </p>
+            <div
+              style={{ color: accent, opacity: 0.55 }}
+              className="group-hover:opacity-90 transition-opacity duration-200 mt-0.5"
+            >
+              <Icon size={16} strokeWidth={2} />
+            </div>
+          </div>
+
+          <p
+            className="font-black leading-none mb-4 select-none"
+            style={{
+              fontFamily: 'var(--font-barlow)',
+              fontSize: 'clamp(2.1rem, 3.5vw, 2.8rem)',
+              letterSpacing: '-0.025em',
+              color: '#F0EEE9',
+            }}
+          >
+            {typeof value === 'number' ? value.toLocaleString('es-CO') : value}
+          </p>
+
+          <div className="flex items-center gap-1.5">
+            <TrendIcon size={13} strokeWidth={2.5} style={{ color: trendColor }} />
+            <span
+              className="text-[11px] font-medium select-none"
+              style={{ fontFamily: 'var(--font-outfit)', color: trendColor }}
+            >
+              {!hasTrend ? 'Sin variación' : `${isPositive ? '+' : ''}${trend}% vs mes anterior`}
+            </span>
+          </div>
+        </div>
+      )}
+
+      {/* Animated bottom accent on hover */}
+      <div
+        className="absolute bottom-0 left-0 h-[2px] w-0 group-hover:w-full transition-all duration-500 ease-out"
+        style={{ background: `linear-gradient(90deg, ${accent}, transparent)` }}
+      />
+    </motion.div>
+  );
+}
+
 const TOTAL_PRODUCTS_QUERY = gql`
   query {
     totalProducts
@@ -101,34 +218,43 @@ const CONTACT_LEADS_BY_STORE = gql`
   }
 `;
 
-const mockKPIs: KPI = {
-  totalCustomers: 1234,
-  totalOrders: 892,
-  monthlyRevenue: 45600,
-  conversionRate: 3.2,
-  averageOrderValue: 78.5,
+// ─── Lead badge helper ────────────────────────────────────────────────────────
+const LEAD_BADGE: Record<string, { bg: string; text: string; border: string; label: string }> = {
+  lead: {
+    bg: 'rgba(255,210,51,0.12)',
+    text: '#FFD233',
+    border: 'rgba(255,210,51,0.22)',
+    label: 'LEAD',
+  },
+  customer: {
+    bg: 'rgba(0,176,119,0.12)',
+    text: '#00B077',
+    border: 'rgba(0,176,119,0.22)',
+    label: 'CLIENTE',
+  },
+  vip: {
+    bg: 'rgba(240,78,35,0.12)',
+    text: '#F04E23',
+    border: 'rgba(240,78,35,0.22)',
+    label: 'VIP',
+  },
 };
 
+// ─── Main page ────────────────────────────────────────────────────────────────
 export default function InsightsPage() {
   const router = useRouter();
-  const [kpis, setKpis] = useState<KPI | null>(null);
   const [chartData, setChartData] = useState<ChartData | null>(null);
   const [user, setUser] = useState<any>(null);
   const currentStore = useSessionStore((s: any) => s.currentStore);
 
-  // Load user data from localStorage
   useEffect(() => {
     const userData = localStorage.getItem('user');
-    if (userData) {
-      const parsedUser = JSON.parse(userData);
-      setUser(parsedUser);
-    }
+    if (userData) setUser(JSON.parse(userData));
   }, []);
 
-  // Get storeId from either the session store or user data
   const storeId = currentStore?.storeId.id || user?.storeId;
 
-  // Queries para las KPI cards
+  // ── Queries ──────────────────────────────────────────────────────────────────
   const {
     data: totalProductsData,
     loading: loadingProducts,
@@ -149,7 +275,6 @@ export default function InsightsPage() {
     loading: loadingConversionRate,
     error: errorConversionRate,
   } = useQuery(CONVERSION_RATE_QUERY, { variables: { storeId } });
-
   const {
     data: ordersByPeriodData,
     loading: loadingOrdersByPeriod,
@@ -158,45 +283,38 @@ export default function InsightsPage() {
     variables: { period: 'WEEK', storeId: storeId || null, limit: 12.0 },
     skip: !storeId,
   });
-
-  const {
-    data: customersByPeriodData,
-    loading: loadingCustomersByPeriod,
-    error: errorCustomersByPeriod,
-  } = useQuery(CUSTOMERS_BY_PERIOD, {
+  const { data: customersByPeriodData } = useQuery(CUSTOMERS_BY_PERIOD, {
     variables: { period: 'MONTH', storeId: storeId || null, limit: 6.0 },
     skip: !storeId,
   });
-
-  const {
-    data: salesByPeriodData,
-    loading: loadingSalesByPeriod,
-    error: errorSalesByPeriod,
-  } = useQuery(SALES_BY_PERIOD, {
+  const { data: salesByPeriodData } = useQuery(SALES_BY_PERIOD, {
     variables: { period: 'MONTH', storeId: storeId || null, limit: 6.0 },
     skip: !storeId,
   });
-
   const {
-    data,
+    data: leadsData,
     loading: loadingLeads,
     error: errorLeads,
-  } = useQuery(CONTACT_LEADS_BY_STORE, {
-    variables: { storeId: storeId || '' },
-    skip: !storeId,
-  });
+  } = useQuery(CONTACT_LEADS_BY_STORE, { variables: { storeId: storeId || '' }, skip: !storeId });
 
-  // Log any GraphQL errors
   useEffect(() => {
     if (errorProducts) console.error('Products query error:', errorProducts);
     if (errorActiveUsers) console.error('Active users query error:', errorActiveUsers);
     if (errorMonthlySales) console.error('Monthly sales query error:', errorMonthlySales);
     if (errorConversionRate) console.error('Conversion rate query error:', errorConversionRate);
+    if (errorOrdersByPeriod) console.error('Orders by period error:', errorOrdersByPeriod);
     if (errorLeads) console.error('Leads query error:', errorLeads);
-  }, [errorProducts, errorActiveUsers, errorMonthlySales, errorConversionRate, errorLeads]);
+  }, [
+    errorProducts,
+    errorActiveUsers,
+    errorMonthlySales,
+    errorConversionRate,
+    errorOrdersByPeriod,
+    errorLeads,
+  ]);
 
   const leads: Customer[] =
-    data?.contactLeadsByStore?.map((lead: any) => ({
+    leadsData?.contactLeadsByStore?.map((lead: any) => ({
       id: lead.id,
       name: `${lead.firstName} ${lead.lastName}`,
       email: lead.email,
@@ -209,345 +327,509 @@ export default function InsightsPage() {
     })) || [];
 
   useEffect(() => {
-    // Build KPIs and chart data from real query results when available
-    const builtKPIs: KPI = {
-      totalCustomers: 0,
-      totalOrders: 0,
-      monthlyRevenue: monthlySalesData?.monthlySales?.totalSales || mockKPIs.monthlyRevenue,
-      conversionRate: conversionRateData?.conversionRate?.rate || mockKPIs.conversionRate,
-      averageOrderValue:
-        monthlySalesData?.monthlySales?.averageOrderValue || mockKPIs.averageOrderValue,
-    } as KPI;
+    setChartData({
+      customersGrowth: (customersByPeriodData?.customersByPeriod || []).map((c: any) => ({
+        date: c.periodLabel,
+        customers: c.count,
+      })),
+      salesByPeriod: (salesByPeriodData?.salesByPeriod || []).map((s: any) => ({
+        date: s.periodLabel,
+        totalSales: s.totalSales,
+        totalOrders: s.totalOrders,
+        averageOrderValue: s.averageOrderValue,
+      })),
+      ordersByPeriod: ordersByPeriodData?.ordersByPeriod?.length
+        ? ordersByPeriodData.ordersByPeriod.map((o: any) => ({
+            date: o.periodLabel,
+            count: o.count,
+          }))
+        : (salesByPeriodData?.salesByPeriod || []).map((s: any) => ({
+            date: s.periodLabel,
+            count: s.totalOrders || 0,
+          })),
+    } as any);
+  }, [customersByPeriodData, salesByPeriodData, ordersByPeriodData]);
 
-    setKpis(builtKPIs);
+  // ── Derived values ───────────────────────────────────────────────────────────
+  const latestOrders = (() => {
+    const orders = ordersByPeriodData?.ordersByPeriod || [];
+    return orders.length ? (orders[orders.length - 1]?.count ?? 0) : 0;
+  })();
 
-    const builtChartData: ChartData = {
-      customersGrowth:
-        (customersByPeriodData?.customersByPeriod || []).map((c: any) => ({
-          date: c.periodLabel,
-          customers: c.count,
-        })) || [],
-      salesByPeriod:
-        (salesByPeriodData?.salesByPeriod || []).map((s: any) => ({
-          date: s.periodLabel,
-          totalSales: s.totalSales,
-          totalOrders: s.totalOrders,
-          averageOrderValue: s.averageOrderValue,
-        })) || [],
-      ordersByPeriod:
-        (ordersByPeriodData?.ordersByPeriod && ordersByPeriodData.ordersByPeriod.length
-          ? ordersByPeriodData.ordersByPeriod.map((o: any) => ({
-              date: o.periodLabel,
-              count: o.count,
-            }))
-          : (salesByPeriodData?.salesByPeriod || []).map((s: any) => ({
-              date: s.periodLabel,
-              count: s.totalOrders || 0,
-            }))) || [],
-    } as any;
+  const ordersTrend = (() => {
+    const orders = ordersByPeriodData?.ordersByPeriod || [];
+    if (orders.length < 2) return 0;
+    const latest = orders[orders.length - 1];
+    const prev = orders[orders.length - 2];
+    if (!prev?.count) return 0;
+    return Math.round(((latest.count - prev.count) / Math.max(prev.count, 1)) * 1000) / 10;
+  })();
 
-    setChartData(builtChartData);
-  }, [
-    customersByPeriodData,
-    salesByPeriodData,
-    ordersByPeriodData,
-    monthlySalesData,
-    conversionRateData,
-  ]);
+  const statCards: StatCardProps[] = [
+    {
+      label: 'Ventas Mensuales',
+      value: monthlySalesData?.monthlySales
+        ? `$${monthlySalesData.monthlySales.totalSales.toLocaleString('es-CO')}`
+        : '$0',
+      trend: monthlySalesData?.monthlySales?.percentageChange ?? 0,
+      isPositive: (monthlySalesData?.monthlySales?.percentageChange ?? 0) >= 0,
+      loading: loadingMonthlySales,
+      accent: '#F04E23',
+      icon: DollarSign,
+      index: 0,
+    },
+    {
+      label: 'Usuarios Activos',
+      value: activeUsersData?.activeUsers?.count ?? 0,
+      trend: activeUsersData?.activeUsers?.percentageChange ?? 0,
+      isPositive: (activeUsersData?.activeUsers?.percentageChange ?? 0) >= 0,
+      loading: loadingActiveUsers,
+      accent: '#00B077',
+      icon: Users,
+      index: 1,
+    },
+    {
+      label: 'Total Productos',
+      value: totalProductsData?.totalProducts ?? 0,
+      trend: 0,
+      isPositive: true,
+      loading: loadingProducts,
+      accent: '#FFD233',
+      icon: Package,
+      index: 2,
+    },
+    {
+      label: 'Órdenes Recientes',
+      value: latestOrders,
+      trend: ordersTrend,
+      isPositive: ordersTrend >= 0,
+      loading: loadingOrdersByPeriod,
+      accent: '#00B2FF',
+      icon: ShoppingCart,
+      index: 3,
+    },
+  ];
 
-  // Determinar si hay carga en alguna de las queries
-  const isLoading =
-    loadingProducts ||
-    loadingActiveUsers ||
-    loadingMonthlySales ||
-    loadingConversionRate ||
-    loadingLeads ||
-    (typeof loadingOrdersByPeriod !== 'undefined' && loadingOrdersByPeriod) ||
-    (typeof loadingCustomersByPeriod !== 'undefined' && loadingCustomersByPeriod) ||
-    (typeof loadingSalesByPeriod !== 'undefined' && loadingSalesByPeriod);
+  const today = new Date().toLocaleDateString('es-CO', {
+    weekday: 'long',
+    year: 'numeric',
+    month: 'long',
+    day: 'numeric',
+  });
 
-  // Show loading while checking user data
+  // Unused but required to satisfy linter for conversionRateData
+  void conversionRateData;
+  void loadingConversionRate;
+
+  // ── Loading state ────────────────────────────────────────────────────────────
   if (!user) {
     return (
-      <div className="flex items-center justify-center min-h-[400px]">
-        <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-blue-600"></div>
-      </div>
-    );
-  }
-
-  // Show message if no store exists
-  if (user && !storeId) {
-    return (
-      <div className="space-y-6">
-        {/* Encabezado */}
-        <div>
-          <h1 className="text-2xl font-bold text-gray-900 dark:text-white">Panel de Insights</h1>
-          <p className="text-gray-600 dark:text-gray-400">
-            Primero necesitas crear tu tienda para ver las métricas
+      <div
+        className={`${barlowCondensed.variable} ${outfit.variable} min-h-[60vh] bg-[#0B0C11] flex items-center justify-center`}
+      >
+        <div className="flex flex-col items-center gap-4">
+          <div
+            className="w-10 h-10 rounded-full border-2 border-transparent animate-spin"
+            style={{ borderTopColor: '#F04E23', borderRightColor: '#F04E23' }}
+          />
+          <p
+            className="text-[10px] tracking-[0.28em] uppercase"
+            style={{ fontFamily: 'var(--font-outfit)', color: 'rgba(240,238,233,0.3)' }}
+          >
+            Cargando panel
           </p>
         </div>
+      </div>
+    );
+  }
 
-        {/* Message Card */}
-        <div className="bg-blue-50 dark:bg-blue-900/20 border border-blue-200 dark:border-blue-800 rounded-lg p-6">
-          <div className="flex items-center justify-between">
-            <div>
-              <h3 className="text-lg font-semibold text-blue-900 dark:text-blue-100 mb-2">
-                ¡Bienvenido a EmprendyUp!
-              </h3>
-              <p className="text-blue-700 dark:text-blue-300 mb-4">
-                Para comenzar a ver tus métricas e insights, primero necesitas crear tu tienda
-                online.
-              </p>
-              <button
-                onClick={() => router.push('/dashboard/store/new')}
-                className="bg-blue-600 hover:bg-blue-700 text-white px-4 py-2 rounded-md transition-colors"
+  // ── No store state ───────────────────────────────────────────────────────────
+  if (user && !storeId) {
+    return (
+      <div
+        className={`${barlowCondensed.variable} ${outfit.variable} min-h-screen bg-[#0B0C11] p-6 md:p-10`}
+      >
+        <div className="max-w-2xl">
+          <p
+            className="text-[10px] tracking-[0.3em] uppercase mb-3"
+            style={{ fontFamily: 'var(--font-outfit)', color: 'rgba(240,238,233,0.3)' }}
+          >
+            Panel de Insights
+          </p>
+          <h1
+            className="font-black mb-8 leading-tight"
+            style={{
+              fontFamily: 'var(--font-barlow)',
+              fontSize: 'clamp(2rem, 5vw, 3.5rem)',
+              letterSpacing: '-0.025em',
+              color: '#F0EEE9',
+            }}
+          >
+            Bienvenido a <span style={{ color: '#F04E23' }}>Emprendy.ai</span>
+          </h1>
+
+          <div
+            className="border border-white/[0.08] p-8"
+            style={{ borderLeftWidth: 3, borderLeftColor: '#F04E23' }}
+          >
+            <div className="flex items-start gap-6">
+              <div
+                className="w-11 h-11 flex-shrink-0 flex items-center justify-center"
+                style={{ background: 'rgba(240,78,35,0.1)', color: '#F04E23' }}
               >
-                Crear mi tienda
-              </button>
-            </div>
-            <div className="hidden md:block">
-              <Package className="h-16 w-16 text-blue-400" />
+                <Store size={22} />
+              </div>
+              <div>
+                <h3
+                  className="text-base font-semibold mb-2"
+                  style={{ fontFamily: 'var(--font-outfit)', color: '#F0EEE9' }}
+                >
+                  Crea tu primera tienda
+                </h3>
+                <p
+                  className="text-sm mb-6 leading-relaxed"
+                  style={{ fontFamily: 'var(--font-outfit)', color: 'rgba(240,238,233,0.48)' }}
+                >
+                  Para ver tus métricas e insights, primero necesitas crear tu tienda online. Todo
+                  el rendimiento de tu negocio aparecerá aquí.
+                </p>
+                <button
+                  onClick={() => router.push('/dashboard/store/new')}
+                  className="px-6 py-3 text-sm font-semibold tracking-wide transition-all duration-200 hover:opacity-90 active:scale-95"
+                  style={{ fontFamily: 'var(--font-outfit)', background: '#F04E23', color: '#fff' }}
+                >
+                  Crear mi tienda →
+                </button>
+              </div>
             </div>
           </div>
-        </div>
 
-        {/* Demo KPI Cards */}
-        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
-          <KPICard
-            title="Total de Productos"
-            value={0}
-            icon={Package}
-            trend={{ value: 0, isPositive: true }}
-            loading={false}
-          />
-          <KPICard
-            title="Usuarios Activos"
-            value={0}
-            icon={Users}
-            trend={{ value: 0, isPositive: true }}
-            loading={false}
-          />
-          <KPICard
-            title="Ventas Mensuales"
-            value="$0"
-            icon={DollarSign}
-            trend={{ value: 0, isPositive: true }}
-            loading={false}
-          />
-          <KPICard
-            title="Tasa de Conversión"
-            value="0%"
-            icon={TrendingUp}
-            trend={{ value: 0, isPositive: true }}
-            loading={false}
-          />
+          {/* Ghost KPI preview */}
+          <div className="grid grid-cols-2 md:grid-cols-4 gap-3 mt-8 opacity-[0.18] pointer-events-none select-none">
+            {(['Ventas', 'Usuarios', 'Productos', 'Órdenes'] as const).map((lbl, i) => (
+              <div
+                key={lbl}
+                className="bg-[#13151F] border border-white/[0.07] p-4"
+                style={{
+                  borderLeftWidth: 3,
+                  borderLeftColor: ['#F04E23', '#00B077', '#FFD233', '#00B2FF'][i],
+                }}
+              >
+                <p
+                  className="text-[9px] tracking-widest uppercase mb-2"
+                  style={{ fontFamily: 'var(--font-outfit)', color: 'rgba(240,238,233,0.3)' }}
+                >
+                  {lbl}
+                </p>
+                <p
+                  className="text-3xl font-black"
+                  style={{ fontFamily: 'var(--font-barlow)', color: 'rgba(240,238,233,0.2)' }}
+                >
+                  —
+                </p>
+              </div>
+            ))}
+          </div>
         </div>
       </div>
     );
   }
 
-  const getStatusBadge = (status: string) => {
-    const styles = {
-      lead: 'bg-yellow-100 text-yellow-800 dark:bg-yellow-900 dark:text-yellow-300',
-      customer: 'bg-green-100 text-green-800 dark:bg-green-900 dark:text-green-300',
-      vip: 'bg-purple-100 text-purple-800 dark:bg-purple-900 dark:text-purple-300',
-    };
+  // ── Dark chart container class ────────────────────────────────────────────────
+  const darkChartClass = 'bg-[#13151F] p-5 pt-4';
 
-    const etiquetas: Record<string, string> = {
-      lead: 'LEAD',
-      customer: 'CLIENTE',
-      vip: 'VIP',
-    };
-
-    return (
-      <span
-        className={`inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium ${styles[status as keyof typeof styles]}`}
-      >
-        {etiquetas[status] || status.toUpperCase()}
-      </span>
-    );
-  };
-
+  // ── Main render ──────────────────────────────────────────────────────────────
   return (
-    <div className="space-y-6">
-      {/* Encabezado */}
-      <div>
-        <h1 className="text-2xl font-bold text-gray-900 dark:text-white">Panel de Insights</h1>
-        <p className="text-gray-600 dark:text-gray-400">
-          Vista general del rendimiento de tu tienda y análisis de clientes
-        </p>
-      </div>
+    <div className={`${barlowCondensed.variable} ${outfit.variable} min-h-screen bg-[#0B0C11]`}>
+      <div className="p-5 md:p-8 lg:p-10 space-y-8 max-w-[1400px] mx-auto">
+        {/* ── Header ── */}
+        <motion.header
+          initial={{ opacity: 0, y: -14 }}
+          animate={{ opacity: 1, y: 0 }}
+          transition={{ duration: 0.38, ease: [0.22, 1, 0.36, 1] }}
+          className="flex flex-col sm:flex-row sm:items-end justify-between gap-4 pb-7"
+          style={{ borderBottom: '1px solid rgba(255,255,255,0.07)' }}
+        >
+          <div>
+            <p
+              className="text-[10px] tracking-[0.32em] uppercase mb-2"
+              style={{ fontFamily: 'var(--font-outfit)', color: 'rgba(240,238,233,0.32)' }}
+            >
+              Panel de Insights
+            </p>
+            <h1
+              className="font-black leading-none"
+              style={{
+                fontFamily: 'var(--font-barlow)',
+                fontSize: 'clamp(1.8rem, 3.5vw, 2.75rem)',
+                letterSpacing: '-0.02em',
+                color: '#F0EEE9',
+              }}
+            >
+              Pulso de tu <span style={{ color: '#F04E23' }}>negocio</span>
+            </h1>
+          </div>
 
-      {/* Tarjetas KPI actualizadas con los nuevos queries */}
-      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
-        {/* Total de Productos */}
-        <KPICard
-          title="Total de Productos"
-          value={totalProductsData?.totalProducts || 0}
-          icon={Package}
-          trend={{ value: 0, isPositive: true }} // Puedes ajustar este trend según necesites
-          loading={loadingProducts}
-        />
+          <div className="flex items-center gap-3 flex-wrap">
+            {currentStore?.storeId?.name && (
+              <div
+                className="px-3 py-1.5 text-xs font-semibold tracking-wide"
+                style={{
+                  fontFamily: 'var(--font-outfit)',
+                  background: 'rgba(240,78,35,0.1)',
+                  color: '#F04E23',
+                  border: '1px solid rgba(240,78,35,0.22)',
+                }}
+              >
+                {currentStore.storeId.name}
+              </div>
+            )}
+            <p
+              className="text-[11px] capitalize"
+              style={{ fontFamily: 'var(--font-outfit)', color: 'rgba(240,238,233,0.28)' }}
+            >
+              {today}
+            </p>
+          </div>
+        </motion.header>
 
-        {/* Usuarios Activos */}
-        <KPICard
-          title="Usuarios Activos"
-          value={activeUsersData?.activeUsers?.count || 0}
-          icon={Users}
-          trend={{
-            value: activeUsersData?.activeUsers?.percentageChange || 0,
-            isPositive: (activeUsersData?.activeUsers?.percentageChange || 0) >= 0,
-          }}
-          loading={loadingActiveUsers}
-        />
+        {/* ── KPI Grid ── */}
+        <section>
+          <div className="grid grid-cols-1 sm:grid-cols-2 xl:grid-cols-4 gap-[3px] sm:gap-3">
+            {statCards.map((card) => (
+              <StatCard key={card.label} {...card} />
+            ))}
+          </div>
+        </section>
 
-        {/* Ventas Mensuales */}
-        <KPICard
-          title="Ventas Mensuales"
-          value={
-            monthlySalesData?.monthlySales
-              ? `$${monthlySalesData.monthlySales.totalSales.toLocaleString()}`
-              : '$0'
-          }
-          icon={DollarSign}
-          trend={{
-            value: monthlySalesData?.monthlySales?.percentageChange || 0,
-            isPositive: (monthlySalesData?.monthlySales?.percentageChange || 0) >= 0,
-          }}
-          loading={loadingMonthlySales}
-        />
+        {/* ── Charts ── */}
+        <section>
+          <motion.p
+            initial={{ opacity: 0 }}
+            animate={{ opacity: 1 }}
+            transition={{ delay: 0.42 }}
+            className="text-[10px] tracking-[0.28em] uppercase mb-3"
+            style={{ fontFamily: 'var(--font-outfit)', color: 'rgba(240,238,233,0.28)' }}
+          >
+            Tendencias
+          </motion.p>
 
-        {/* Órdenes - último periodo */}
-        <KPICard
-          title="Órdenes (último periodo)"
-          value={(() => {
-            const orders = ordersByPeriodData?.ordersByPeriod || [];
-            const latest = orders.length ? orders[orders.length - 1] : null;
-            return latest ? latest.count : 0;
-          })()}
-          icon={ShoppingCart}
-          trend={{
-            value: (() => {
-              const orders = ordersByPeriodData?.ordersByPeriod || [];
-              if (orders.length < 2) return 0;
-              const latest = orders[orders.length - 1];
-              const prev = orders[orders.length - 2];
-              if (!prev || !prev.count) return 0;
-              const diff = latest.count - prev.count;
-              return Math.round((diff / Math.max(prev.count, 1)) * 100 * 10) / 10; // one decimal
-            })(),
-            isPositive: (() => {
-              const orders = ordersByPeriodData?.ordersByPeriod || [];
-              if (orders.length < 2) return true;
-              const latest = orders[orders.length - 1];
-              const prev = orders[orders.length - 2];
-              return latest.count - (prev?.count || 0) >= 0;
-            })(),
-          }}
-          description={(() => {
-            const orders = ordersByPeriodData?.ordersByPeriod || [];
-            const latest = orders.length ? orders[orders.length - 1] : null;
-            return latest?.periodLabel || '';
-          })()}
-          loading={loadingOrdersByPeriod}
-        />
+          <motion.div
+            initial={{ opacity: 0, y: 14 }}
+            animate={{ opacity: 1, y: 0 }}
+            transition={{ delay: 0.48, duration: 0.4, ease: [0.22, 1, 0.36, 1] }}
+            className="grid grid-cols-1 lg:grid-cols-2 gap-3"
+          >
+            {chartData ? (
+              <>
+                {/* Customers Growth */}
+                <div className="bg-[#13151F] border border-white/[0.07] overflow-hidden">
+                  <div
+                    className="px-5 py-3.5 flex items-center gap-2"
+                    style={{ borderBottom: '1px solid rgba(255,255,255,0.05)' }}
+                  >
+                    <div className="w-0.5 h-4" style={{ background: '#00B077' }} />
+                    <p
+                      className="text-[10.5px] font-semibold tracking-[0.14em] uppercase"
+                      style={{ fontFamily: 'var(--font-outfit)', color: 'rgba(240,238,233,0.42)' }}
+                    >
+                      Crecimiento de Clientes
+                    </p>
+                  </div>
+                  <LineChart
+                    data={chartData.customersGrowth}
+                    xKey="date"
+                    yKey="customers"
+                    title=""
+                    color="#00B077"
+                    theme="dark"
+                    containerClassName={darkChartClass}
+                    height={240}
+                  />
+                </div>
 
-        {/* Órdenes Totales (mantenida como ejemplo adicional) */}
-        {/* <KPICard
-          title="Órdenes Totales"
-          value={kpis?.totalOrders || 0}
-          icon={ShoppingCart}
-          trend={{ value: 8.2, isPositive: true }}
-          loading={isLoading}
-        /> */}
-      </div>
-
-      {/* Gráficas */}
-      <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
-        {chartData ? (
-          <>
-            <LineChart
-              data={chartData.customersGrowth}
-              xKey="date"
-              yKey="customers"
-              title="Crecimiento de Clientes"
-              color="#22c55e"
-            />
-            <BarChart
-              data={chartData.ordersByPeriod || []}
-              xKey="date"
-              yKey="count"
-              title="Órdenes por periodo"
-              color="#3b82f6"
-            />
-          </>
-        ) : (
-          <>
-            <div className="bg-white dark:bg-gray-800 rounded-lg shadow-sm border border-gray-200 dark:border-gray-700 p-6">
-              <div className="animate-pulse h-64 bg-gray-300 dark:bg-gray-600 rounded"></div>
-            </div>
-            <div className="bg-white dark:bg-gray-800 rounded-lg shadow-sm border border-gray-200 dark:border-gray-700 p-6">
-              <div className="animate-pulse h-64 bg-gray-300 dark:bg-gray-600 rounded"></div>
-            </div>
-          </>
-        )}
-      </div>
-
-      {/* Tabla Leads estilo pro */}
-      <div className="bg-white dark:bg-gray-800 rounded-lg shadow border border-gray-200 dark:border-gray-700">
-        <div className="px-6 py-4 border-b border-gray-200 dark:border-gray-700 flex items-center justify-between">
-          <h3 className="text-lg font-semibold text-gray-900 dark:text-white">Leads Recientes</h3>
-        </div>
-        <div className="overflow-x-auto">
-          {loadingLeads ? (
-            <SectionLoader text="Cargando leads..." />
-          ) : leads.length === 0 ? (
-            <div className="p-6 text-center text-gray-500">No hay leads disponibles.</div>
-          ) : (
-            <table className="min-w-full divide-y divide-gray-200 dark:divide-gray-700">
-              <thead className="bg-gray-50 dark:bg-gray-900">
-                <tr>
-                  <th className="px-6 py-3 text-left text-xs font-semibold text-gray-600 dark:text-gray-300 uppercase tracking-wider">
-                    Cliente
-                  </th>
-                  <th className="px-6 py-3 text-left text-xs font-semibold text-gray-600 dark:text-gray-300 uppercase tracking-wider">
-                    Estado
-                  </th>
-                  <th className="px-6 py-3 text-left text-xs font-semibold text-gray-600 dark:text-gray-300 uppercase tracking-wider">
-                    Email
-                  </th>
-                  <th className="px-6 py-3 text-left text-xs font-semibold text-gray-600 dark:text-gray-300 uppercase tracking-wider">
-                    Teléfono
-                  </th>
-                  <th className="px-6 py-3 text-left text-xs font-semibold text-gray-600 dark:text-gray-300 uppercase tracking-wider">
-                    Último Contacto
-                  </th>
-                </tr>
-              </thead>
-              <tbody className="divide-y divide-gray-200 dark:divide-gray-700">
-                {leads.map((lead) => (
-                  <tr key={lead.id} className="hover:bg-gray-50 dark:hover:bg-gray-700 transition">
-                    <td className="px-6 py-4 whitespace-nowrap">
-                      <div className="text-sm font-medium text-gray-900 dark:text-white">
-                        {lead.name}
-                      </div>
-                    </td>
-                    <td className="px-6 py-4 whitespace-nowrap">{getStatusBadge(lead.status)}</td>
-                    <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500 dark:text-gray-400">
-                      {lead.email}
-                    </td>
-                    <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500 dark:text-gray-400">
-                      {lead.phone}
-                    </td>
-                    <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500 dark:text-gray-400">
-                      {new Date(lead.lastContactAt).toLocaleDateString()}
-                    </td>
-                  </tr>
+                {/* Orders by period */}
+                <div className="bg-[#13151F] border border-white/[0.07] overflow-hidden">
+                  <div
+                    className="px-5 py-3.5 flex items-center gap-2"
+                    style={{ borderBottom: '1px solid rgba(255,255,255,0.05)' }}
+                  >
+                    <div className="w-0.5 h-4" style={{ background: '#00B2FF' }} />
+                    <p
+                      className="text-[10.5px] font-semibold tracking-[0.14em] uppercase"
+                      style={{ fontFamily: 'var(--font-outfit)', color: 'rgba(240,238,233,0.42)' }}
+                    >
+                      Órdenes por Periodo
+                    </p>
+                  </div>
+                  <BarChart
+                    data={chartData.ordersByPeriod || []}
+                    xKey="date"
+                    yKey="count"
+                    title=""
+                    color="#00B2FF"
+                    containerClassName={darkChartClass}
+                    height={240}
+                  />
+                </div>
+              </>
+            ) : (
+              <>
+                {[0, 1].map((i) => (
+                  <div key={i} className="bg-[#13151F] border border-white/[0.07] p-5">
+                    <div className="animate-pulse space-y-3">
+                      <div className="h-2.5 bg-white/[0.08] rounded w-36" />
+                      <div className="h-48 bg-white/[0.04] rounded" />
+                    </div>
+                  </div>
                 ))}
-              </tbody>
-            </table>
-          )}
-        </div>
+              </>
+            )}
+          </motion.div>
+        </section>
+
+        {/* ── Leads Table ── */}
+        <motion.section
+          initial={{ opacity: 0, y: 14 }}
+          animate={{ opacity: 1, y: 0 }}
+          transition={{ delay: 0.58, duration: 0.4, ease: [0.22, 1, 0.36, 1] }}
+        >
+          <div className="bg-[#13151F] border border-white/[0.07] overflow-hidden">
+            {/* Table header */}
+            <div
+              className="px-6 py-4 flex items-center justify-between"
+              style={{ borderBottom: '1px solid rgba(255,255,255,0.06)' }}
+            >
+              <div className="flex items-center gap-3">
+                <div className="w-0.5 h-5" style={{ background: '#FFD233' }} />
+                <h3
+                  className="text-sm font-semibold"
+                  style={{ fontFamily: 'var(--font-outfit)', color: '#F0EEE9' }}
+                >
+                  Leads Recientes
+                </h3>
+              </div>
+              {leads.length > 0 && (
+                <span
+                  className="text-[10px] font-semibold px-2.5 py-1 tracking-wide"
+                  style={{
+                    fontFamily: 'var(--font-outfit)',
+                    background: 'rgba(255,210,51,0.1)',
+                    color: '#FFD233',
+                    border: '1px solid rgba(255,210,51,0.2)',
+                  }}
+                >
+                  {leads.length} leads
+                </span>
+              )}
+            </div>
+
+            {loadingLeads ? (
+              <div className="p-6">
+                <SectionLoader text="Cargando leads..." />
+              </div>
+            ) : leads.length === 0 ? (
+              <div
+                className="px-6 py-14 text-center text-sm"
+                style={{ fontFamily: 'var(--font-outfit)', color: 'rgba(240,238,233,0.25)' }}
+              >
+                No hay leads disponibles.
+              </div>
+            ) : (
+              <div className="overflow-x-auto">
+                <table className="w-full">
+                  <thead>
+                    <tr style={{ borderBottom: '1px solid rgba(255,255,255,0.05)' }}>
+                      {['Cliente', 'Estado', 'Email', 'Teléfono', 'Último Contacto'].map((h) => (
+                        <th
+                          key={h}
+                          className="px-6 py-3 text-left text-[10px] font-semibold tracking-[0.15em] uppercase"
+                          style={{
+                            fontFamily: 'var(--font-outfit)',
+                            color: 'rgba(240,238,233,0.28)',
+                          }}
+                        >
+                          {h}
+                        </th>
+                      ))}
+                    </tr>
+                  </thead>
+                  <tbody>
+                    {leads.map((lead, i) => {
+                      const badge =
+                        LEAD_BADGE[lead.status as keyof typeof LEAD_BADGE] ?? LEAD_BADGE.lead;
+                      return (
+                        <motion.tr
+                          key={lead.id}
+                          initial={{ opacity: 0 }}
+                          animate={{ opacity: 1 }}
+                          transition={{ delay: 0.62 + i * 0.035 }}
+                          className="group transition-colors duration-150"
+                          style={{ borderBottom: '1px solid rgba(255,255,255,0.04)' }}
+                          onMouseEnter={(e) => {
+                            (e.currentTarget as HTMLTableRowElement).style.background =
+                              'rgba(255,255,255,0.025)';
+                          }}
+                          onMouseLeave={(e) => {
+                            (e.currentTarget as HTMLTableRowElement).style.background =
+                              'transparent';
+                          }}
+                        >
+                          <td
+                            className="px-6 py-4 text-sm font-medium"
+                            style={{ fontFamily: 'var(--font-outfit)', color: '#F0EEE9' }}
+                          >
+                            {lead.name}
+                          </td>
+                          <td className="px-6 py-4">
+                            <span
+                              className="text-[10px] font-semibold px-2.5 py-1 tracking-wide"
+                              style={{
+                                fontFamily: 'var(--font-outfit)',
+                                background: badge.bg,
+                                color: badge.text,
+                                border: `1px solid ${badge.border}`,
+                              }}
+                            >
+                              {badge.label}
+                            </span>
+                          </td>
+                          <td
+                            className="px-6 py-4 text-sm"
+                            style={{
+                              fontFamily: 'var(--font-outfit)',
+                              color: 'rgba(240,238,233,0.45)',
+                            }}
+                          >
+                            {lead.email}
+                          </td>
+                          <td
+                            className="px-6 py-4 text-sm"
+                            style={{
+                              fontFamily: 'var(--font-outfit)',
+                              color: 'rgba(240,238,233,0.45)',
+                            }}
+                          >
+                            {lead.phone}
+                          </td>
+                          <td
+                            className="px-6 py-4 text-sm"
+                            style={{
+                              fontFamily: 'var(--font-outfit)',
+                              color: 'rgba(240,238,233,0.32)',
+                            }}
+                          >
+                            {new Date(lead.lastContactAt).toLocaleDateString('es-CO')}
+                          </td>
+                        </motion.tr>
+                      );
+                    })}
+                  </tbody>
+                </table>
+              </div>
+            )}
+          </div>
+        </motion.section>
       </div>
     </div>
   );

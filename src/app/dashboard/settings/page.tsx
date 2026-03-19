@@ -14,7 +14,7 @@ const mockUser: UserProfile = {
   role: 'ADMIN',
   avatar: '/api/placeholder/128/128',
   phone: '+1 (555) 123-4567',
-  company: 'EmprendyUp',
+  company: 'Emprendy.ai',
   timezone: 'America/New_York',
 };
 
