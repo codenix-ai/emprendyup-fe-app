@@ -31,13 +31,44 @@ import {
   UserCheck,
   ClipboardList,
   Mail,
+  ExternalLink,
 } from 'lucide-react';
 import Image from 'next/image';
+import { useQuery, gql } from '@apollo/client';
 import { useSessionStore } from '@/lib/store/dashboard';
 import { getCurrentUser } from '@/lib/utils/rbac';
 import { useAuth } from '../hooks/useAuth';
 import { toast } from 'sonner';
 import { PageLoader } from '@/app/components/Loader';
+
+const GET_STORE_DOMAIN = gql`
+  query GetStoreDomain($storeId: String!) {
+    store(storeId: $storeId) {
+      storeId
+      customDomain
+    }
+  }
+`;
+
+const GET_RESTAURANT_DOMAIN = gql`
+  query GetRestaurantDomain($id: ID!) {
+    restaurant(id: $id) {
+      id
+      customDomain
+      slug
+    }
+  }
+`;
+
+const GET_SERVICE_DOMAIN = gql`
+  query GetServiceDomain($id: String!) {
+    serviceProvider(id: $id) {
+      id
+      customDomain
+      slug
+    }
+  }
+`;
 
 // Estructura de navegación agrupada para ADMIN
 const adminNavigationGroups = [
@@ -148,6 +179,46 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
   const [mounted, setMounted] = useState(false);
   const [collapsed, setCollapsed] = useState(false);
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
+
+  const isAdmin = user?.role === 'ADMIN';
+  const isRestaurantType = !isAdmin && !!user?.restaurantId;
+  const isServiceType = !isAdmin && !!user?.serviceProviderId;
+  const isStoreType = !isAdmin && !isRestaurantType && !isServiceType;
+
+  const { data: storeData } = useQuery(GET_STORE_DOMAIN, {
+    variables: { storeId: user?.storeId || '' },
+    skip: !isStoreType || !user?.storeId,
+  });
+
+  const { data: restaurantData } = useQuery(GET_RESTAURANT_DOMAIN, {
+    variables: { id: user?.restaurantId || '' },
+    skip: !isRestaurantType,
+  });
+
+  const { data: serviceData } = useQuery(GET_SERVICE_DOMAIN, {
+    variables: { id: user?.serviceProviderId || '' },
+    skip: !isServiceType,
+  });
+
+  let storeUrl: string | null = null;
+  if (isStoreType && storeData?.store) {
+    const s = storeData.store;
+    storeUrl = s.customDomain ? `https://${s.customDomain}` : `https://${s.storeId}.emprendyup.com`;
+  } else if (isRestaurantType && restaurantData?.restaurant) {
+    const r = restaurantData.restaurant;
+    storeUrl = r.customDomain
+      ? `https://${r.customDomain}`
+      : r.slug
+        ? `https://${r.slug}.emprendyup.com`
+        : null;
+  } else if (isServiceType && serviceData?.serviceProvider) {
+    const sp = serviceData.serviceProvider;
+    storeUrl = sp.customDomain
+      ? `https://${sp.customDomain}`
+      : sp.slug
+        ? `https://${sp.slug}.emprendyup.com`
+        : null;
+  }
 
   const hideDashboardChrome = Boolean(pathname && pathname.includes('/dashboard/store/new'));
 
@@ -291,6 +362,25 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
               );
             })}
           </div>
+
+          {/* Ver mi sitio button */}
+          {storeUrl && (
+            <div className="px-4 pb-2">
+              <a
+                href={storeUrl}
+                target="_blank"
+                rel="noopener noreferrer"
+                data-testid="view-store-button"
+                title="Ver mi sitio"
+                className={`group flex items-center w-full px-2 py-2 text-sm font-medium rounded-md transition-colors bg-fourth-base/10 text-black dark:text-white hover:bg-fourth-base/20 ${collapsed ? 'justify-center' : ''}`}
+              >
+                <ExternalLink
+                  className={`h-5 w-5 flex-shrink-0 text-fourth-base ${collapsed ? '' : 'mr-3'}`}
+                />
+                {!collapsed && <span className="truncate flex-1 text-left">Ver mi sitio</span>}
+              </a>
+            </div>
+          )}
           {/* Pie de barra lateral: usuario y acciones */}
           <div className="px-4 py-4 border-t border-gray-200 dark:border-gray-700">
             {!collapsed ? (
@@ -415,6 +505,19 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
                   </Link>
                 );
               })}
+
+              {storeUrl && (
+                <a
+                  href={storeUrl}
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  data-testid="view-store-button-mobile"
+                  className="group flex items-center w-full px-2 py-2 text-sm font-medium rounded-md transition-colors bg-fourth-base/10 text-black dark:text-white hover:bg-fourth-base/20"
+                >
+                  <ExternalLink className="mr-3 h-5 w-5 text-fourth-base" />
+                  <span className="truncate">Ver mi sitio</span>
+                </a>
+              )}
 
               <button
                 type="button"
