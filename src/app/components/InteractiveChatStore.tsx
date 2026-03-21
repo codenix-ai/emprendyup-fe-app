@@ -820,27 +820,29 @@ const defaultStoreData: StoreData = {
 // @ts-ignore - suppress unused parameter-name warning in the function type annotation
 function ColorPicker({ value, onChange }: { value: string; onChange: (_color: string) => void }) {
   const presetColors = [
-    '#3B82F6',
+    '#F04E23',
     '#EF4444',
     '#10B981',
     '#F59E0B',
     '#8B5CF6',
     '#EC4899',
-    '#6B7280',
-    '#1F2937',
+    '#00B2FF',
+    '#00B077',
   ];
 
   return (
-    <div className="mt-2 space-y-3">
+    <div className="mt-3 space-y-3">
       <div className="flex gap-2 flex-wrap">
         {presetColors.map((color) => (
           <button
             key={color}
             onClick={() => onChange(color)}
-            className={`w-8 h-8 rounded-full border-2 transition-transform ${
-              value === color ? 'border-gray-800 scale-110' : 'border-gray-300'
-            }`}
-            style={{ backgroundColor: color }}
+            className="w-8 h-8 rounded-full transition-transform"
+            style={{
+              backgroundColor: color,
+              border: value === color ? `3px solid #fff` : '2px solid rgba(255,255,255,0.15)',
+              transform: value === color ? 'scale(1.18)' : 'scale(1)',
+            }}
           />
         ))}
       </div>
@@ -849,20 +851,25 @@ function ColorPicker({ value, onChange }: { value: string; onChange: (_color: st
           type="color"
           value={value}
           onChange={(e) => onChange(e.target.value)}
-          className="w-8 h-8 rounded border"
+          className="w-8 h-8 rounded cursor-pointer"
+          style={{ background: 'transparent', border: '1px solid rgba(255,255,255,0.15)' }}
         />
         <input
           type="text"
           value={value}
           onChange={(e) => onChange(e.target.value)}
-          className="flex-1 px-3 py-1 border rounded text-sm font-mono"
+          className="flex-1 px-3 py-1.5 text-sm font-mono rounded-lg outline-none transition-colors"
+          style={{
+            background: 'rgba(255,255,255,0.05)',
+            border: '1px solid rgba(255,255,255,0.12)',
+            color: '#F0EEE9',
+          }}
           placeholder="#000000"
         />
       </div>
     </div>
   );
 }
-
 // GraphQL mutation to create a store
 const CREATE_STORE = gql`
   mutation CreateStore($input: CreateStoreInput!) {
@@ -966,7 +973,20 @@ function SelectInput({
         <button
           key={option}
           onClick={() => onSelect(option)}
-          className="px-3 py-2 bg-blue-50 hover:bg-blue-100 text-black rounded-lg text-sm transition-colors border hover:border-blue-300"
+          className="px-3 py-2.5 text-[#F0EEE9] text-sm font-medium transition-colors text-left"
+          style={{
+            background: '#13151F',
+            border: '1px solid rgba(255,255,255,0.07)',
+            borderRadius: '8px',
+          }}
+          onMouseEnter={(e) => {
+            (e.currentTarget as HTMLButtonElement).style.background = '#1C1E2A';
+            (e.currentTarget as HTMLButtonElement).style.borderColor = 'rgba(255,255,255,0.2)';
+          }}
+          onMouseLeave={(e) => {
+            (e.currentTarget as HTMLButtonElement).style.background = '#13151F';
+            (e.currentTarget as HTMLButtonElement).style.borderColor = 'rgba(255,255,255,0.07)';
+          }}
         >
           {option}
         </button>
@@ -1855,328 +1875,449 @@ export default function InteractiveChatStore() {
         ? 'talking'
         : 'idle';
 
+  const accentColor =
+    storeData.businessCategory === 'restaurant'
+      ? '#00B077'
+      : storeData.businessCategory === 'services'
+        ? '#00B2FF'
+        : '#F04E23';
+
+  const stepLabels = [
+    'Tipo',
+    'Nombre',
+    'Descripción',
+    'Logo',
+    'Colores',
+    'Contacto',
+    'Redes',
+    'Listo',
+  ];
+
   return (
     <div
-      className={`${barlowCondensed.variable} ${outfit.variable} min-h-screen flex flex-col`}
-      style={{ fontFamily: 'var(--font-outfit)', background: '#0B0C11' }}
+      className={`${barlowCondensed.variable} ${outfit.variable} min-h-screen bg-[#0B0C11] flex flex-col`}
+      style={{ fontFamily: 'var(--font-outfit)' }}
     >
-      {/* Ambient background */}
+      {/* Ambient radial glow */}
       <div
         className="fixed inset-0 pointer-events-none"
         style={{
-          background: `radial-gradient(ellipse 80% 40% at 50% 0%, ${accent}14 0%, transparent 70%)`,
+          background: `radial-gradient(ellipse 80% 40% at 50% 0%, ${accentColor}12 0%, transparent 70%)`,
         }}
       />
 
-      {/* Progress hairline at very top */}
-      <div className="fixed top-0 left-0 right-0 h-[2px] bg-white/5 z-50">
+      {/* Top progress bar */}
+      <div className="fixed top-0 left-0 right-0 h-[2px] bg-white/[0.05] z-50">
         <motion.div
           className="h-full"
-          style={{ background: `linear-gradient(90deg, ${accent}, ${accent}88)` }}
-          animate={{ width: `${progress}%` }}
+          style={{ background: `linear-gradient(90deg, ${accentColor}, ${accentColor}88)` }}
+          animate={{ width: `${Math.max(progress, 2)}%` }}
           transition={{ duration: 0.5, ease: 'easeOut' }}
         />
       </div>
 
-      {/* Centered column */}
-      <div className="relative z-10 flex-1 flex flex-col items-center w-full px-4 pt-10 pb-6">
-        <div className="w-full max-w-2xl flex flex-col flex-1">
-          {/* Luna avatar + label */}
-          <motion.div
-            className="flex flex-col items-center mb-5"
-            initial={{ opacity: 0, y: -20 }}
-            animate={{ opacity: 1, y: 0 }}
-            transition={{ duration: 0.6 }}
-          >
-            <AvatarLuna state={avatarState} accent={accent} />
-            <div className="mt-3 flex flex-col items-center gap-1">
-              <span
-                className="text-xl font-bold tracking-wide"
-                style={{ fontFamily: 'var(--font-barlow)', color: accent }}
-              >
-                Luna
-              </span>
-              <span className="text-xs text-white/40 tracking-widest uppercase">
-                Asistente · EmprendYup
-              </span>
-            </div>
-          </motion.div>
+      {/* Main 2-panel layout */}
+      <div className="relative z-10 flex flex-1 h-screen overflow-hidden pt-[2px]">
+        {/* ── LEFT: Avatar sidebar ── */}
+        <div
+          className="hidden md:flex w-72 xl:w-80 flex-shrink-0 flex-col items-center py-10 px-6 gap-6 overflow-y-auto border-r"
+          style={{ background: '#0D0F18', borderColor: 'rgba(255,255,255,0.06)' }}
+        >
+          {/* Brand label */}
+          <div className="w-full">
+            <p
+              className="text-[10px] tracking-[0.3em] uppercase"
+              style={{ color: 'rgba(240,238,233,0.3)', fontFamily: 'var(--font-outfit)' }}
+            >
+              EmprendyUp
+            </p>
+          </div>
 
-          {/* Step progress pills */}
-          {questions.length > 0 && (
-            <div className="flex items-center justify-center gap-1.5 mb-5">
-              {questions.map((_, i) => (
-                <motion.div
-                  key={i}
-                  className="rounded-full"
-                  style={{
-                    height: 4,
-                    width: i === currentStep ? 24 : 8,
-                    background:
-                      i < currentStep
-                        ? accent
-                        : i === currentStep
-                          ? accent
-                          : 'rgba(255,255,255,0.12)',
-                  }}
-                  animate={{ width: i === currentStep ? 24 : 8 }}
-                  transition={{ duration: 0.3 }}
-                />
-              ))}
+          {/* Luna Avatar */}
+          <AvatarLuna state={avatarState} accent={accentColor} />
+
+          {/* Name + status */}
+          <div className="flex flex-col items-center gap-1 -mt-2">
+            <span
+              className="text-lg font-bold tracking-wide"
+              style={{ fontFamily: 'var(--font-barlow)', color: accentColor }}
+            >
+              Luna
+            </span>
+            <span
+              className="text-[11px] tracking-widest uppercase"
+              style={{ color: 'rgba(240,238,233,0.35)', fontFamily: 'var(--font-outfit)' }}
+            >
+              {avatarState === 'talking'
+                ? 'Escribiendo...'
+                : avatarState === 'thinking'
+                  ? 'Pensando...'
+                  : avatarState === 'happy'
+                    ? '¡Listo!'
+                    : 'Tu asistente'}
+            </span>
+          </div>
+
+          {/* Divider */}
+          <div className="w-full h-px" style={{ background: 'rgba(255,255,255,0.06)' }} />
+
+          {/* Progress steps */}
+          {selectedBusinessType && questions.length > 0 && (
+            <div className="w-full space-y-2">
+              <p
+                className="text-[10px] tracking-[0.2em] uppercase mb-3"
+                style={{ color: 'rgba(240,238,233,0.28)', fontFamily: 'var(--font-outfit)' }}
+              >
+                Progreso
+              </p>
+              {stepLabels.map((label, i) => {
+                const isDone = i < currentStep;
+                const isActive = i === currentStep && currentStep < questions.length;
+                return (
+                  <div key={i} className="flex items-center gap-3">
+                    <div
+                      className="w-5 h-5 rounded-full flex items-center justify-center flex-shrink-0 text-[10px] font-bold"
+                      style={{
+                        background: isDone
+                          ? accentColor
+                          : isActive
+                            ? `${accentColor}22`
+                            : 'rgba(255,255,255,0.05)',
+                        border: isActive
+                          ? `1px solid ${accentColor}`
+                          : '1px solid rgba(255,255,255,0.08)',
+                        color: isDone ? '#fff' : isActive ? accentColor : 'rgba(240,238,233,0.3)',
+                      }}
+                    >
+                      {isDone ? '✓' : i + 1}
+                    </div>
+                    <span
+                      className="text-xs font-medium"
+                      style={{
+                        fontFamily: 'var(--font-outfit)',
+                        color: isDone
+                          ? '#F0EEE9'
+                          : isActive
+                            ? accentColor
+                            : 'rgba(240,238,233,0.3)',
+                      }}
+                    >
+                      {label}
+                    </span>
+                  </div>
+                );
+              })}
             </div>
           )}
 
-          {/* Chat card */}
-          <div
-            className="flex-1 flex flex-col rounded-2xl overflow-hidden"
-            style={{ background: '#13151F', border: '1px solid rgba(255,255,255,0.06)' }}
-          >
-            {/* Messages */}
+          {/* Business type badge */}
+          {selectedBusinessType && (
             <div
-              ref={chatRef}
-              className="flex-1 overflow-y-auto p-5 space-y-4"
-              style={{ minHeight: 320, maxHeight: '45vh' }}
+              className="px-3 py-1.5 text-xs font-semibold tracking-wide mt-auto rounded"
+              style={{
+                fontFamily: 'var(--font-outfit)',
+                background: `${accentColor}15`,
+                color: accentColor,
+                border: `1px solid ${accentColor}33`,
+              }}
             >
-              <AnimatePresence initial={false}>
-                {messages.map((msg, idx) => (
-                  <motion.div
-                    key={idx}
-                    initial={{ opacity: 0, y: 12 }}
-                    animate={{ opacity: 1, y: 0 }}
-                    transition={{ duration: 0.3, delay: 0.03 * Math.min(idx, 6) }}
-                    className={`flex ${msg.from === 'user' ? 'justify-end' : 'justify-start'} items-end gap-2.5`}
-                  >
-                    {/* Bot micro-avatar */}
-                    {msg.from === 'bot' && (
-                      <div
-                        className="w-7 h-7 rounded-full flex-shrink-0 flex items-center justify-center text-[10px] font-bold"
-                        style={{
-                          background: `${accent}22`,
-                          border: `1px solid ${accent}44`,
-                          color: accent,
-                        }}
-                      >
-                        L
-                      </div>
-                    )}
-
-                    <div
-                      className="max-w-[82%] px-4 py-3 rounded-2xl text-sm leading-relaxed"
-                      style={
-                        msg.from === 'bot'
-                          ? {
-                              background: 'rgba(255,255,255,0.05)',
-                              border: `1px solid ${accent}22`,
-                              color: '#e2e8f0',
-                              borderBottomLeftRadius: 4,
-                            }
-                          : { background: accent, color: '#fff', borderBottomRightRadius: 4 }
-                      }
-                    >
-                      {msg.from === 'bot' && msg.field && (
-                        <div className="flex items-center gap-1.5 mb-1.5 opacity-50">
-                          <div
-                            className="w-1.5 h-1.5 rounded-full"
-                            style={{ background: accent }}
-                          />
-                          <span
-                            className="text-[10px] uppercase tracking-wider"
-                            style={{ color: accent }}
-                          >
-                            Luna
-                          </span>
-                        </div>
-                      )}
-                      {/* Business type options styled as cards */}
-                      {((msg.field === 'businessCategory' && !selectedBusinessType) ||
-                        (questions.length > 0 &&
-                          currentStep < questions.length &&
-                          msg === messages[messages.length - 1] &&
-                          questions[currentStep]?.type === 'select' &&
-                          questions[currentStep]?.options)) &&
-                      msg.options ? (
-                        <div className="space-y-1 mt-2">
-                          <p className="mb-3 text-white/80">{msg.text}</p>
-                          {msg.field === 'businessCategory' ? (
-                            <div className="space-y-2">
-                              {[
-                                {
-                                  label: 'Productos',
-                                  icon: ShoppingBag,
-                                  color: '#F04E23',
-                                  desc: 'Tienda online de productos físicos o digitales',
-                                },
-                                {
-                                  label: 'Restaurante',
-                                  icon: UtensilsCrossed,
-                                  color: '#00B077',
-                                  desc: 'Menú digital, pedidos y delivery',
-                                },
-                                {
-                                  label: 'Servicios',
-                                  icon: Briefcase,
-                                  color: '#00B2FF',
-                                  desc: 'Agenda, cotizaciones y portafolio',
-                                },
-                              ].map(({ label, icon: Icon, color, desc }) => (
-                                <button
-                                  key={label}
-                                  onClick={() => handleResponse(label)}
-                                  className="w-full flex items-center gap-3 p-3 rounded-xl text-left group transition-all duration-200 hover:scale-[1.02]"
-                                  style={{
-                                    background: `${color}11`,
-                                    border: `1px solid ${color}33`,
-                                  }}
-                                >
-                                  <div
-                                    className="w-9 h-9 rounded-lg flex items-center justify-center flex-shrink-0"
-                                    style={{ background: `${color}22` }}
-                                  >
-                                    <Icon className="w-4 h-4" style={{ color }} />
-                                  </div>
-                                  <div className="flex-1 min-w-0">
-                                    <div className="font-semibold text-white text-sm">{label}</div>
-                                    <div className="text-xs text-white/40 truncate">{desc}</div>
-                                  </div>
-                                  <ChevronRight
-                                    className="w-4 h-4 opacity-30 group-hover:opacity-80 transition-opacity"
-                                    style={{ color }}
-                                  />
-                                </button>
-                              ))}
-                            </div>
-                          ) : (
-                            <div className="flex flex-wrap gap-2 mt-2">
-                              {msg.options.map((opt) => (
-                                <button
-                                  key={opt}
-                                  onClick={() => handleResponse(opt)}
-                                  className="px-3 py-1.5 rounded-lg text-xs font-medium transition-all hover:scale-105"
-                                  style={{
-                                    background: `${accent}22`,
-                                    border: `1px solid ${accent}44`,
-                                    color: accent,
-                                  }}
-                                >
-                                  {opt}
-                                </button>
-                              ))}
-                            </div>
-                          )}
-                        </div>
-                      ) : (
-                        renderMessageContent(msg)
-                      )}
-                    </div>
-
-                    {/* User avatar */}
-                    {msg.from === 'user' && (
-                      <div className="w-7 h-7 rounded-full flex-shrink-0 flex items-center justify-center text-[10px] font-bold bg-white/10 text-white/60">
-                        <User className="w-3.5 h-3.5" />
-                      </div>
-                    )}
-                  </motion.div>
-                ))}
-              </AnimatePresence>
-
-              {/* Typing indicator */}
-              {isTyping && (
-                <motion.div
-                  initial={{ opacity: 0, y: 8 }}
-                  animate={{ opacity: 1, y: 0 }}
-                  className="flex items-end gap-2.5 justify-start"
-                >
-                  <div
-                    className="w-7 h-7 rounded-full flex-shrink-0 flex items-center justify-center text-[10px] font-bold"
-                    style={{
-                      background: `${accent}22`,
-                      border: `1px solid ${accent}44`,
-                      color: accent,
-                    }}
-                  >
-                    L
-                  </div>
-                  <div
-                    className="px-4 py-3 rounded-2xl"
-                    style={{ background: 'rgba(255,255,255,0.05)', borderBottomLeftRadius: 4 }}
-                  >
-                    <div className="flex items-end gap-1">
-                      {[0, 1, 2].map((i) => (
-                        <motion.div
-                          key={i}
-                          className="w-1.5 rounded-full"
-                          style={{ background: accent }}
-                          animate={{ height: [4, 10, 4], opacity: [0.4, 1, 0.4] }}
-                          transition={{ duration: 0.6, repeat: Infinity, delay: i * 0.12 }}
-                        />
-                      ))}
-                    </div>
-                  </div>
-                </motion.div>
-              )}
-              <div ref={bottomRef} />
+              {selectedBusinessType}
             </div>
+          )}
+        </div>
 
-            {/* Description edit */}
-            {showDescriptionEdit && tempDescription && (
-              <div
-                className="px-5 py-4 border-t"
+        {/* ── RIGHT: Chat panel ── */}
+        <div className="flex-1 flex flex-col min-w-0 overflow-hidden">
+          {/* Chat header */}
+          <div
+            className="px-6 py-4 flex items-center justify-between flex-shrink-0"
+            style={{ borderBottom: '1px solid rgba(255,255,255,0.06)' }}
+          >
+            <div>
+              <h1
+                className="font-black leading-none"
                 style={{
-                  borderColor: 'rgba(255,255,255,0.06)',
-                  background: 'rgba(255,255,255,0.02)',
+                  fontFamily: 'var(--font-barlow)',
+                  fontSize: 'clamp(1.1rem, 2.5vw, 1.6rem)',
+                  letterSpacing: '-0.02em',
+                  color: '#F0EEE9',
                 }}
               >
-                <div className="space-y-3">
-                  <div className="flex items-center gap-2 mb-2">
-                    <span className="text-lg">✨</span>
-                    <label className="text-sm font-medium" style={{ color: accent }}>
-                      Descripción generada por IA
-                    </label>
-                  </div>
-                  <div className="relative">
-                    <textarea
-                      value={tempDescription}
-                      onChange={(e) => setTempDescription(e.target.value)}
-                      rows={4}
-                      className="w-full px-4 py-3 rounded-xl resize-none transition-all duration-200 text-sm"
+                Crea tu <span style={{ color: accentColor }}>emprendimiento</span>
+              </h1>
+              <p
+                className="text-[11px] mt-0.5"
+                style={{ fontFamily: 'var(--font-outfit)', color: 'rgba(240,238,233,0.35)' }}
+              >
+                {questions.length > 0
+                  ? `Paso ${Math.min(currentStep + 1, questions.length)} de ${questions.length}`
+                  : 'Selecciona el tipo de emprendimiento'}
+              </p>
+            </div>
+
+            {/* Step pills (mobile / compact) */}
+            {questions.length > 0 && (
+              <div className="flex items-center gap-1">
+                {questions.map((_, i) => (
+                  <motion.div
+                    key={i}
+                    className="rounded-full"
+                    style={{
+                      height: 3,
+                      background:
+                        i < currentStep
+                          ? accentColor
+                          : i === currentStep
+                            ? accentColor
+                            : 'rgba(255,255,255,0.12)',
+                    }}
+                    animate={{ width: i === currentStep ? 20 : 6 }}
+                    transition={{ duration: 0.3 }}
+                  />
+                ))}
+              </div>
+            )}
+          </div>
+
+          {/* Messages area */}
+          <div ref={chatRef} className="flex-1 overflow-y-auto p-6 space-y-5">
+            <AnimatePresence initial={false}>
+              {messages.map((msg, idx) => (
+                <motion.div
+                  key={idx}
+                  initial={{ opacity: 0, y: 12 }}
+                  animate={{ opacity: 1, y: 0 }}
+                  transition={{ duration: 0.3, ease: [0.22, 1, 0.36, 1] }}
+                  className={`flex ${msg.from === 'user' ? 'justify-end' : 'justify-start'} items-end gap-3`}
+                >
+                  {/* Bot micro-avatar */}
+                  {msg.from === 'bot' && (
+                    <div
+                      className="w-8 h-8 rounded-full flex-shrink-0 flex items-center justify-center text-xs font-bold flex-none"
                       style={{
-                        background: 'rgba(255,255,255,0.05)',
-                        border: `1px solid ${accent}33`,
-                        color: '#e2e8f0',
-                        outline: 'none',
+                        background: `${accentColor}20`,
+                        border: `1px solid ${accentColor}40`,
+                        color: accentColor,
+                        fontFamily: 'var(--font-barlow)',
                       }}
-                      placeholder="Edita la descripción aquí..."
-                    />
-                    <div className="absolute bottom-2 right-2 text-xs text-white/30">
-                      {tempDescription.length} caracteres
-                    </div>
-                  </div>
-                  <div className="flex items-center justify-between pt-1">
-                    <p className="text-xs text-white/30 flex items-center gap-1">
-                      <span>💡</span>
-                      Puedes modificar el texto antes de continuar
-                    </p>
-                    <button
-                      onClick={() => {
-                        setStoreData((prev) => ({ ...prev, description: tempDescription }));
-                        setShowDescriptionEdit(false);
-                        setMessages((prev) => [
-                          ...prev,
-                          { from: 'user', text: `📝 ${tempDescription}`, type: 'text' },
-                        ]);
-                        setTempDescription('');
-                        if (currentStep + 1 < questions.length) {
-                          setCurrentStep((prev) => prev + 1);
-                          addBotMessage(currentStep + 1);
-                        } else {
-                          setCurrentStep(questions.length);
-                        }
-                      }}
-                      className="px-4 py-2 text-sm font-semibold rounded-lg transition-all hover:scale-105 flex items-center gap-1"
-                      style={{ background: accent, color: '#fff' }}
                     >
-                      ✅ Confirmar
-                    </button>
+                      L
+                    </div>
+                  )}
+
+                  {/* Message bubble */}
+                  <div
+                    className="max-w-[80%]"
+                    style={{
+                      background: msg.from === 'bot' ? '#13151F' : accentColor,
+                      border: msg.from === 'bot' ? '1px solid rgba(255,255,255,0.07)' : 'none',
+                      borderRadius: msg.from === 'bot' ? '0 16px 16px 16px' : '16px 0 16px 16px',
+                      padding: '12px 16px',
+                      color: msg.from === 'bot' ? '#F0EEE9' : '#fff',
+                      fontFamily: 'var(--font-outfit)',
+                      fontSize: '14px',
+                      lineHeight: '1.6',
+                    }}
+                  >
+                    {msg.from === 'bot' && msg.field && (
+                      <div className="flex items-center gap-1.5 mb-1.5">
+                        {getMessageIcon(msg.field)}
+                        <div
+                          className="w-1.5 h-1.5 rounded-full animate-pulse"
+                          style={{ background: accentColor }}
+                        />
+                      </div>
+                    )}
+
+                    {/* Special businessCategory card rendering */}
+                    {msg.field === 'businessCategory' && !selectedBusinessType ? (
+                      <div>
+                        <p className="mb-3 text-white/80">{msg.text}</p>
+                        <div className="space-y-2">
+                          {[
+                            {
+                              label: 'Productos',
+                              icon: ShoppingBag,
+                              color: '#F04E23',
+                              desc: 'Tienda online de productos físicos o digitales',
+                            },
+                            {
+                              label: 'Restaurante',
+                              icon: UtensilsCrossed,
+                              color: '#00B077',
+                              desc: 'Menú digital, pedidos y delivery',
+                            },
+                            {
+                              label: 'Servicios',
+                              icon: Briefcase,
+                              color: '#00B2FF',
+                              desc: 'Agenda, cotizaciones y portafolio',
+                            },
+                          ].map(({ label, icon: Icon, color, desc }) => (
+                            <motion.button
+                              key={label}
+                              whileHover={{ scale: 1.02 }}
+                              whileTap={{ scale: 0.98 }}
+                              onClick={() => handleResponse(label)}
+                              className="w-full flex items-center gap-4 p-4 cursor-pointer text-left rounded-xl"
+                              style={{
+                                background: `${color}10`,
+                                border: `1px solid ${color}30`,
+                              }}
+                            >
+                              <div
+                                className="w-10 h-10 rounded-lg flex items-center justify-center flex-shrink-0"
+                                style={{ background: `${color}20` }}
+                              >
+                                <Icon className="w-5 h-5" style={{ color }} />
+                              </div>
+                              <div className="flex-1 min-w-0">
+                                <div
+                                  className="font-bold text-white text-base"
+                                  style={{ fontFamily: 'var(--font-barlow)' }}
+                                >
+                                  {label}
+                                </div>
+                                <div className="text-xs text-white/40 truncate">{desc}</div>
+                              </div>
+                              <ChevronRight className="w-4 h-4 opacity-30" style={{ color }} />
+                            </motion.button>
+                          ))}
+                        </div>
+                      </div>
+                    ) : (
+                      renderMessageContent(msg)
+                    )}
+                  </div>
+
+                  {/* User avatar */}
+                  {msg.from === 'user' && (
+                    <div
+                      className="w-8 h-8 rounded-full flex-shrink-0 flex items-center justify-center text-xs font-bold text-white/60 flex-none"
+                      style={{
+                        background: 'rgba(255,255,255,0.1)',
+                        border: '1px solid rgba(255,255,255,0.15)',
+                      }}
+                    >
+                      Tú
+                    </div>
+                  )}
+                </motion.div>
+              ))}
+            </AnimatePresence>
+
+            {/* Typing indicator */}
+            {isTyping && (
+              <motion.div
+                initial={{ opacity: 0, y: 8 }}
+                animate={{ opacity: 1, y: 0 }}
+                className="flex items-end gap-3"
+              >
+                <div
+                  className="w-8 h-8 rounded-full flex-shrink-0 flex items-center justify-center text-xs font-bold"
+                  style={{
+                    background: `${accentColor}20`,
+                    border: `1px solid ${accentColor}40`,
+                    color: accentColor,
+                    fontFamily: 'var(--font-barlow)',
+                  }}
+                >
+                  L
+                </div>
+                <div
+                  className="px-4 py-3"
+                  style={{
+                    background: '#13151F',
+                    border: '1px solid rgba(255,255,255,0.07)',
+                    borderRadius: '0 16px 16px 16px',
+                  }}
+                >
+                  <div className="flex items-end gap-1.5 h-5">
+                    {[0, 1, 2].map((i) => (
+                      <motion.div
+                        key={i}
+                        className="w-1.5 rounded-full"
+                        style={{ background: accentColor }}
+                        animate={{ height: [4, 10, 4], opacity: [0.4, 1, 0.4] }}
+                        transition={{ duration: 0.6, repeat: Infinity, delay: i * 0.12 }}
+                      />
+                    ))}
+                  </div>
+                </div>
+              </motion.div>
+            )}
+
+            {/* Description edit panel */}
+            {showDescriptionEdit && tempDescription && (
+              <div
+                className="rounded-2xl overflow-hidden"
+                style={{ background: '#13151F', border: '1px solid rgba(255,255,255,0.07)' }}
+              >
+                <div className="px-5 py-4">
+                  <div className="space-y-3">
+                    <div className="flex items-center gap-2">
+                      <span className="text-base">✨</span>
+                      <label
+                        className="text-sm font-medium"
+                        style={{ color: accentColor, fontFamily: 'var(--font-outfit)' }}
+                      >
+                        Descripción generada por IA
+                      </label>
+                    </div>
+                    <div className="relative">
+                      <textarea
+                        value={tempDescription}
+                        onChange={(e) => setTempDescription(e.target.value)}
+                        rows={4}
+                        className="w-full px-4 py-3 rounded-xl resize-none text-sm outline-none"
+                        style={{
+                          background: 'rgba(255,255,255,0.04)',
+                          border: `1px solid ${accentColor}33`,
+                          color: '#F0EEE9',
+                          fontFamily: 'var(--font-outfit)',
+                        }}
+                        placeholder="Edita la descripción aquí..."
+                      />
+                      <div
+                        className="absolute bottom-3 right-3 text-xs"
+                        style={{ color: 'rgba(240,238,233,0.3)' }}
+                      >
+                        {tempDescription.length} chars
+                      </div>
+                    </div>
+                    <div className="flex items-center justify-between pt-1">
+                      <p
+                        className="text-xs flex items-center gap-1"
+                        style={{ color: 'rgba(240,238,233,0.3)', fontFamily: 'var(--font-outfit)' }}
+                      >
+                        <span>💡</span> Puedes modificar el texto antes de continuar
+                      </p>
+                      <button
+                        onClick={() => {
+                          setStoreData((prev) => ({ ...prev, description: tempDescription }));
+                          setShowDescriptionEdit(false);
+                          setMessages((prev) => [
+                            ...prev,
+                            { from: 'user', text: `📝 ${tempDescription}`, type: 'text' },
+                          ]);
+                          setTempDescription('');
+                          if (currentStep + 1 < questions.length) {
+                            setCurrentStep((prev) => prev + 1);
+                            addBotMessage(currentStep + 1);
+                          } else {
+                            setCurrentStep(questions.length);
+                          }
+                        }}
+                        className="px-4 py-2 text-sm font-semibold rounded-lg transition-all hover:opacity-90 flex items-center gap-1"
+                        style={{
+                          background: accentColor,
+                          color: '#fff',
+                          fontFamily: 'var(--font-outfit)',
+                        }}
+                      >
+                        ✅ Confirmar
+                      </button>
+                    </div>
                   </div>
                 </div>
               </div>
@@ -2184,18 +2325,26 @@ export default function InteractiveChatStore() {
 
             {/* Specialties Selector */}
             {showSpecialtiesSelector && (
-              <div className="px-5 py-4 border-t" style={{ borderColor: 'rgba(255,255,255,0.06)' }}>
-                <div className="max-w-2xl mx-auto">
+              <div
+                className="rounded-2xl overflow-hidden"
+                style={{ background: '#13151F', border: '1px solid rgba(255,255,255,0.07)' }}
+              >
+                <div className="px-5 py-4">
                   <div className="mb-3">
-                    <h3 className="text-base font-semibold text-white flex items-center gap-2">
+                    <h3
+                      className="text-base font-semibold text-white flex items-center gap-2"
+                      style={{ fontFamily: 'var(--font-outfit)' }}
+                    >
                       <span>✨</span> Selecciona tus especialidades
                     </h3>
-                    <p className="text-xs text-white/40 mt-0.5">
+                    <p
+                      className="text-xs mt-0.5"
+                      style={{ color: 'rgba(240,238,233,0.4)', fontFamily: 'var(--font-outfit)' }}
+                    >
                       Elige al menos 3 para generar una mejor descripción
                     </p>
                   </div>
-
-                  <div className="grid grid-cols-2 sm:grid-cols-3 gap-2 mb-3">
+                  <div className="grid grid-cols-2 sm:grid-cols-3 gap-2 mb-4">
                     {availableSpecialties.map((specialty) => (
                       <button
                         key={specialty}
@@ -2206,13 +2355,13 @@ export default function InteractiveChatStore() {
                               : [...prev, specialty]
                           );
                         }}
-                        className="px-3 py-2 rounded-lg text-xs font-medium transition-all hover:scale-[1.03]"
+                        className="px-3 py-2 rounded-lg text-xs font-medium transition-all hover:scale-[1.03] text-left"
                         style={
                           selectedSpecialties.includes(specialty)
-                            ? { background: accent, color: '#fff' }
+                            ? { background: accentColor, color: '#fff' }
                             : {
-                                background: 'rgba(255,255,255,0.06)',
-                                color: 'rgba(255,255,255,0.6)',
+                                background: 'rgba(255,255,255,0.05)',
+                                color: 'rgba(240,238,233,0.6)',
                                 border: '1px solid rgba(255,255,255,0.08)',
                               }
                         }
@@ -2222,9 +2371,11 @@ export default function InteractiveChatStore() {
                       </button>
                     ))}
                   </div>
-
                   <div className="flex items-center justify-between gap-3">
-                    <p className="text-xs text-white/30">
+                    <p
+                      className="text-xs"
+                      style={{ color: 'rgba(240,238,233,0.3)', fontFamily: 'var(--font-outfit)' }}
+                    >
                       {selectedSpecialties.length} seleccionada
                       {selectedSpecialties.length !== 1 ? 's' : ''}
                     </p>
@@ -2241,24 +2392,19 @@ export default function InteractiveChatStore() {
                         className="px-3 py-2 text-xs font-medium rounded-lg transition-all"
                         style={{
                           background: 'rgba(255,255,255,0.06)',
-                          color: 'rgba(255,255,255,0.5)',
+                          color: 'rgba(240,238,233,0.5)',
+                          fontFamily: 'var(--font-outfit)',
                         }}
                       >
                         Omitir
                       </button>
                       <button
                         onClick={async () => {
-                          if (selectedSpecialties.length === 0) {
-                            return;
-                          }
-
+                          if (selectedSpecialties.length === 0) return;
                           setShowSpecialtiesSelector(false);
-
-                          // Generar descripción con IA
                           const isRestaurant = storeData.businessCategory === 'restaurant';
                           try {
                             if (!storeData.city || String(storeData.city).trim() === '') {
-                              // Require explicit city selection before sending payload
                               alert('Por favor selecciona la ciudad antes de continuar.');
                               return;
                             }
@@ -2274,19 +2420,13 @@ export default function InteractiveChatStore() {
                               tone: isRestaurant ? 'elegant' : 'professional',
                               language: 'es',
                             };
-
                             const apiUrl =
                               process.env.NEXT_PUBLIC_API_URL || 'http://localhost:4000';
-
                             const response = await fetch(`${apiUrl}/ai/description/generate`, {
                               method: 'POST',
-                              headers: {
-                                'Content-Type': 'application/json',
-                              },
+                              headers: { 'Content-Type': 'application/json' },
                               body: JSON.stringify(requestBody),
                             });
-
-                            // 200 OK o 201 Created son válidos
                             if (response.ok || response.status === 201) {
                               const result = await response.json();
                               if (result.data.description) {
@@ -2298,7 +2438,6 @@ export default function InteractiveChatStore() {
                                   '⚠️ No se encontró description en la respuesta:',
                                   result
                                 );
-                                // Intentar de todas formas mostrar el editor con mensaje de error
                                 setTempDescription(
                                   'No se pudo generar una descripción. Por favor, escribe una manualmente.'
                                 );
@@ -2313,7 +2452,6 @@ export default function InteractiveChatStore() {
                               );
                               const errorText = await response.text();
                               console.error('Error details:', errorText);
-                              // Mostrar editor con mensaje de error
                               setTempDescription(
                                 'Hubo un error al generar la descripción. Por favor, escribe una manualmente.'
                               );
@@ -2322,7 +2460,6 @@ export default function InteractiveChatStore() {
                             }
                           } catch (error) {
                             console.error('💥 Error generando descripción:', error);
-                            // Mostrar editor con mensaje de error
                             setTempDescription(
                               'Error de conexión. Por favor, escribe una descripción manualmente.'
                             );
@@ -2334,10 +2471,13 @@ export default function InteractiveChatStore() {
                         }}
                         disabled={selectedSpecialties.length === 0}
                         className="px-5 py-2 text-xs font-semibold rounded-lg disabled:opacity-40 disabled:cursor-not-allowed transition-all hover:scale-105 flex items-center gap-2"
-                        style={{ background: accent, color: '#fff' }}
+                        style={{
+                          background: accentColor,
+                          color: '#fff',
+                          fontFamily: 'var(--font-outfit)',
+                        }}
                       >
-                        <span>✨</span>
-                        Generar Descripción
+                        <span>✨</span> Generar Descripción
                       </button>
                     </div>
                   </div>
@@ -2345,107 +2485,9 @@ export default function InteractiveChatStore() {
               </div>
             )}
 
-            {/* Input Area */}
-            {!showDescriptionEdit &&
-              !showSpecialtiesSelector &&
-              ((questions.length > 0 && currentStep < questions.length) ||
-                (questions.length === 0 && !selectedBusinessType)) &&
-              messages.length > 0 &&
-              messages[messages.length - 1]?.from === 'bot' &&
-              !(
-                questions.length > 0 &&
-                questions[currentStep]?.field === 'address' &&
-                storeData.businessCategory === 'restaurant'
-              ) &&
-              !['image', 'color', 'select'].includes(
-                questions.length > 0
-                  ? questions[currentStep]?.type
-                  : messages[messages.length - 1]?.type
-              ) && (
-                <div
-                  className="px-5 py-4 border-t"
-                  style={{ borderColor: 'rgba(255,255,255,0.06)' }}
-                >
-                  {validationError && (
-                    <motion.div
-                      initial={{ opacity: 0, y: -4 }}
-                      animate={{ opacity: 1, y: 0 }}
-                      className="mb-3 px-3 py-2 rounded-lg text-xs flex items-center gap-2"
-                      style={{
-                        background: '#ff000018',
-                        border: '1px solid #ff444433',
-                        color: '#ff9999',
-                      }}
-                    >
-                      <span>⚠️</span>
-                      {validationError}
-                      {questions.length > 0 && questions[currentStep]?.validation?.message && (
-                        <span className="opacity-70">
-                          {' '}
-                          — {questions[currentStep]?.validation?.message}
-                        </span>
-                      )}
-                    </motion.div>
-                  )}
-
-                  <div className="flex gap-2">
-                    <input
-                      type="text"
-                      value={input}
-                      onChange={(e) => {
-                        setInput(e.target.value);
-                        setValidationError(null);
-                      }}
-                      onKeyPress={handleKeyPress}
-                      placeholder={
-                        questions.length > 0
-                          ? `${questions[currentStep]?.text.split('?')[0]}...`
-                          : 'Escribe tu respuesta...'
-                      }
-                      className="flex-1 px-4 py-2.5 rounded-xl text-sm transition-all outline-none"
-                      style={{
-                        background: 'rgba(255,255,255,0.05)',
-                        border: `1px solid ${validationError ? '#ff4444' : `${accent}44`}`,
-                        color: '#e2e8f0',
-                      }}
-                    />
-                    <div className="flex gap-1.5">
-                      {questions.length > 0 && questions[currentStep]?.optional && (
-                        <button
-                          onClick={handleSkip}
-                          className="px-3 py-2.5 rounded-xl text-xs transition-all hover:scale-105"
-                          style={{
-                            background: 'rgba(255,255,255,0.06)',
-                            color: 'rgba(255,255,255,0.5)',
-                          }}
-                          title="Saltar pregunta opcional"
-                        >
-                          Saltar
-                        </button>
-                      )}
-                      <button
-                        onClick={handleSend}
-                        disabled={
-                          !input.trim() && questions.length > 0 && !questions[currentStep]?.optional
-                        }
-                        className="px-4 py-2.5 rounded-xl text-sm font-semibold transition-all hover:scale-105 disabled:opacity-40 flex items-center gap-1.5"
-                        style={{ background: accent, color: '#fff' }}
-                      >
-                        <Send className="w-3.5 h-3.5" />
-                        Enviar
-                      </button>
-                    </div>
-                  </div>
-                  {questions.length > 0 && questions[currentStep]?.optional && (
-                    <p className="text-[10px] text-white/25 mt-2">
-                      💡 Pregunta opcional — puedes saltarla
-                    </p>
-                  )}
-                </div>
-              )}
-
+            {/* Completion / Review area */}
             {questions.length > 0 && currentStep >= questions.length && (
-              <div className="px-5 py-6 border-t" style={{ borderColor: 'rgba(255,255,255,0.06)' }}>
+              <div className="py-4">
                 {createdStoreId ? (
                   <motion.div
                     initial={{ opacity: 0, scale: 0.95 }}
@@ -2454,7 +2496,7 @@ export default function InteractiveChatStore() {
                   >
                     <motion.div
                       className="w-16 h-16 rounded-full flex items-center justify-center mx-auto"
-                      style={{ background: `${accent}22`, border: `2px solid ${accent}` }}
+                      style={{ background: `${accentColor}22`, border: `2px solid ${accentColor}` }}
                       animate={{ scale: [1, 1.12, 1] }}
                       transition={{ duration: 0.6, repeat: 3 }}
                     >
@@ -2470,19 +2512,17 @@ export default function InteractiveChatStore() {
                           ? '¡Tu empresa de servicios ha sido creada!'
                           : '¡Tu tienda ha sido creada!'}
                     </h2>
-                    <p className="text-sm text-white/40">
+                    <p
+                      className="text-sm"
+                      style={{ color: 'rgba(240,238,233,0.4)', fontFamily: 'var(--font-outfit)' }}
+                    >
                       Próximamente recibirás un email con los detalles de acceso.
                     </p>
-                    <div className="flex items-center justify-center gap-3">
+                    <div className="flex items-center justify-center gap-3 flex-wrap">
                       {(() => {
-                        // Build a friendly URL depending on the created resource type.
-                        // - For stores (products), prefer `shopUrl` or subdomain: `https://{storeId}.emprendyup.com`.
-                        // - For restaurants/services, prefer a path using `slug`: `https://emprendyup.com/{slug}`.
                         const category =
                           (createdStore && createdStore.businessCategory) ||
                           storeData.businessCategory;
-
-                        // If the created resource is a restaurant or service, prefer slug paths
                         if (category === 'restaurant' || category === 'services') {
                           const slug = createdStore?.slug || createdStoreId;
                           if (slug)
@@ -2490,7 +2530,11 @@ export default function InteractiveChatStore() {
                               <a
                                 href={`https://${slug}.emprendyup.com`}
                                 className="px-5 py-2.5 text-sm font-semibold rounded-xl transition-all hover:scale-105"
-                                style={{ background: accent, color: '#fff' }}
+                                style={{
+                                  background: accentColor,
+                                  color: '#fff',
+                                  fontFamily: 'var(--font-outfit)',
+                                }}
                                 target="_blank"
                                 rel="noopener noreferrer"
                               >
@@ -2498,15 +2542,17 @@ export default function InteractiveChatStore() {
                               </a>
                             );
                         }
-
-                        // Default/store behavior: prefer explicit shopUrl, then storeId subdomain, then createdStoreId as subdomain
                         if (createdStore?.shopUrl) {
                           return (
                             <div className="flex items-center gap-3">
                               <a
                                 href={createdStore.shopUrl}
                                 className="px-5 py-2.5 text-sm font-semibold rounded-xl transition-all hover:scale-105"
-                                style={{ background: accent, color: '#fff' }}
+                                style={{
+                                  background: accentColor,
+                                  color: '#fff',
+                                  fontFamily: 'var(--font-outfit)',
+                                }}
                                 target="_blank"
                                 rel="noopener noreferrer"
                               >
@@ -2518,6 +2564,7 @@ export default function InteractiveChatStore() {
                                 style={{
                                   background: 'rgba(255,255,255,0.08)',
                                   color: 'rgba(255,255,255,0.7)',
+                                  fontFamily: 'var(--font-outfit)',
                                 }}
                               >
                                 Ir al panel
@@ -2525,66 +2572,17 @@ export default function InteractiveChatStore() {
                             </div>
                           );
                         }
-
-                        if (createdStore?.storeId) {
-                          return (
-                            <div className="flex items-center gap-3">
-                              <a
-                                href={`https://${createdStore.storeId}.emprendyup.com`}
-                                className="px-5 py-2.5 text-sm font-semibold rounded-xl transition-all hover:scale-105"
-                                style={{ background: accent, color: '#fff' }}
-                                target="_blank"
-                                rel="noopener noreferrer"
-                              >
-                                Ir a la tienda
-                              </a>
-                              <a
-                                href="/dashboard"
-                                className="px-5 py-2.5 text-sm font-semibold rounded-xl transition-all hover:scale-105"
-                                style={{
-                                  background: 'rgba(255,255,255,0.08)',
-                                  color: 'rgba(255,255,255,0.7)',
-                                }}
-                              >
-                                Ir al panel
-                              </a>
-                            </div>
-                          );
-                        }
-
-                        if (createdStoreId) {
-                          return (
-                            <div className="flex items-center gap-3">
-                              <a
-                                href={`https://${createdStoreId}.emprendyup.com`}
-                                className="px-5 py-2.5 text-sm font-semibold rounded-xl transition-all hover:scale-105"
-                                style={{ background: accent, color: '#fff' }}
-                                target="_blank"
-                                rel="noopener noreferrer"
-                              >
-                                Ir a la tienda
-                              </a>
-                              <a
-                                href="/dashboard"
-                                className="px-5 py-2.5 text-sm font-semibold rounded-xl transition-all hover:scale-105"
-                                style={{
-                                  background: 'rgba(255,255,255,0.08)',
-                                  color: 'rgba(255,255,255,0.7)',
-                                }}
-                              >
-                                Ir al panel
-                              </a>
-                            </div>
-                          );
-                        }
-
-                        // Fallback
+                        const storeLink = createdStore?.storeId || createdStoreId;
                         return (
                           <div className="flex items-center gap-3">
                             <a
-                              href="https://emprendyup.com"
+                              href={`https://${storeLink}.emprendyup.com`}
                               className="px-5 py-2.5 text-sm font-semibold rounded-xl transition-all hover:scale-105"
-                              style={{ background: accent, color: '#fff' }}
+                              style={{
+                                background: accentColor,
+                                color: '#fff',
+                                fontFamily: 'var(--font-outfit)',
+                              }}
                               target="_blank"
                               rel="noopener noreferrer"
                             >
@@ -2596,6 +2594,7 @@ export default function InteractiveChatStore() {
                               style={{
                                 background: 'rgba(255,255,255,0.08)',
                                 color: 'rgba(255,255,255,0.7)',
+                                fontFamily: 'var(--font-outfit)',
                               }}
                             >
                               Ir al panel
@@ -2606,13 +2605,18 @@ export default function InteractiveChatStore() {
                     </div>
                   </motion.div>
                 ) : (
-                  // Botón para revisar datos antes de crear (cuando aún no se ha creado)
                   <>
-                    <div className="text-center mb-4 text-slate-300">
-                      <button
+                    <div className="text-center mb-4">
+                      <motion.button
+                        whileHover={{ scale: 1.04 }}
+                        whileTap={{ scale: 0.97 }}
                         onClick={() => openSummary()}
-                        className="px-5 py-2.5 text-sm font-semibold rounded-xl transition-all hover:scale-105"
-                        style={{ background: accent, color: '#fff' }}
+                        className="px-6 py-3 text-sm font-semibold rounded-xl transition-all"
+                        style={{
+                          background: accentColor,
+                          color: '#fff',
+                          fontFamily: 'var(--font-outfit)',
+                        }}
                         disabled={creating}
                       >
                         {creating
@@ -2622,10 +2626,10 @@ export default function InteractiveChatStore() {
                               ? 'Creando empresa...'
                               : 'Creando tienda...'
                           : 'Revisar información'}
-                      </button>
+                      </motion.button>
                     </div>
 
-                    {/* Modal - Usar el componente correcto según el tipo de negocio */}
+                    {/* Summary Modals */}
                     {storeData.businessCategory === 'restaurant' ? (
                       <RestaurantSummary
                         open={showSummary}
@@ -2635,9 +2639,6 @@ export default function InteractiveChatStore() {
                           setCreateError(null);
                           setCreating(true);
                           try {
-                            let created: any = null;
-
-                            // Crear restaurante con branding
                             const input = {
                               name: updatedData.name,
                               description: updatedData.description || '',
@@ -2655,8 +2656,6 @@ export default function InteractiveChatStore() {
                               googleLocation: updatedData.googleLocation || '',
                               branding: {
                                 logoUrl: updatedData.logoUrl || '',
-                                // faviconUrl: updatedData.faviconUrl || '',
-                                // bannerUrl: updatedData.bannerUrl || '',
                                 coverImageUrl: updatedData.coverImage || '',
                                 primaryColor: updatedData.primaryColor || '#3B82F6',
                                 secondaryColor: updatedData.secondaryColor || '#1F2937',
@@ -2693,12 +2692,11 @@ export default function InteractiveChatStore() {
                             const { data } = await createRestaurantMutation({
                               variables: { input },
                             });
-                            created = data?.createRestaurantWithBranding;
+                            const created = data?.createRestaurantWithBranding;
                             if (created) {
                               setCreatedStoreId(created.id);
                               setCreatedStore(created);
                             }
-
                             setShowSummary(false);
                           } catch (err: any) {
                             setCreateError(err?.message || 'Error al crear el restaurante');
@@ -2716,14 +2714,10 @@ export default function InteractiveChatStore() {
                           setCreateError(null);
                           setCreating(true);
                           try {
-                            let created: any = null;
-
-                            // Crear proveedor de servicios con branding
                             const slug = updatedData.name
                               .toLowerCase()
                               .replace(/[^a-z0-9]+/g, '-')
                               .replace(/^-|-$/g, '');
-
                             const input = {
                               businessName: updatedData.name,
                               type: updatedData.businessType || 'OTHER',
@@ -2734,7 +2728,6 @@ export default function InteractiveChatStore() {
                               buttonColor:
                                 updatedData.buttonColor || updatedData.primaryColor || '#7C3AED',
                               location: `${updatedData.city}, ${updatedData.department || 'Colombia'}`,
-
                               address: updatedData.address,
                               phone: updatedData.phone,
                               whatsappNumber: updatedData.whatsappNumber || updatedData.phone,
@@ -2743,8 +2736,6 @@ export default function InteractiveChatStore() {
                               isActive: true,
                               branding: {
                                 logoUrl: updatedData.logoUrl || '',
-                                // faviconUrl: updatedData.faviconUrl || '',
-                                // bannerUrl: updatedData.bannerUrl || '',
                                 coverImageUrl: updatedData.coverImage || '',
                                 primaryColor: updatedData.primaryColor || '#7C3AED',
                                 secondaryColor: updatedData.secondaryColor || '#1F2937',
@@ -2781,12 +2772,11 @@ export default function InteractiveChatStore() {
                             const { data } = await createServiceProviderMutation({
                               variables: { input },
                             });
-                            created = data?.createServiceProviderWithBranding;
+                            const created = data?.createServiceProviderWithBranding;
                             if (created) {
                               setCreatedStoreId(created.id);
                               setCreatedStore(created);
                             }
-
                             setShowSummary(false);
                           } catch (err: any) {
                             setCreateError(
@@ -2806,31 +2796,25 @@ export default function InteractiveChatStore() {
                           setCreateError(null);
                           setCreating(true);
                           try {
-                            let created: any = null;
-
-                            // Crear tienda de productos (flujo original)
-                            // Filtrar solo los campos válidos para CreateStoreInput
                             const {
                               businessCategory: _bc,
                               coverImage: _ci,
                               googleLocation: _gl,
                               ...validStoreData
                             } = updatedData;
-
                             const input = {
                               ...validStoreData,
                               status: 'active',
                               userId: session?.user?.id || 'anonymous',
                             };
                             const { data } = await createStoreMutation({ variables: { input } });
-                            created = data?.createStore;
+                            const created = data?.createStore;
                             if (created) {
                               setCreatedStoreId(created.storeId);
                               setCreatedStore(created);
                               session.setCurrentStore?.(created as any);
                               session.addStore?.(created as any);
                             }
-
                             setShowSummary(false);
                           } catch (err: any) {
                             setCreateError(err?.message || 'Error al crear la tienda');
@@ -2851,6 +2835,7 @@ export default function InteractiveChatStore() {
                       background: '#ff000018',
                       border: '1px solid #ff444433',
                       color: '#ff9999',
+                      fontFamily: 'var(--font-outfit)',
                     }}
                   >
                     ⚠️ {createError}
@@ -2862,14 +2847,15 @@ export default function InteractiveChatStore() {
                   <div
                     className="mt-3 px-4 py-3 rounded-xl text-xs flex items-center gap-2"
                     style={{
-                      background: `${accent}11`,
-                      border: `1px solid ${accent}33`,
-                      color: accent,
+                      background: `${accentColor}11`,
+                      border: `1px solid ${accentColor}33`,
+                      color: accentColor,
+                      fontFamily: 'var(--font-outfit)',
                     }}
                   >
                     <div
-                      className="w-3.5 h-3.5 border-2 border-t-transparent rounded-full animate-spin"
-                      style={{ borderColor: accent, borderTopColor: 'transparent' }}
+                      className="w-3.5 h-3.5 border-2 border-t-transparent rounded-full animate-spin flex-shrink-0"
+                      style={{ borderColor: accentColor, borderTopColor: 'transparent' }}
                     />
                     {storeData.businessCategory === 'restaurant'
                       ? 'Creando restaurante...'
@@ -2880,12 +2866,125 @@ export default function InteractiveChatStore() {
                 )}
               </div>
             )}
+
+            <div ref={bottomRef} />
           </div>
-          {/* end chat card */}
+
+          {/* ── Input area ── */}
+          {!showDescriptionEdit &&
+            !showSpecialtiesSelector &&
+            ((questions.length > 0 && currentStep < questions.length) ||
+              (questions.length === 0 && !selectedBusinessType)) &&
+            messages.length > 0 &&
+            messages[messages.length - 1]?.from === 'bot' &&
+            !(
+              questions.length > 0 &&
+              questions[currentStep]?.field === 'address' &&
+              storeData.businessCategory === 'restaurant'
+            ) &&
+            !['image', 'color', 'select'].includes(
+              questions.length > 0
+                ? questions[currentStep]?.type
+                : messages[messages.length - 1]?.type
+            ) &&
+            !(
+              messages[messages.length - 1]?.field === 'businessCategory' && !selectedBusinessType
+            ) && (
+              <div
+                className="px-6 py-4 flex-shrink-0"
+                style={{ borderTop: '1px solid rgba(255,255,255,0.06)' }}
+              >
+                {validationError && (
+                  <motion.div
+                    initial={{ opacity: 0, y: -4 }}
+                    animate={{ opacity: 1, y: 0 }}
+                    className="mb-3 px-3 py-2 rounded-lg text-xs flex items-center gap-2"
+                    style={{
+                      background: '#ff000018',
+                      border: '1px solid #ff444433',
+                      color: '#ff9999',
+                      fontFamily: 'var(--font-outfit)',
+                    }}
+                  >
+                    <span>⚠️</span>
+                    {validationError}
+                    {questions.length > 0 && questions[currentStep]?.validation?.message && (
+                      <span className="opacity-70">
+                        {' '}
+                        — {questions[currentStep]?.validation?.message}
+                      </span>
+                    )}
+                  </motion.div>
+                )}
+
+                <div className="flex gap-2">
+                  <input
+                    type="text"
+                    value={input}
+                    onChange={(e) => {
+                      setInput(e.target.value);
+                      setValidationError(null);
+                    }}
+                    onKeyPress={handleKeyPress}
+                    placeholder={
+                      questions.length > 0
+                        ? `${questions[currentStep]?.text.split('?')[0]}...`
+                        : 'Escribe tu respuesta...'
+                    }
+                    className="flex-1 px-4 py-2.5 rounded-xl text-sm outline-none transition-all"
+                    style={{
+                      background: 'rgba(255,255,255,0.05)',
+                      border: `1px solid ${validationError ? '#ff4444' : 'rgba(255,255,255,0.12)'}`,
+                      color: '#F0EEE9',
+                      fontFamily: 'var(--font-outfit)',
+                    }}
+                  />
+                  <div className="flex gap-1.5">
+                    {questions.length > 0 && questions[currentStep]?.optional && (
+                      <button
+                        onClick={handleSkip}
+                        className="px-3 py-2.5 rounded-xl text-xs transition-all hover:scale-105"
+                        style={{
+                          background: 'rgba(255,255,255,0.06)',
+                          color: 'rgba(240,238,233,0.5)',
+                          fontFamily: 'var(--font-outfit)',
+                        }}
+                        title="Saltar pregunta opcional"
+                      >
+                        Saltar
+                      </button>
+                    )}
+                    <button
+                      onClick={handleSend}
+                      disabled={
+                        !input.trim() && questions.length > 0 && !questions[currentStep]?.optional
+                      }
+                      className="px-4 py-2.5 rounded-xl text-sm font-semibold transition-all hover:scale-105 disabled:opacity-40 flex items-center gap-1.5"
+                      style={{
+                        background: accentColor,
+                        color: '#fff',
+                        fontFamily: 'var(--font-outfit)',
+                      }}
+                    >
+                      <Send className="w-3.5 h-3.5" />
+                      Enviar
+                    </button>
+                  </div>
+                </div>
+                {questions.length > 0 && questions[currentStep]?.optional && (
+                  <p
+                    className="text-[10px] mt-2"
+                    style={{ color: 'rgba(240,238,233,0.25)', fontFamily: 'var(--font-outfit)' }}
+                  >
+                    💡 Pregunta opcional — puedes saltarla
+                  </p>
+                )}
+              </div>
+            )}
         </div>
-        {/* end max-w-2xl */}
+        {/* end chat panel */}
       </div>
-      {/* end centered column */}
+      {/* end main 2-panel layout */}
     </div>
   );
 }
