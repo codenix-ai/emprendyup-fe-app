@@ -101,7 +101,11 @@ function SignupForm() {
   }) => {
     const hasBusiness = user.storeId || user.restaurantId || user.serviceProviderId;
     if (user.role === 'ADMIN' || hasBusiness) {
-      router.push('/dashboard/insights');
+      if (user.serviceProviderId) {
+        router.push('/dashboard/service-dashboard');
+      } else {
+        router.push('/dashboard/insights');
+      }
     } else {
       router.push('/dashboard/store/new');
     }

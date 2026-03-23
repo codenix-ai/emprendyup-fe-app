@@ -35,7 +35,12 @@ function AuthSuccessPage() {
 
       // Redirect after storing data
       setTimeout(() => {
-        router.push(redirectTo || '/dashboard/insights');
+        const redirectUser = JSON.parse(searchParams.get('user') || '{}');
+        if (redirectUser?.serviceProviderId) {
+          router.push('/dashboard/service-dashboard');
+        } else {
+          router.push(redirectTo || '/dashboard/insights');
+        }
       }, 1000);
     } else {
       // Handle existing localStorage check (legacy behavior)
@@ -49,7 +54,9 @@ function AuthSuccessPage() {
       }
 
       const timer = setTimeout(() => {
-        if (user?.storeId || user?.restaurantId || user?.serviceProviderId) {
+        if (user?.serviceProviderId) {
+          router.push('/dashboard/service-dashboard');
+        } else if (user?.storeId || user?.restaurantId) {
           router.push('/dashboard/insights');
         } else {
           router.push('/dashboard/store/new');

@@ -119,7 +119,9 @@ export async function GET(req: Request) {
 
     // Determine final redirect based on whether user has a store
     let finalRedirectTo;
-    if (userData && (userData.storeId || userData.restaurantId || userData.serviceProviderId)) {
+    if (userData?.serviceProviderId) {
+      finalRedirectTo = '/dashboard/service-dashboard';
+    } else if (userData && (userData.storeId || userData.restaurantId)) {
       // User has a store, redirect to insights dashboard
       finalRedirectTo = '/dashboard/insights';
     } else {

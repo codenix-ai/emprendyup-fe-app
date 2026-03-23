@@ -249,8 +249,14 @@ export default function InsightsPage() {
 
   useEffect(() => {
     const userData = localStorage.getItem('user');
-    if (userData) setUser(JSON.parse(userData));
-  }, []);
+    if (userData) {
+      const parsed = JSON.parse(userData);
+      setUser(parsed);
+      if (parsed?.serviceProviderId) {
+        router.replace('/dashboard/service-dashboard');
+      }
+    }
+  }, [router]);
 
   const storeId = currentStore?.storeId.id || user?.storeId;
 
