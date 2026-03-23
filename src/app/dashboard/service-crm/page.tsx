@@ -19,6 +19,9 @@ import {
   Pencil,
   X,
   Save,
+  UserPlus,
+  Loader2,
+  MessageCircle,
 } from 'lucide-react';
 
 const GET_ALL_APPOINTMENTS = gql`
@@ -48,6 +51,19 @@ const GET_SERVICES = gql`
       id
       name
       priceAmount
+    }
+  }
+`;
+
+const CREATE_APPOINTMENT_CRM = gql`
+  mutation CreateAppointmentCRM($data: CreateAppointmentInput!) {
+    createAppointment(data: $data) {
+      id
+      customerName
+      customerEmail
+      customerPhone
+      startDatetime
+      endDatetime
     }
   }
 `;
@@ -109,10 +125,22 @@ interface EditClientForm {
   customerPhone: string;
 }
 
+interface NewClientForm {
+  customerName: string;
+  customerEmail: string;
+  customerPhone: string;
+  customerWhatsapp: string;
+  serviceId: string;
+  appointmentDate: string;
+  appointmentTime: string;
+  notes: string;
+}
+
 interface Service {
   id: string;
   name: string;
   priceAmount: number;
+  durationMinutes?: number;
 }
 
 const formatCOP = (n: number) =>
@@ -167,6 +195,98 @@ export default function ServiceCRM() {
   const editNameRef = useRef<HTMLInputElement>(null);
 
   const [updateClientMutation] = useMutation(UPDATE_CLIENT_APPOINTMENTS);
+  const [createAppointmentMutation] = useMutation(CREATE_APPOINTMENT_CRM);
+
+  const [isNewClientOpen, setIsNewClientOpen] = useState(false);
+  const [newClientForm, setNewClientForm] = useState<NewClientForm>({
+    customerName: '',
+    customerEmail: '',
+    customerPhone: '',
+    customerWhatsapp: '',
+    serviceId: '',
+    appointmentDate: '',
+    appointmentTime: '09:00',
+    notes: '',
+  });
+  const [newClientSaving, setNewClientSaving] = useState(false);
+  const [newClientError, setNewClientError] = useState<string | null>(null);
+
+  const handleNewClientChange = (
+    e: React.ChangeEvent<HTMLInputElement | HTMLSelectElement | HTMLTextAreaElement>
+  ) => {
+    const { name, value } = e.target;
+    setNewClientForm((prev) => ({ ...prev, [name]: value }));
+  };
+
+  const handleCreateClient = async () => {
+    if (!newClientForm.customerName.trim()) {
+      setNewClientError('El nombre es requerido');
+      return;
+    }
+    if (!newClientForm.customerEmail.trim()) {
+      setNewClientError('El email es requerido');
+      return;
+    }
+    if (!newClientForm.serviceId) {
+      setNewClientError('Selecciona un servicio');
+      return;
+    }
+    if (!newClientForm.appointmentDate) {
+      setNewClientError('Selecciona una fecha');
+      return;
+    }
+
+    setNewClientSaving(true);
+    setNewClientError(null);
+
+    try {
+      const startDate = new Date(
+        `${newClientForm.appointmentDate}T${newClientForm.appointmentTime}:00`
+      );
+      const service = servicesData?.servicesByProvider?.find(
+        (s: Service) => s.id === newClientForm.serviceId
+      );
+      const durationMs = (service?.durationMinutes ?? 60) * 60000;
+      const endDate = new Date(startDate.getTime() + durationMs);
+
+      await createAppointmentMutation({
+        variables: {
+          data: {
+            serviceProviderId,
+            serviceId: newClientForm.serviceId,
+            customerName: newClientForm.customerName.trim(),
+            customerEmail: newClientForm.customerEmail.trim(),
+            customerPhone: newClientForm.customerPhone.trim() || undefined,
+            customerWhatsappNumber: newClientForm.customerWhatsapp.trim() || undefined,
+            startDatetime: startDate.toISOString(),
+            endDatetime: endDate.toISOString(),
+            notes: newClientForm.notes.trim() || undefined,
+          },
+        },
+      });
+
+      await refetchAppointments();
+      setIsNewClientOpen(false);
+      setNewClientForm({
+        customerName: '',
+        customerEmail: '',
+        customerPhone: '',
+        customerWhatsapp: '',
+        serviceId: '',
+        appointmentDate: '',
+        appointmentTime: '09:00',
+        notes: '',
+      });
+    } catch (err: unknown) {
+      const msg =
+        (err as { graphQLErrors?: { message: string }[] })?.graphQLErrors?.[0]?.message ||
+        (err as Error)?.message ||
+        'Error al crear el cliente';
+      setNewClientError(msg);
+    } finally {
+      setNewClientSaving(false);
+    }
+  };
 
   // Calculate date range based on selection
   const { dateFrom, dateTo } = useMemo(() => {
@@ -540,6 +660,15 @@ export default function ServiceCRM() {
               Citas
             </button>
           </div>
+          {viewMode === 'clients' && (
+            <button
+              onClick={() => setIsNewClientOpen(true)}
+              className="inline-flex items-center gap-2 px-4 py-2 bg-green-600 text-white rounded-lg hover:bg-green-700 text-sm font-medium"
+            >
+              <UserPlus className="h-4 w-4" />
+              Nuevo Cliente
+            </button>
+          )}
           <button
             onClick={handleExportCSV}
             className="inline-flex items-center gap-2 px-4 py-2 bg-fourth-base text-white rounded-lg hover:opacity-90 text-sm font-medium"
@@ -1159,6 +1288,208 @@ export default function ServiceCRM() {
                   <Save className="h-4 w-4" />
                 )}
                 {isSaving ? 'Guardando...' : 'Guardar cambios'}
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* ── New Client Modal ─────────────────────────────────────────── */}
+      {isNewClientOpen && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/60 backdrop-blur-sm">
+          <div className="bg-white dark:bg-gray-800 rounded-2xl shadow-2xl w-full max-w-lg border border-gray-200 dark:border-gray-700 overflow-hidden">
+            {/* Header */}
+            <div className="flex items-center justify-between px-6 py-4 border-b border-gray-200 dark:border-gray-700">
+              <h2 className="text-lg font-bold text-gray-900 dark:text-white flex items-center gap-2">
+                <UserPlus className="h-5 w-5 text-green-500" />
+                Nuevo Cliente
+              </h2>
+              <button
+                onClick={() => {
+                  setIsNewClientOpen(false);
+                  setNewClientError(null);
+                }}
+                className="text-gray-400 hover:text-gray-600 dark:hover:text-gray-300 transition-colors"
+              >
+                <X className="h-5 w-5" />
+              </button>
+            </div>
+
+            {/* Body */}
+            <div className="px-6 py-5 space-y-4 max-h-[70vh] overflow-y-auto">
+              {/* Name */}
+              <div>
+                <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">
+                  Nombre <span className="text-red-500">*</span>
+                </label>
+                <input
+                  type="text"
+                  name="customerName"
+                  value={newClientForm.customerName}
+                  onChange={handleNewClientChange}
+                  placeholder="Nombre completo"
+                  data-testid="new-client-name"
+                  className="w-full px-3 py-2 text-sm border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-900 text-gray-900 dark:text-white placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-green-500"
+                />
+              </div>
+
+              {/* Email */}
+              <div>
+                <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">
+                  Email <span className="text-red-500">*</span>
+                </label>
+                <div className="relative">
+                  <Mail className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-gray-400" />
+                  <input
+                    type="email"
+                    name="customerEmail"
+                    value={newClientForm.customerEmail}
+                    onChange={handleNewClientChange}
+                    placeholder="cliente@email.com"
+                    data-testid="new-client-email"
+                    className="w-full pl-9 pr-3 py-2 text-sm border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-900 text-gray-900 dark:text-white placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-green-500"
+                  />
+                </div>
+              </div>
+
+              {/* Phone + WhatsApp */}
+              <div className="grid grid-cols-2 gap-3">
+                <div>
+                  <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">
+                    Teléfono
+                  </label>
+                  <div className="relative">
+                    <Phone className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-gray-400" />
+                    <input
+                      type="tel"
+                      name="customerPhone"
+                      value={newClientForm.customerPhone}
+                      onChange={handleNewClientChange}
+                      placeholder="3001234567"
+                      data-testid="new-client-phone"
+                      className="w-full pl-9 pr-3 py-2 text-sm border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-900 text-gray-900 dark:text-white placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-green-500"
+                    />
+                  </div>
+                </div>
+                <div>
+                  <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">
+                    WhatsApp
+                  </label>
+                  <div className="relative">
+                    <MessageCircle className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-gray-400" />
+                    <input
+                      type="tel"
+                      name="customerWhatsapp"
+                      value={newClientForm.customerWhatsapp}
+                      onChange={handleNewClientChange}
+                      placeholder="3001234567"
+                      data-testid="new-client-whatsapp"
+                      className="w-full pl-9 pr-3 py-2 text-sm border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-900 text-gray-900 dark:text-white placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-green-500"
+                    />
+                  </div>
+                </div>
+              </div>
+
+              <hr className="border-gray-200 dark:border-gray-700" />
+
+              {/* Service */}
+              <div>
+                <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">
+                  Servicio <span className="text-red-500">*</span>
+                </label>
+                <select
+                  name="serviceId"
+                  value={newClientForm.serviceId}
+                  onChange={handleNewClientChange}
+                  data-testid="new-client-service"
+                  className="w-full px-3 py-2 text-sm border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-900 text-gray-900 dark:text-white focus:outline-none focus:ring-2 focus:ring-green-500"
+                >
+                  <option value="">Selecciona un servicio</option>
+                  {(servicesData?.servicesByProvider ?? []).map((s: Service) => (
+                    <option key={s.id} value={s.id}>
+                      {s.name} — {formatCOP(s.priceAmount)}
+                    </option>
+                  ))}
+                </select>
+              </div>
+
+              {/* Date + Time */}
+              <div className="grid grid-cols-2 gap-3">
+                <div>
+                  <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">
+                    Fecha <span className="text-red-500">*</span>
+                  </label>
+                  <input
+                    type="date"
+                    name="appointmentDate"
+                    value={newClientForm.appointmentDate}
+                    onChange={handleNewClientChange}
+                    data-testid="new-client-date"
+                    className="w-full px-3 py-2 text-sm border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-900 text-gray-900 dark:text-white focus:outline-none focus:ring-2 focus:ring-green-500"
+                  />
+                </div>
+                <div>
+                  <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">
+                    Hora
+                  </label>
+                  <input
+                    type="time"
+                    name="appointmentTime"
+                    value={newClientForm.appointmentTime}
+                    onChange={handleNewClientChange}
+                    data-testid="new-client-time"
+                    className="w-full px-3 py-2 text-sm border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-900 text-gray-900 dark:text-white focus:outline-none focus:ring-2 focus:ring-green-500"
+                  />
+                </div>
+              </div>
+
+              {/* Notes */}
+              <div>
+                <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">
+                  Notas
+                </label>
+                <textarea
+                  name="notes"
+                  value={newClientForm.notes}
+                  onChange={handleNewClientChange}
+                  placeholder="Observaciones sobre el cliente o la cita..."
+                  rows={3}
+                  data-testid="new-client-notes"
+                  className="w-full px-3 py-2 text-sm border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-900 text-gray-900 dark:text-white placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-green-500 resize-none"
+                />
+              </div>
+
+              {newClientError && (
+                <div className="flex items-center gap-2 text-sm text-red-600 dark:text-red-400 bg-red-50 dark:bg-red-900/20 rounded-lg px-3 py-2">
+                  <AlertCircle className="h-4 w-4 flex-shrink-0" />
+                  {newClientError}
+                </div>
+              )}
+            </div>
+
+            {/* Footer */}
+            <div className="flex gap-3 px-6 py-4 border-t border-gray-200 dark:border-gray-700">
+              <button
+                onClick={() => {
+                  setIsNewClientOpen(false);
+                  setNewClientError(null);
+                }}
+                className="flex-1 px-4 py-2 text-sm font-medium text-gray-700 dark:text-gray-300 bg-gray-100 dark:bg-gray-700 rounded-lg hover:bg-gray-200 dark:hover:bg-gray-600 transition-colors"
+              >
+                Cancelar
+              </button>
+              <button
+                onClick={handleCreateClient}
+                disabled={newClientSaving}
+                data-testid="new-client-submit"
+                className="flex-1 px-4 py-2 text-sm font-medium text-white bg-green-600 rounded-lg hover:bg-green-700 disabled:opacity-50 transition-colors flex items-center justify-center gap-2"
+              >
+                {newClientSaving ? (
+                  <Loader2 className="h-4 w-4 animate-spin" />
+                ) : (
+                  <UserPlus className="h-4 w-4" />
+                )}
+                {newClientSaving ? 'Guardando...' : 'Agregar Cliente'}
               </button>
             </div>
           </div>
