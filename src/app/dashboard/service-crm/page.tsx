@@ -22,6 +22,8 @@ import {
   UserPlus,
   Loader2,
   MessageCircle,
+  CreditCard,
+  ChevronDown as ChevronDownIcon,
 } from 'lucide-react';
 
 const GET_ALL_APPOINTMENTS = gql`
@@ -36,6 +38,7 @@ const GET_ALL_APPOINTMENTS = gql`
       endDatetime
       status
       paymentStatus
+      paymentMethod
       notes
       serviceAddress
       serviceCity
@@ -54,6 +57,26 @@ const GET_SERVICES = gql`
     }
   }
 `;
+
+const UPDATE_APPOINTMENT_PAYMENT = gql`
+  mutation UpdateAppointmentPayment($id: String!, $data: UpdateAppointmentInput!) {
+    updateAppointment(id: $id, data: $data) {
+      id
+      paymentStatus
+      paymentMethod
+    }
+  }
+`;
+
+const PAYMENT_METHOD_LABELS: Record<string, string> = {
+  CASH: 'Efectivo',
+  CARD: 'Tarjeta',
+  TRANSFER: 'Transferencia',
+  NEQUI: 'Nequi',
+  DAVIPLATA: 'Daviplata',
+  PSE: 'PSE',
+  OTHER: 'Otro',
+};
 
 const CREATE_APPOINTMENT_CRM = gql`
   mutation CreateAppointmentCRM($data: CreateAppointmentInput!) {
@@ -112,6 +135,7 @@ interface Appointment {
   endDatetime: string;
   status: string;
   paymentStatus: string;
+  paymentMethod?: string;
   notes?: string;
   serviceAddress?: string;
   serviceCity?: string;
@@ -195,7 +219,49 @@ export default function ServiceCRM() {
   const editNameRef = useRef<HTMLInputElement>(null);
 
   const [updateClientMutation] = useMutation(UPDATE_CLIENT_APPOINTMENTS);
+  const [updatePaymentMutation] = useMutation(UPDATE_APPOINTMENT_PAYMENT);
   const [createAppointmentMutation] = useMutation(CREATE_APPOINTMENT_CRM);
+
+  const [editingPayment, setEditingPayment] = useState<{
+    aptId: string;
+    status: string;
+    method: string;
+  } | null>(null);
+  const [paymentSaving, setPaymentSaving] = useState(false);
+
+  const openPaymentEditor = (
+    e: React.MouseEvent,
+    apt: { id: string; paymentStatus: string; paymentMethod?: string }
+  ) => {
+    e.stopPropagation();
+    setEditingPayment({
+      aptId: apt.id,
+      status: apt.paymentStatus,
+      method: apt.paymentMethod ?? '',
+    });
+  };
+
+  const handleSavePayment = async () => {
+    if (!editingPayment) return;
+    setPaymentSaving(true);
+    try {
+      await updatePaymentMutation({
+        variables: {
+          id: editingPayment.aptId,
+          data: {
+            paymentStatus: editingPayment.status,
+            ...(editingPayment.method ? { paymentMethod: editingPayment.method } : {}),
+          },
+        },
+      });
+      await refetchAppointments();
+      setEditingPayment(null);
+    } catch (err) {
+      console.error('Error updating payment:', err);
+    } finally {
+      setPaymentSaving(false);
+    }
+  };
 
   const [isNewClientOpen, setIsNewClientOpen] = useState(false);
   const [newClientForm, setNewClientForm] = useState<NewClientForm>({
@@ -1087,7 +1153,7 @@ export default function ServiceCRM() {
                     Estado
                   </th>
                   <th className="px-6 py-3 text-left text-xs font-semibold text-gray-600 dark:text-gray-300 uppercase tracking-wider">
-                    Pago
+                    Pago / Método
                   </th>
                   <th className="px-6 py-3 text-left text-xs font-semibold text-gray-600 dark:text-gray-300 uppercase tracking-wider">
                     Monto
@@ -1163,17 +1229,91 @@ export default function ServiceCRM() {
                         </span>
                       </td>
                       <td className="px-6 py-4">
-                        <span
-                          className={`inline-flex px-2.5 py-0.5 rounded-full text-xs font-medium ${
-                            apt.paymentStatus === 'PAID'
-                              ? 'bg-green-100 text-green-800 dark:bg-green-900 dark:text-green-300'
-                              : apt.paymentStatus === 'PENDING'
-                                ? 'bg-yellow-100 text-yellow-800 dark:bg-yellow-900 dark:text-yellow-300'
-                                : 'bg-gray-100 text-gray-800 dark:bg-gray-700 dark:text-gray-300'
-                          }`}
-                        >
-                          {PAYMENT_LABELS[apt.paymentStatus] || apt.paymentStatus}
-                        </span>
+                        {editingPayment?.aptId === apt.id ? (
+                          <div
+                            className="flex flex-col gap-2 min-w-[160px]"
+                            onClick={(e) => e.stopPropagation()}
+                          >
+                            <select
+                              value={editingPayment.status}
+                              onChange={(e) =>
+                                setEditingPayment((prev) =>
+                                  prev ? { ...prev, status: e.target.value } : prev
+                                )
+                              }
+                              className="w-full text-xs px-2 py-1.5 border border-gray-300 dark:border-gray-600 rounded-md bg-white dark:bg-gray-900 text-gray-900 dark:text-white focus:outline-none focus:ring-2 focus:ring-fourth-base"
+                            >
+                              {Object.entries(PAYMENT_LABELS).map(([k, v]) => (
+                                <option key={k} value={k}>
+                                  {v}
+                                </option>
+                              ))}
+                            </select>
+                            <select
+                              value={editingPayment.method}
+                              onChange={(e) =>
+                                setEditingPayment((prev) =>
+                                  prev ? { ...prev, method: e.target.value } : prev
+                                )
+                              }
+                              className="w-full text-xs px-2 py-1.5 border border-gray-300 dark:border-gray-600 rounded-md bg-white dark:bg-gray-900 text-gray-900 dark:text-white focus:outline-none focus:ring-2 focus:ring-fourth-base"
+                            >
+                              <option value="">Sin método</option>
+                              {Object.entries(PAYMENT_METHOD_LABELS).map(([k, v]) => (
+                                <option key={k} value={k}>
+                                  {v}
+                                </option>
+                              ))}
+                            </select>
+                            <div className="flex gap-1">
+                              <button
+                                onClick={handleSavePayment}
+                                disabled={paymentSaving}
+                                className="flex-1 flex items-center justify-center gap-1 text-xs px-2 py-1.5 bg-fourth-base text-white rounded-md hover:opacity-90 disabled:opacity-50 transition-opacity"
+                              >
+                                {paymentSaving ? (
+                                  <Loader2 className="h-3 w-3 animate-spin" />
+                                ) : (
+                                  <Save className="h-3 w-3" />
+                                )}
+                                {paymentSaving ? 'Guardando' : 'Guardar'}
+                              </button>
+                              <button
+                                onClick={() => setEditingPayment(null)}
+                                className="px-2 py-1.5 text-xs bg-gray-100 dark:bg-gray-700 text-gray-700 dark:text-gray-300 rounded-md hover:bg-gray-200 dark:hover:bg-gray-600 transition-colors"
+                              >
+                                <X className="h-3 w-3" />
+                              </button>
+                            </div>
+                          </div>
+                        ) : (
+                          <button
+                            onClick={(e) => openPaymentEditor(e, apt)}
+                            className="group flex flex-col gap-0.5 text-left"
+                            title="Click para editar pago"
+                          >
+                            <span
+                              className={`inline-flex items-center gap-1 px-2.5 py-0.5 rounded-full text-xs font-medium transition-opacity group-hover:opacity-80 ${
+                                apt.paymentStatus === 'PAID'
+                                  ? 'bg-green-100 text-green-800 dark:bg-green-900 dark:text-green-300'
+                                  : apt.paymentStatus === 'PENDING'
+                                    ? 'bg-yellow-100 text-yellow-800 dark:bg-yellow-900 dark:text-yellow-300'
+                                    : apt.paymentStatus === 'PARTIAL'
+                                      ? 'bg-blue-100 text-blue-800 dark:bg-blue-900 dark:text-blue-300'
+                                      : 'bg-gray-100 text-gray-800 dark:bg-gray-700 dark:text-gray-300'
+                              }`}
+                            >
+                              {PAYMENT_LABELS[apt.paymentStatus] || apt.paymentStatus}
+                              <ChevronDownIcon className="h-3 w-3 opacity-50 group-hover:opacity-100" />
+                            </span>
+                            {apt.paymentMethod && (
+                              <span className="flex items-center gap-1 text-xs text-gray-500 dark:text-gray-400 pl-0.5">
+                                <CreditCard className="h-3 w-3" />
+                                {PAYMENT_METHOD_LABELS[apt.paymentMethod] || apt.paymentMethod}
+                              </span>
+                            )}
+                          </button>
+                        )}
                       </td>
                       <td className="px-6 py-4">
                         <div className="text-sm font-semibold text-fourth-base">
