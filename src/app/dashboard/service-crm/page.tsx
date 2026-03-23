@@ -909,34 +909,34 @@ export default function ServiceCRM() {
               <table className="min-w-full divide-y divide-gray-200 dark:divide-gray-700">
                 <thead className="bg-gray-50 dark:bg-gray-900">
                   <tr>
-                    <th className="px-6 py-3 text-left text-xs font-semibold text-gray-600 dark:text-gray-300 uppercase tracking-wider">
+                    <th className="px-2 py-2 sm:px-6 sm:py-3 text-left text-xs font-semibold text-gray-600 dark:text-gray-300 uppercase tracking-wider">
                       Cliente
                     </th>
                     <th
-                      className="px-6 py-3 text-left text-xs font-semibold text-gray-600 dark:text-gray-300 uppercase tracking-wider cursor-pointer hover:text-gray-900 dark:hover:text-white select-none"
+                      className="px-2 py-2 sm:px-6 sm:py-3 text-left text-xs font-semibold text-gray-600 dark:text-gray-300 uppercase tracking-wider cursor-pointer hover:text-gray-900 dark:hover:text-white select-none"
                       onClick={() => toggleSort('totalAppointments')}
                     >
                       Citas <SortIcon k="totalAppointments" />
                     </th>
                     <th
-                      className="px-6 py-3 text-left text-xs font-semibold text-gray-600 dark:text-gray-300 uppercase tracking-wider cursor-pointer hover:text-gray-900 dark:hover:text-white select-none"
+                      className="px-2 py-2 sm:px-6 sm:py-3 text-left text-xs font-semibold text-gray-600 dark:text-gray-300 uppercase tracking-wider cursor-pointer hover:text-gray-900 dark:hover:text-white select-none"
                       onClick={() => toggleSort('totalRevenue')}
                     >
                       Ingresos <SortIcon k="totalRevenue" />
                     </th>
-                    <th className="px-6 py-3 text-left text-xs font-semibold text-gray-600 dark:text-gray-300 uppercase tracking-wider">
+                    <th className="hidden sm:table-cell px-2 py-2 sm:px-6 sm:py-3 text-left text-xs font-semibold text-gray-600 dark:text-gray-300 uppercase tracking-wider">
                       Estado de Pagos
                     </th>
                     <th
-                      className="px-6 py-3 text-left text-xs font-semibold text-gray-600 dark:text-gray-300 uppercase tracking-wider cursor-pointer hover:text-gray-900 dark:hover:text-white select-none"
+                      className="px-2 py-2 sm:px-6 sm:py-3 text-left text-xs font-semibold text-gray-600 dark:text-gray-300 uppercase tracking-wider cursor-pointer hover:text-gray-900 dark:hover:text-white select-none"
                       onClick={() => toggleSort('lastAppointmentDate')}
                     >
                       Última visita <SortIcon k="lastAppointmentDate" />
                     </th>
-                    <th className="px-6 py-3 text-left text-xs font-semibold text-gray-600 dark:text-gray-300 uppercase tracking-wider">
+                    <th className="hidden sm:table-cell px-2 py-2 sm:px-6 sm:py-3 text-left text-xs font-semibold text-gray-600 dark:text-gray-300 uppercase tracking-wider">
                       Tipo
                     </th>
-                    <th className="px-6 py-3" />
+                    <th className="px-2 py-2 sm:px-6 sm:py-3" />
                   </tr>
                 </thead>
                 <tbody className="divide-y divide-gray-200 dark:divide-gray-700">
@@ -957,11 +957,24 @@ export default function ServiceCRM() {
                             )
                           }
                         >
-                          <td className="px-6 py-4">
-                            <div className="font-medium text-gray-900 dark:text-white text-sm">
-                              #{idx + 1} {client.customerName}
+                          <td className="px-2 py-2 sm:px-6 sm:py-4">
+                            <div className="flex items-center gap-1.5 flex-wrap">
+                              <span className="font-medium text-gray-900 dark:text-white text-sm">
+                                #{idx + 1} {client.customerName}
+                              </span>
+                              <span className="sm:hidden">
+                                {client.isVIP ? (
+                                  <span className="inline-flex items-center gap-0.5 px-1.5 py-0.5 rounded-full text-xs font-medium bg-purple-100 text-purple-800 dark:bg-purple-900 dark:text-purple-300">
+                                    <Crown className="h-2.5 w-2.5" /> VIP
+                                  </span>
+                                ) : client.isRecurrent ? (
+                                  <span className="inline-flex items-center gap-0.5 px-1.5 py-0.5 rounded-full text-xs font-medium bg-yellow-100 text-yellow-800 dark:bg-yellow-900 dark:text-yellow-300">
+                                    <Star className="h-2.5 w-2.5" /> Rec
+                                  </span>
+                                ) : null}
+                              </span>
                             </div>
-                            <div className="flex items-center gap-3 mt-1">
+                            <div className="hidden sm:flex items-center gap-3 mt-1">
                               <span className="text-xs text-gray-500 dark:text-gray-400 flex items-center gap-1">
                                 <Mail className="h-3 w-3" /> {client.customerEmail}
                               </span>
@@ -969,17 +982,28 @@ export default function ServiceCRM() {
                                 <Phone className="h-3 w-3" /> {client.customerPhone}
                               </span>
                             </div>
+                            <div className="sm:hidden text-xs text-gray-500 dark:text-gray-400 flex items-center gap-1 mt-0.5">
+                              <Phone className="h-3 w-3" /> {client.customerPhone}
+                            </div>
                           </td>
-                          <td className="px-6 py-4 text-sm font-semibold text-gray-900 dark:text-white">
+                          <td className="px-2 py-2 sm:px-6 sm:py-4 text-sm font-semibold text-gray-900 dark:text-white">
                             <span className="flex items-center gap-1">
                               <Calendar className="h-3.5 w-3.5 text-gray-400" />
                               {client.totalAppointments}
                             </span>
                           </td>
-                          <td className="px-6 py-4 text-sm font-semibold text-fourth-base">
+                          <td className="px-2 py-2 sm:px-6 sm:py-4 text-sm font-semibold text-fourth-base">
                             {formatCOP(client.totalRevenue)}
+                            <div className="sm:hidden mt-0.5 space-y-0.5">
+                              <div className="text-xs font-medium text-green-600 dark:text-green-400">
+                                ✓ {formatCOP(paidAmount)}
+                              </div>
+                              <div className="text-xs text-yellow-600 dark:text-yellow-400">
+                                ⏳ {formatCOP(pendingAmount)}
+                              </div>
+                            </div>
                           </td>
-                          <td className="px-6 py-4">
+                          <td className="hidden sm:table-cell px-2 py-2 sm:px-6 sm:py-4">
                             <div className="text-xs font-medium text-green-600 dark:text-green-400">
                               ✓ {formatCOP(paidAmount)}
                             </div>
@@ -987,14 +1011,21 @@ export default function ServiceCRM() {
                               ⏳ {formatCOP(pendingAmount)}
                             </div>
                           </td>
-                          <td className="px-6 py-4 text-sm text-gray-600 dark:text-gray-400">
-                            {parseFlexDate(client.lastAppointmentDate).toLocaleDateString('es-CO', {
-                              day: 'numeric',
-                              month: 'short',
-                              year: 'numeric',
-                            })}
+                          <td className="px-2 py-2 sm:px-6 sm:py-4 text-xs sm:text-sm text-gray-600 dark:text-gray-400 whitespace-nowrap">
+                            <span className="hidden sm:inline">
+                              {parseFlexDate(client.lastAppointmentDate).toLocaleDateString(
+                                'es-CO',
+                                { day: 'numeric', month: 'short', year: 'numeric' }
+                              )}
+                            </span>
+                            <span className="sm:hidden">
+                              {parseFlexDate(client.lastAppointmentDate).toLocaleDateString(
+                                'es-CO',
+                                { day: 'numeric', month: 'short' }
+                              )}
+                            </span>
                           </td>
-                          <td className="px-6 py-4">
+                          <td className="hidden sm:table-cell px-2 py-2 sm:px-6 sm:py-4">
                             {client.isVIP ? (
                               <span className="inline-flex items-center gap-1 px-2.5 py-0.5 rounded-full text-xs font-medium bg-purple-100 text-purple-800 dark:bg-purple-900 dark:text-purple-300">
                                 <Crown className="h-3 w-3" /> VIP
@@ -1009,7 +1040,7 @@ export default function ServiceCRM() {
                               </span>
                             )}
                           </td>
-                          <td className="px-6 py-4">
+                          <td className="px-2 py-2 sm:px-6 sm:py-4">
                             <div className="flex items-center gap-2 justify-end">
                               <button
                                 onClick={(e) => openEdit(e, client)}
@@ -1120,25 +1151,25 @@ export default function ServiceCRM() {
             <table className="min-w-full divide-y divide-gray-200 dark:divide-gray-700">
               <thead className="bg-gray-50 dark:bg-gray-900">
                 <tr>
-                  <th className="px-6 py-3 text-left text-xs font-semibold text-gray-600 dark:text-gray-300 uppercase tracking-wider">
+                  <th className="px-2 py-2 sm:px-6 sm:py-3 text-left text-xs font-semibold text-gray-600 dark:text-gray-300 uppercase tracking-wider">
                     Fecha y Hora
                   </th>
-                  <th className="px-6 py-3 text-left text-xs font-semibold text-gray-600 dark:text-gray-300 uppercase tracking-wider">
+                  <th className="px-2 py-2 sm:px-6 sm:py-3 text-left text-xs font-semibold text-gray-600 dark:text-gray-300 uppercase tracking-wider">
                     Cliente
                   </th>
-                  <th className="px-6 py-3 text-left text-xs font-semibold text-gray-600 dark:text-gray-300 uppercase tracking-wider">
+                  <th className="px-2 py-2 sm:px-6 sm:py-3 text-left text-xs font-semibold text-gray-600 dark:text-gray-300 uppercase tracking-wider">
                     Servicio
                   </th>
-                  <th className="px-6 py-3 text-left text-xs font-semibold text-gray-600 dark:text-gray-300 uppercase tracking-wider">
+                  <th className="hidden sm:table-cell px-2 py-2 sm:px-6 sm:py-3 text-left text-xs font-semibold text-gray-600 dark:text-gray-300 uppercase tracking-wider">
                     Ubicación
                   </th>
-                  <th className="px-6 py-3 text-left text-xs font-semibold text-gray-600 dark:text-gray-300 uppercase tracking-wider">
+                  <th className="px-2 py-2 sm:px-6 sm:py-3 text-left text-xs font-semibold text-gray-600 dark:text-gray-300 uppercase tracking-wider">
                     Estado
                   </th>
-                  <th className="px-6 py-3 text-left text-xs font-semibold text-gray-600 dark:text-gray-300 uppercase tracking-wider">
+                  <th className="px-2 py-2 sm:px-6 sm:py-3 text-left text-xs font-semibold text-gray-600 dark:text-gray-300 uppercase tracking-wider">
                     Pago / Método
                   </th>
-                  <th className="px-6 py-3 text-left text-xs font-semibold text-gray-600 dark:text-gray-300 uppercase tracking-wider">
+                  <th className="hidden sm:table-cell px-2 py-2 sm:px-6 sm:py-3 text-left text-xs font-semibold text-gray-600 dark:text-gray-300 uppercase tracking-wider">
                     Monto
                   </th>
                 </tr>
@@ -1154,13 +1185,21 @@ export default function ServiceCRM() {
                       key={apt.id}
                       className="hover:bg-gray-50 dark:hover:bg-gray-700/50 transition"
                     >
-                      <td className="px-6 py-4">
-                        <div className="text-sm font-medium text-gray-900 dark:text-white">
-                          {aptDate.toLocaleDateString('es-CO', {
-                            day: 'numeric',
-                            month: 'short',
-                            year: 'numeric',
-                          })}
+                      <td className="px-2 py-2 sm:px-6 sm:py-4 whitespace-nowrap">
+                        <div className="text-xs sm:text-sm font-medium text-gray-900 dark:text-white">
+                          <span className="hidden sm:inline">
+                            {aptDate.toLocaleDateString('es-CO', {
+                              day: 'numeric',
+                              month: 'short',
+                              year: 'numeric',
+                            })}
+                          </span>
+                          <span className="sm:hidden">
+                            {aptDate.toLocaleDateString('es-CO', {
+                              day: 'numeric',
+                              month: 'short',
+                            })}
+                          </span>
                         </div>
                         <div className="text-xs text-gray-500 dark:text-gray-400">
                           {aptDate.toLocaleTimeString('es-CO', {
@@ -1169,20 +1208,20 @@ export default function ServiceCRM() {
                           })}
                         </div>
                       </td>
-                      <td className="px-6 py-4">
-                        <div className="text-sm font-medium text-gray-900 dark:text-white">
+                      <td className="px-2 py-2 sm:px-6 sm:py-4">
+                        <div className="text-sm font-medium text-gray-900 dark:text-white truncate max-w-[90px] sm:max-w-none">
                           {apt.customerName}
                         </div>
-                        <div className="flex items-center gap-2 mt-1">
+                        <div className="hidden sm:flex items-center gap-2 mt-1">
                           <span className="text-xs text-gray-500 dark:text-gray-400 flex items-center gap-1">
                             <Mail className="h-3 w-3" /> {apt.customerEmail}
                           </span>
                         </div>
-                        <div className="text-xs text-gray-500 dark:text-gray-400 flex items-center gap-1 mt-0.5">
+                        <div className="hidden sm:flex text-xs text-gray-500 dark:text-gray-400 items-center gap-1 mt-0.5">
                           <Phone className="h-3 w-3" /> {apt.customerPhone}
                         </div>
                       </td>
-                      <td className="px-6 py-4">
+                      <td className="px-2 py-2 sm:px-6 sm:py-4">
                         <div className="text-sm text-gray-900 dark:text-white font-medium">
                           {service?.name || 'Sin servicio'}
                         </div>
@@ -1191,8 +1230,11 @@ export default function ServiceCRM() {
                             {apt.notes}
                           </div>
                         )}
+                        <div className="sm:hidden text-xs font-semibold text-fourth-base mt-1">
+                          {service ? formatCOP(service.priceAmount) : '—'}
+                        </div>
                       </td>
-                      <td className="px-6 py-4">
+                      <td className="hidden sm:table-cell px-2 py-2 sm:px-6 sm:py-4">
                         {location ? (
                           <div className="text-sm text-gray-700 dark:text-gray-300 max-w-xs">
                             {location}
@@ -1206,12 +1248,12 @@ export default function ServiceCRM() {
                           <span className="text-xs text-gray-400">—</span>
                         )}
                       </td>
-                      <td className="px-6 py-4">
+                      <td className="px-2 py-2 sm:px-6 sm:py-4">
                         <span className="inline-flex px-2.5 py-0.5 rounded-full text-xs font-medium bg-gray-100 dark:bg-gray-700 text-gray-700 dark:text-gray-300">
                           {STATUS_LABELS[apt.status] || apt.status}
                         </span>
                       </td>
-                      <td className="px-6 py-4">
+                      <td className="px-2 py-2 sm:px-6 sm:py-4">
                         {editingPayment?.aptId === apt.id ? (
                           <div
                             className="flex flex-col gap-2 min-w-[160px]"
@@ -1298,7 +1340,7 @@ export default function ServiceCRM() {
                           </button>
                         )}
                       </td>
-                      <td className="px-6 py-4">
+                      <td className="hidden sm:table-cell px-2 py-2 sm:px-6 sm:py-4">
                         <div className="text-sm font-semibold text-fourth-base">
                           {service ? formatCOP(service.priceAmount) : '—'}
                         </div>
