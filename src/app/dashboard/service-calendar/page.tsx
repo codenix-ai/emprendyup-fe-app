@@ -51,6 +51,9 @@ interface KnownClient {
   email: string;
   phone: string;
   appointmentCount: number;
+  serviceAddress: string;
+  serviceCity: string;
+  serviceReference: string;
 }
 
 const STATUS_LABELS: Record<string, string> = {
@@ -218,13 +221,23 @@ export default function ServiceCalendar() {
       const key = apt.customerEmail?.toLowerCase() || apt.customerName?.toLowerCase() || '';
       if (!key) continue;
       if (map.has(key)) {
-        map.get(key)!.appointmentCount++;
+        const existing = map.get(key)!;
+        existing.appointmentCount++;
+        // Populate address from the first appointment that has one
+        if (!existing.serviceAddress && apt.serviceAddress) {
+          existing.serviceAddress = apt.serviceAddress;
+          existing.serviceCity = apt.serviceCity || '';
+          existing.serviceReference = apt.serviceReference || '';
+        }
       } else {
         map.set(key, {
           name: apt.customerName || '',
           email: apt.customerEmail || '',
           phone: apt.customerPhone || '',
           appointmentCount: 1,
+          serviceAddress: apt.serviceAddress || '',
+          serviceCity: apt.serviceCity || '',
+          serviceReference: apt.serviceReference || '',
         });
       }
     }
@@ -266,6 +279,9 @@ export default function ServiceCalendar() {
       customerName: client.name,
       customerEmail: client.email,
       customerPhone: client.phone,
+      serviceAddress: client.serviceAddress || f.serviceAddress,
+      serviceCity: client.serviceCity || f.serviceCity,
+      serviceReference: client.serviceReference || f.serviceReference,
     }));
     setClientQuery(client.name);
     setShowClientSuggestions(false);
@@ -940,21 +956,23 @@ export default function ServiceCalendar() {
                 />
               </div>
 
-              {/* End Date/Time */}
-              <div>
-                <label className="block text-xs sm:text-sm font-medium text-gray-700 dark:text-gray-300 mb-1.5 sm:mb-2">
-                  <Clock className="h-3.5 w-3.5 sm:h-4 sm:w-4 inline mr-1.5 sm:mr-2" />
-                  Fecha y Hora de Fin
-                </label>
-                <input
-                  type="datetime-local"
-                  value={appointmentForm.endDatetime.slice(0, 16)}
-                  onChange={(e) =>
-                    setAppointmentForm({ ...appointmentForm, endDatetime: e.target.value })
-                  }
-                  className="w-full px-3 sm:px-4 py-2.5 sm:py-3 text-sm sm:text-base border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-700 text-gray-900 dark:text-white focus:ring-2 focus:ring-[var(--fourth-base)] focus:border-transparent"
-                />
-              </div>
+              {/* End Date/Time — only shown when editing; new appointments auto-compute from service duration */}
+              {selectedEvent && (
+                <div>
+                  <label className="block text-xs sm:text-sm font-medium text-gray-700 dark:text-gray-300 mb-1.5 sm:mb-2">
+                    <Clock className="h-3.5 w-3.5 sm:h-4 sm:w-4 inline mr-1.5 sm:mr-2" />
+                    Fecha y Hora de Fin
+                  </label>
+                  <input
+                    type="datetime-local"
+                    value={appointmentForm.endDatetime.slice(0, 16)}
+                    onChange={(e) =>
+                      setAppointmentForm({ ...appointmentForm, endDatetime: e.target.value })
+                    }
+                    className="w-full px-3 sm:px-4 py-2.5 sm:py-3 text-sm sm:text-base border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-700 text-gray-900 dark:text-white focus:ring-2 focus:ring-[var(--fourth-base)] focus:border-transparent"
+                  />
+                </div>
+              )}
 
               {/* Address */}
               <div className="border-t border-gray-100 dark:border-gray-700 pt-3 mt-1">
