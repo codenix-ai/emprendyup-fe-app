@@ -1,7 +1,7 @@
 'use client';
 
-import { useState, useMemo } from 'react';
-import { gql, useQuery } from '@apollo/client';
+import { useState, useMemo, useRef } from 'react';
+import { gql, useQuery, useMutation } from '@apollo/client';
 import { useSessionStore } from '@/lib/store/dashboard';
 import {
   Users,
@@ -16,6 +16,9 @@ import {
   Phone,
   Mail,
   AlertCircle,
+  Pencil,
+  X,
+  Save,
 } from 'lucide-react';
 
 const GET_ALL_APPOINTMENTS = gql`
@@ -45,6 +48,17 @@ const GET_SERVICES = gql`
       id
       name
       priceAmount
+    }
+  }
+`;
+
+const UPDATE_CLIENT_APPOINTMENTS = gql`
+  mutation UpdateClientContact($id: String!, $data: UpdateAppointmentInput!) {
+    updateAppointment(id: $id, data: $data) {
+      id
+      customerName
+      customerEmail
+      customerPhone
     }
   }
 `;
@@ -87,6 +101,12 @@ interface Appointment {
   serviceCity?: string;
   serviceReference?: string;
   createdAt: string;
+}
+
+interface EditClientForm {
+  customerName: string;
+  customerEmail: string;
+  customerPhone: string;
 }
 
 interface Service {
@@ -136,6 +156,18 @@ export default function ServiceCRM() {
   const [dateRange, setDateRange] = useState<'week' | 'month' | 'all'>('all');
   const [filterType, setFilterType] = useState<'all' | 'recurring' | 'vip'>('all');
 
+  const [editingClient, setEditingClient] = useState<FrequentClient | null>(null);
+  const [editForm, setEditForm] = useState<EditClientForm>({
+    customerName: '',
+    customerEmail: '',
+    customerPhone: '',
+  });
+  const [isSaving, setIsSaving] = useState(false);
+  const [saveError, setSaveError] = useState<string | null>(null);
+  const editNameRef = useRef<HTMLInputElement>(null);
+
+  const [updateClientMutation] = useMutation(UPDATE_CLIENT_APPOINTMENTS);
+
   // Calculate date range based on selection
   const { dateFrom, dateTo } = useMemo(() => {
     const now = new Date();
@@ -184,6 +216,7 @@ export default function ServiceCRM() {
     data: appointmentsData,
     loading: loadingAppointments,
     error: appointmentsError,
+    refetch: refetchAppointments,
   } = useQuery(GET_ALL_APPOINTMENTS, {
     variables: { serviceProviderId: serviceProviderId || '' },
     skip: !serviceProviderId,
@@ -395,6 +428,56 @@ export default function ServiceCRM() {
       link.download = `citas.csv`;
       link.click();
       URL.revokeObjectURL(url);
+    }
+  };
+
+  const openEdit = (e: React.MouseEvent, client: FrequentClient) => {
+    e.stopPropagation();
+    setEditingClient(client);
+    setEditForm({
+      customerName: client.customerName,
+      customerEmail: client.customerEmail,
+      customerPhone: client.customerPhone,
+    });
+    setSaveError(null);
+    setTimeout(() => editNameRef.current?.focus(), 50);
+  };
+
+  const closeEdit = () => {
+    setEditingClient(null);
+    setSaveError(null);
+  };
+
+  const saveEdit = async () => {
+    if (!editingClient) return;
+    setIsSaving(true);
+    setSaveError(null);
+    try {
+      const clientAppointments = appointments.filter(
+        (apt) =>
+          (apt.customerEmail && apt.customerEmail === editingClient.customerEmail) ||
+          (!apt.customerEmail && apt.customerName === editingClient.customerName)
+      );
+      await Promise.all(
+        clientAppointments.map((apt) =>
+          updateClientMutation({
+            variables: {
+              id: apt.id,
+              data: {
+                customerName: editForm.customerName,
+                customerEmail: editForm.customerEmail,
+                customerPhone: editForm.customerPhone,
+              },
+            },
+          })
+        )
+      );
+      await refetchAppointments();
+      closeEdit();
+    } catch (err) {
+      setSaveError(err instanceof Error ? err.message : 'Error al guardar');
+    } finally {
+      setIsSaving(false);
     }
   };
 
@@ -748,12 +831,24 @@ export default function ServiceCRM() {
                               </span>
                             )}
                           </td>
-                          <td className="px-6 py-4 text-gray-400">
-                            {expandedEmail === client.customerEmail ? (
-                              <ChevronUp className="h-4 w-4" />
-                            ) : (
-                              <ChevronDown className="h-4 w-4" />
-                            )}
+                          <td className="px-6 py-4">
+                            <div className="flex items-center gap-2 justify-end">
+                              <button
+                                onClick={(e) => openEdit(e, client)}
+                                className="p-1.5 rounded-md text-gray-400 hover:text-fourth-base hover:bg-gray-100 dark:hover:bg-gray-700 transition-colors"
+                                title="Editar cliente"
+                                data-testid="edit-client-btn"
+                              >
+                                <Pencil className="h-3.5 w-3.5" />
+                              </button>
+                              <span className="text-gray-400">
+                                {expandedEmail === client.customerEmail ? (
+                                  <ChevronUp className="h-4 w-4" />
+                                ) : (
+                                  <ChevronDown className="h-4 w-4" />
+                                )}
+                              </span>
+                            </div>
                           </td>
                         </tr>
 
@@ -961,6 +1056,111 @@ export default function ServiceCRM() {
                 })}
               </tbody>
             </table>
+          </div>
+        </div>
+      )}
+
+      {/* Edit Client Modal */}
+      {editingClient && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/50 backdrop-blur-sm">
+          <div className="bg-white dark:bg-gray-800 rounded-xl shadow-xl w-full max-w-md">
+            {/* Header */}
+            <div className="flex items-center justify-between px-6 py-4 border-b border-gray-200 dark:border-gray-700">
+              <div>
+                <h3 className="text-lg font-semibold text-gray-900 dark:text-white">
+                  Editar Cliente
+                </h3>
+                <p className="text-xs text-gray-500 dark:text-gray-400 mt-0.5">
+                  Los cambios se aplican a todas las citas de este cliente
+                </p>
+              </div>
+              <button
+                onClick={closeEdit}
+                className="p-1.5 rounded-lg text-gray-400 hover:text-gray-700 dark:hover:text-gray-200 hover:bg-gray-100 dark:hover:bg-gray-700 transition-colors"
+              >
+                <X className="h-5 w-5" />
+              </button>
+            </div>
+
+            {/* Form */}
+            <div className="px-6 py-5 space-y-4">
+              <div>
+                <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">
+                  Nombre completo
+                </label>
+                <input
+                  ref={editNameRef}
+                  type="text"
+                  value={editForm.customerName}
+                  onChange={(e) => setEditForm((f) => ({ ...f, customerName: e.target.value }))}
+                  className="w-full px-3 py-2 rounded-lg border border-gray-300 dark:border-gray-600 bg-white dark:bg-gray-700 text-gray-900 dark:text-white text-sm focus:outline-none focus:ring-2 focus:ring-fourth-base focus:border-transparent"
+                  placeholder="Nombre del cliente"
+                />
+              </div>
+
+              <div>
+                <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">
+                  Correo electrónico
+                </label>
+                <div className="relative">
+                  <Mail className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-gray-400" />
+                  <input
+                    type="email"
+                    value={editForm.customerEmail}
+                    onChange={(e) => setEditForm((f) => ({ ...f, customerEmail: e.target.value }))}
+                    className="w-full pl-9 pr-3 py-2 rounded-lg border border-gray-300 dark:border-gray-600 bg-white dark:bg-gray-700 text-gray-900 dark:text-white text-sm focus:outline-none focus:ring-2 focus:ring-fourth-base focus:border-transparent"
+                    placeholder="correo@ejemplo.com"
+                  />
+                </div>
+              </div>
+
+              <div>
+                <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">
+                  Teléfono
+                </label>
+                <div className="relative">
+                  <Phone className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-gray-400" />
+                  <input
+                    type="tel"
+                    value={editForm.customerPhone}
+                    onChange={(e) => setEditForm((f) => ({ ...f, customerPhone: e.target.value }))}
+                    className="w-full pl-9 pr-3 py-2 rounded-lg border border-gray-300 dark:border-gray-600 bg-white dark:bg-gray-700 text-gray-900 dark:text-white text-sm focus:outline-none focus:ring-2 focus:ring-fourth-base focus:border-transparent"
+                    placeholder="+57 300 000 0000"
+                  />
+                </div>
+              </div>
+
+              {saveError && (
+                <div className="flex items-center gap-2 text-sm text-red-600 dark:text-red-400 bg-red-50 dark:bg-red-900/20 rounded-lg px-3 py-2">
+                  <AlertCircle className="h-4 w-4 flex-shrink-0" />
+                  {saveError}
+                </div>
+              )}
+            </div>
+
+            {/* Footer */}
+            <div className="flex gap-3 px-6 py-4 border-t border-gray-200 dark:border-gray-700">
+              <button
+                onClick={closeEdit}
+                disabled={isSaving}
+                className="flex-1 px-4 py-2 text-sm font-medium text-gray-700 dark:text-gray-300 bg-gray-100 dark:bg-gray-700 rounded-lg hover:bg-gray-200 dark:hover:bg-gray-600 transition-colors disabled:opacity-50"
+              >
+                Cancelar
+              </button>
+              <button
+                onClick={saveEdit}
+                disabled={isSaving || !editForm.customerName.trim()}
+                className="flex-1 px-4 py-2 text-sm font-medium text-white bg-fourth-base rounded-lg hover:opacity-90 transition-opacity disabled:opacity-50 flex items-center justify-center gap-2"
+                data-testid="save-client-btn"
+              >
+                {isSaving ? (
+                  <div className="h-4 w-4 border-2 border-white/30 border-t-white rounded-full animate-spin" />
+                ) : (
+                  <Save className="h-4 w-4" />
+                )}
+                {isSaving ? 'Guardando...' : 'Guardar cambios'}
+              </button>
+            </div>
           </div>
         </div>
       )}
