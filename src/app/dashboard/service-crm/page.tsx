@@ -153,6 +153,11 @@ const formatCOP = (n: number) =>
     maximumFractionDigits: 0,
   }).format(n);
 
+const parseFlexDate = (val: string): Date => {
+  const n = Number(val);
+  return isNaN(n) ? new Date(val) : new Date(n);
+};
+
 const STATUS_LABELS: Record<string, string> = {
   PENDING: 'Pendiente',
   CONFIRMED: 'Confirmada',
@@ -336,10 +341,10 @@ export default function ServiceCRM() {
       });
 
       const aptTime = parseInt(apt.startDatetime);
-      if (aptTime > parseInt(client.lastAppointmentDate))
-        client.lastAppointmentDate = apt.startDatetime;
-      if (aptTime < parseInt(client.firstAppointmentDate))
-        client.firstAppointmentDate = apt.startDatetime;
+      if (aptTime > parseFlexDate(client.lastAppointmentDate).getTime())
+        client.lastAppointmentDate = aptIso;
+      if (aptTime < parseFlexDate(client.firstAppointmentDate).getTime())
+        client.firstAppointmentDate = aptIso;
     }
 
     const list = Array.from(clientMap.values());
@@ -385,7 +390,8 @@ export default function ServiceCRM() {
       if (sortKey === 'totalRevenue') diff = a.totalRevenue - b.totalRevenue;
       if (sortKey === 'lastAppointmentDate') {
         diff =
-          new Date(a.lastAppointmentDate).getTime() - new Date(b.lastAppointmentDate).getTime();
+          parseFlexDate(a.lastAppointmentDate).getTime() -
+          parseFlexDate(b.lastAppointmentDate).getTime();
       }
       return sortDir === 'desc' ? -diff : diff;
     });
@@ -418,8 +424,8 @@ export default function ServiceCRM() {
         c.customerPhone,
         c.totalAppointments,
         c.totalRevenue,
-        new Date(c.firstAppointmentDate).toLocaleDateString('es-CO'),
-        new Date(c.lastAppointmentDate).toLocaleDateString('es-CO'),
+        parseFlexDate(c.firstAppointmentDate).toLocaleDateString('es-CO'),
+        parseFlexDate(c.lastAppointmentDate).toLocaleDateString('es-CO'),
         c.isVIP ? 'VIP' : c.isRecurrent ? 'Recurrente' : 'Nuevo',
       ]);
       const csv = [headers, ...rows].map((r) => r.map(String).join(',')).join('\n');
@@ -803,7 +809,7 @@ export default function ServiceCRM() {
                             </div>
                           </td>
                           <td className="px-6 py-4 text-sm text-gray-600 dark:text-gray-400">
-                            {new Date(client.lastAppointmentDate).toLocaleDateString('es-CO', {
+                            {parseFlexDate(client.lastAppointmentDate).toLocaleDateString('es-CO', {
                               day: 'numeric',
                               month: 'short',
                               year: 'numeric',
@@ -867,7 +873,7 @@ export default function ServiceCRM() {
                                           className="hover:bg-gray-50 dark:hover:bg-gray-700/30"
                                         >
                                           <td className="px-4 py-2 text-gray-700 dark:text-gray-300">
-                                            {new Date(apt.date).toLocaleDateString('es-CO', {
+                                            {parseFlexDate(apt.date).toLocaleDateString('es-CO', {
                                               day: 'numeric',
                                               month: 'short',
                                               year: 'numeric',
