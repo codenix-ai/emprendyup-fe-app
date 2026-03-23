@@ -123,14 +123,6 @@ interface FrequentClient {
   appointmentHistory: AppointmentHistory[];
 }
 
-interface NewVsRecurrentStats {
-  newClients: number;
-  recurrentClients: number;
-  totalClients: number;
-  percentageNew: number;
-  percentageRecurrent: number;
-}
-
 interface Appointment {
   id: string;
   serviceId: string;
@@ -244,7 +236,11 @@ export default function ServiceCRM() {
     return d.toISOString();
   }, [dateTo]);
 
-  const { data: clientsData, loading: loadingClients } = useQuery(FREQUENT_CLIENTS, {
+  const {
+    data: clientsData,
+    loading: loadingClients,
+    error: clientsError,
+  } = useQuery(FREQUENT_CLIENTS, {
     variables: {
       serviceProviderId: serviceProviderId || '',
       startDate: startDateTime,
@@ -287,6 +283,79 @@ export default function ServiceCRM() {
 
   const services: Service[] = useMemo(() => servicesData?.servicesByProvider || [], [servicesData]);
 
+  // Fallback: derive clients from appointmentsByProvider when frequentClients is empty or errored
+  const derivedClients = useMemo((): FrequentClient[] => {
+    if (clients.length > 0) return [];
+    if (!appointments.length) return [];
+
+    const from = new Date(dateFrom);
+    from.setHours(0, 0, 0, 0);
+    const to = new Date(dateTo);
+    to.setHours(23, 59, 59, 999);
+
+    const rangeApts = appointments.filter((apt) => {
+      const aptDate = new Date(parseInt(apt.startDatetime));
+      return aptDate >= from && aptDate <= to;
+    });
+
+    const clientMap = new Map<string, FrequentClient>();
+
+    for (const apt of rangeApts) {
+      const key = apt.customerEmail || apt.customerName;
+      const service = services.find((s) => s.id === apt.serviceId);
+      const amount = service?.priceAmount || 0;
+
+      if (!clientMap.has(key)) {
+        clientMap.set(key, {
+          customerId: apt.customerEmail,
+          customerName: apt.customerName,
+          customerEmail: apt.customerEmail,
+          customerPhone: apt.customerPhone,
+          totalAppointments: 0,
+          totalRevenue: 0,
+          lastAppointmentDate: apt.startDatetime,
+          firstAppointmentDate: apt.startDatetime,
+          isRecurrent: false,
+          isVIP: false,
+          appointmentHistory: [],
+        });
+      }
+
+      const client = clientMap.get(key)!;
+      client.totalAppointments++;
+      client.totalRevenue += amount;
+      client.appointmentHistory.push({
+        id: apt.id,
+        date: apt.startDatetime,
+        serviceName: service?.name || '',
+        status: apt.status,
+        paymentStatus: apt.paymentStatus,
+        amount,
+      });
+
+      const aptTime = parseInt(apt.startDatetime);
+      if (aptTime > parseInt(client.lastAppointmentDate))
+        client.lastAppointmentDate = apt.startDatetime;
+      if (aptTime < parseInt(client.firstAppointmentDate))
+        client.firstAppointmentDate = apt.startDatetime;
+    }
+
+    const list = Array.from(clientMap.values());
+    list.forEach((c) => {
+      c.isRecurrent = c.totalAppointments > 1;
+    });
+
+    if (list.length > 0) {
+      list.sort((a, b) => b.totalAppointments - a.totalAppointments);
+      const vipCount = Math.max(1, Math.ceil(list.length * 0.1));
+      for (let i = 0; i < vipCount; i++) list[i].isVIP = true;
+    }
+
+    return list;
+  }, [clients, appointments, services, dateFrom, dateTo]);
+
+  const effectiveClients = clients.length > 0 ? clients : derivedClients;
+
   // Filter appointments by date range
   const filteredAppointments = useMemo(() => {
     const from = new Date(dateFrom);
@@ -305,7 +374,7 @@ export default function ServiceCRM() {
   }, [appointments, dateFrom, dateTo]);
 
   const filtered = useMemo(() => {
-    let list = clients;
+    let list = effectiveClients;
     if (filterType === 'recurring') list = list.filter((c) => c.isRecurrent);
     if (filterType === 'vip') list = list.filter((c) => c.isVIP);
     return list.sort((a, b) => {
@@ -318,7 +387,7 @@ export default function ServiceCRM() {
       }
       return sortDir === 'desc' ? -diff : diff;
     });
-  }, [clients, filterType, sortKey, sortDir]);
+  }, [effectiveClients, filterType, sortKey, sortDir]);
 
   const toggleSort = (key: SortKey) => {
     if (sortKey === key) {
@@ -539,25 +608,25 @@ export default function ServiceCRM() {
           {[
             {
               label: 'Total Clientes',
-              value: newVsRecurrentStats?.totalClients || clients.length,
+              value: newVsRecurrentStats?.totalClients || effectiveClients.length,
               icon: Users,
               color: 'blue',
             },
             {
               label: 'Recurrentes',
-              value: clients.filter((c) => c.isRecurrent).length,
+              value: effectiveClients.filter((c) => c.isRecurrent).length,
               icon: Star,
               color: 'yellow',
             },
             {
               label: 'VIP (Top 10%)',
-              value: clients.filter((c) => c.isVIP).length,
+              value: effectiveClients.filter((c) => c.isVIP).length,
               icon: Crown,
               color: 'purple',
             },
             {
               label: 'Total Ingresos',
-              value: formatCOP(clients.reduce((s, c) => s + c.totalRevenue, 0)),
+              value: formatCOP(effectiveClients.reduce((s, c) => s + c.totalRevenue, 0)),
               icon: DollarSign,
               color: 'green',
             },
@@ -636,8 +705,16 @@ export default function ServiceCRM() {
       ) : viewMode === 'clients' ? (
         // Clients Table
         filtered.length === 0 ? (
-          <div className="bg-white dark:bg-gray-800 rounded-lg border border-gray-200 dark:border-gray-700 p-12 text-center text-gray-500 dark:text-gray-400">
-            No se encontraron clientes con los filtros aplicados.
+          <div className="bg-white dark:bg-gray-800 rounded-lg border border-gray-200 dark:border-gray-700 p-12 text-center">
+            {clientsError && (
+              <div className="flex items-center justify-center gap-2 text-red-500 mb-3">
+                <AlertCircle className="h-5 w-5" />
+                <span className="text-sm">Error al cargar clientes: {clientsError.message}</span>
+              </div>
+            )}
+            <p className="text-gray-500 dark:text-gray-400">
+              No se encontraron clientes con los filtros aplicados.
+            </p>
           </div>
         ) : (
           <div className="bg-white dark:bg-gray-800 rounded-lg border border-gray-200 dark:border-gray-700 overflow-hidden">
