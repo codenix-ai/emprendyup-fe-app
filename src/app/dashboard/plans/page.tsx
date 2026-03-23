@@ -119,27 +119,44 @@ export default function PlansPage() {
 
     // Filter products by selected billing cycle (monthly or annual)
     const filteredProducts = allProducts.filter((product: any) => {
+      let meta: Record<string, unknown> = {};
+      try {
+        meta = product.metadata ? JSON.parse(product.metadata) : {};
+      } catch {
+        /* noop */
+      }
+      const metaCycle = (meta.billingCycle as string | undefined)?.toLowerCase();
       const productName = product.name.toLowerCase();
+
       if (selectedCycle === 'annual') {
-        // Check for both 'anual' (Spanish) and 'annual' (English)
+        if (metaCycle) return metaCycle === 'annual' || metaCycle === 'anual';
         return productName.includes('anual') || productName.includes('annual');
       } else {
-        // Check for both 'mensual' (Spanish) and 'monthly' (English)
+        if (metaCycle) return metaCycle === 'monthly' || metaCycle === 'mensual';
         return productName.includes('mensual') || productName.includes('monthly');
       }
     });
 
     // Transform each product into a plan card
     const plans = filteredProducts.map((product: any) => {
-      const metadata = product.metadata ? JSON.parse(product.metadata) : {};
+      let metadata: Record<string, unknown> = {};
+      try {
+        metadata = product.metadata ? JSON.parse(product.metadata) : {};
+      } catch {
+        /* noop */
+      }
       const planType = (
-        metadata.planType || product.name.toLowerCase().split('-')[0]
+        (metadata.planType as string | undefined) || product.name.toLowerCase().split('-')[0]
       ).toLowerCase();
       const billingCycle =
-        metadata.billingCycle ||
-        (product.name.toLowerCase().includes('annual') ? 'annual' : 'monthly');
-      const displayName = metadata.displayName || product.title || product.name;
-      const features = metadata.features || getDefaultFeatures(planType);
+        (metadata.billingCycle as string | undefined) ||
+        (product.name.toLowerCase().includes('anual') ||
+        product.name.toLowerCase().includes('annual')
+          ? 'annual'
+          : 'monthly');
+      const displayName =
+        (metadata.displayName as string | undefined) || product.title || product.name;
+      const features = (metadata.features as string[] | undefined) || getDefaultFeatures(planType);
 
       return {
         id: product.id,
@@ -274,7 +291,7 @@ export default function PlansPage() {
       // Crear un handler para ePayco sin test mode en la configuración
       const handler = window.ePayco.checkout.configure({
         key: process.env.NEXT_PUBLIC_EPAYCO_PUBLIC_KEY,
-        test: true, // Hardcoded para pruebas
+        test: process.env.NEXT_PUBLIC_EPAYCO_TEST_MODE !== 'false',
       });
 
       // Datos del checkout - usando el formato correcto de ePayco
@@ -299,6 +316,7 @@ export default function PlansPage() {
         type_doc_billing: customerData.documentType,
         mobilephone_billing: customerData.phone,
         number_doc_billing: customerData.document,
+        email_billing: customerData.email,
 
         // URLs de respuesta - pasar el orderId como parámetro
         response: `${window.location.origin}/payment/response?orderId=${orderId}`,
