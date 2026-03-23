@@ -38,7 +38,6 @@ const GET_ALL_APPOINTMENTS = gql`
       endDatetime
       status
       paymentStatus
-      paymentMethod
       notes
       serviceAddress
       serviceCity
@@ -63,7 +62,6 @@ const UPDATE_APPOINTMENT_PAYMENT = gql`
     updateAppointment(id: $id, data: $data) {
       id
       paymentStatus
-      paymentMethod
     }
   }
 `;
