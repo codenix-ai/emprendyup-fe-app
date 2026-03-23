@@ -1,7 +1,7 @@
 'use client';
 import React, { useEffect, useMemo, useState } from 'react';
 import { useRouter } from 'next/navigation';
-import { Rocket, Search } from 'lucide-react';
+import { Lightbulb, Rocket, Search } from 'lucide-react';
 import { motion } from 'framer-motion';
 
 import ChatWidget from './ChatWidget/ChatWidget';
@@ -112,6 +112,18 @@ const NewHeroSection = () => {
                 <Search className="h-5 w-5" aria-hidden="true" />
                 Beneficios
               </button>
+
+              <a
+                href="https://www.emprendy.ai/analizar-idea"
+                target="_blank"
+                rel="noopener noreferrer"
+                className="group inline-flex items-center justify-center gap-2 rounded-2xl border border-amber-400/60 bg-amber-400/10 px-6 py-3 text-base font-semibold text-amber-300 backdrop-blur transition hover:bg-amber-400/20 focus:outline-none focus-visible:ring-2 focus-visible:ring-amber-300"
+                aria-label="Analiza tu idea de emprendimiento"
+                data-testid="analyze-idea-button"
+              >
+                <Lightbulb className="h-5 w-5 transition-transform group-hover:scale-110" aria-hidden="true" />
+                Analiza tu idea
+              </a>
             </div>
 
             {/* Social proof / quick stats */}
