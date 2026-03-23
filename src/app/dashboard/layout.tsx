@@ -32,6 +32,7 @@ import {
   ClipboardList,
   Mail,
   ExternalLink,
+  LayoutList,
 } from 'lucide-react';
 import Image from 'next/image';
 import { useQuery, gql } from '@apollo/client';
@@ -125,7 +126,7 @@ const getServiceNavigationGroups = () => {
       isSingle: true,
     },
     { name: 'Mi Servicio', icon: Briefcase, href: '/dashboard/service', isSingle: true },
-    { name: 'Calendario', icon: Calendar, href: '/dashboard/service-calendar', isSingle: true },
+    { name: 'Servicios', icon: LayoutList, href: '/dashboard/service-catalog', isSingle: true },
     { name: 'Gastos', icon: Receipt, href: '/dashboard/service-expenses', isSingle: true },
     { name: 'Clientes CRM', icon: UserCheck, href: '/dashboard/service-crm', isSingle: true },
     { name: 'Imágenes', icon: Package, href: '/dashboard/service-images', isSingle: true },

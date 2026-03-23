@@ -81,6 +81,7 @@ const GET_ALL_APPOINTMENTS = gql`
       endDatetime
       status
       paymentStatus
+      paymentMethod
       notes
       serviceAddress
       serviceCity
@@ -133,6 +134,7 @@ interface Appointment {
   endDatetime: string;
   status: string;
   paymentStatus: string;
+  paymentMethod?: string;
   notes?: string;
   serviceAddress?: string;
   serviceCity?: string;
