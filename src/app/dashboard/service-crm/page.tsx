@@ -744,64 +744,49 @@ export default function ServiceCRM() {
       </div>
 
       {/* Filters */}
-      <div className="bg-white dark:bg-gray-800 rounded-lg border border-gray-200 dark:border-gray-700 p-4 flex flex-wrap gap-4 items-center">
-        <Filter className="h-4 w-4 text-gray-400 flex-shrink-0" />
+      <div className="bg-white dark:bg-gray-800 rounded-lg border border-gray-200 dark:border-gray-700 p-3 sm:p-4">
+        <div className="flex flex-wrap gap-3 items-center">
+          <Filter className="h-4 w-4 text-gray-400 flex-shrink-0 hidden sm:block" />
 
-        {/* Date range selector */}
-        <div className="flex items-center gap-2">
-          <label className="text-sm text-gray-500 whitespace-nowrap">Período:</label>
-          <div className="flex gap-1 bg-gray-100 dark:bg-gray-700 rounded-lg p-1">
-            <button
-              onClick={() => setDateRange('week')}
-              className={`px-4 py-1.5 rounded-md text-sm font-medium transition-colors whitespace-nowrap ${
-                dateRange === 'week'
-                  ? 'bg-fourth-base text-white'
-                  : 'text-gray-600 dark:text-gray-300 hover:bg-gray-200 dark:hover:bg-gray-600'
-              }`}
-            >
-              Semanal
-            </button>
-            <button
-              onClick={() => setDateRange('month')}
-              className={`px-4 py-1.5 rounded-md text-sm font-medium transition-colors whitespace-nowrap ${
-                dateRange === 'month'
-                  ? 'bg-fourth-base text-white'
-                  : 'text-gray-600 dark:text-gray-300 hover:bg-gray-200 dark:hover:bg-gray-600'
-              }`}
-            >
-              Mensual
-            </button>
-            <button
-              onClick={() => setDateRange('all')}
-              className={`px-4 py-1.5 rounded-md text-sm font-medium transition-colors whitespace-nowrap ${
-                dateRange === 'all'
-                  ? 'bg-fourth-base text-white'
-                  : 'text-gray-600 dark:text-gray-300 hover:bg-gray-200 dark:hover:bg-gray-600'
-              }`}
-            >
-              Todas
-            </button>
+          {/* Date range selector */}
+          <div className="flex items-center gap-2 w-full sm:w-auto">
+            <label className="text-xs text-gray-500 whitespace-nowrap sm:text-sm">Período:</label>
+            <div className="flex flex-1 sm:flex-none gap-1 bg-gray-100 dark:bg-gray-700 rounded-lg p-1">
+              {(['week', 'month', 'all'] as const).map((range) => (
+                <button
+                  key={range}
+                  onClick={() => setDateRange(range)}
+                  className={`flex-1 sm:flex-none px-3 py-1.5 rounded-md text-xs sm:text-sm font-medium transition-colors whitespace-nowrap ${
+                    dateRange === range
+                      ? 'bg-fourth-base text-white'
+                      : 'text-gray-600 dark:text-gray-300 hover:bg-gray-200 dark:hover:bg-gray-600'
+                  }`}
+                >
+                  {range === 'week' ? 'Semana' : range === 'month' ? 'Mes' : 'Todas'}
+                </button>
+              ))}
+            </div>
           </div>
+
+          {/* Type filter - only for clients view */}
+          {viewMode === 'clients' && (
+            <div className="flex gap-2 sm:ml-auto w-full sm:w-auto">
+              {(['all', 'recurring', 'vip'] as const).map((t) => (
+                <button
+                  key={t}
+                  onClick={() => setFilterType(t)}
+                  className={`flex-1 sm:flex-none px-3 py-1.5 rounded-lg text-xs sm:text-sm transition-colors ${
+                    filterType === t
+                      ? 'bg-fourth-base text-white'
+                      : 'bg-gray-100 dark:bg-gray-700 text-gray-600 dark:text-gray-300 hover:bg-gray-200 dark:hover:bg-gray-600'
+                  }`}
+                >
+                  {t === 'all' ? 'Todos' : t === 'recurring' ? '⭐ Recurrentes' : '👑 VIP'}
+                </button>
+              ))}
+            </div>
+          )}
         </div>
-
-        {/* Type filter - only for clients view */}
-        {viewMode === 'clients' && (
-          <div className="flex gap-2 ml-auto">
-            {(['all', 'recurring', 'vip'] as const).map((t) => (
-              <button
-                key={t}
-                onClick={() => setFilterType(t)}
-                className={`px-3 py-1.5 rounded-lg text-sm transition-colors ${
-                  filterType === t
-                    ? 'bg-fourth-base text-white'
-                    : 'bg-gray-100 dark:bg-gray-700 text-gray-600 dark:text-gray-300 hover:bg-gray-200 dark:hover:bg-gray-600'
-                }`}
-              >
-                {t === 'all' ? 'Todos' : t === 'recurring' ? '⭐ Recurrentes' : '👑 VIP'}
-              </button>
-            ))}
-          </div>
-        )}
       </div>
 
       {/* Summary - only for clients view */}
@@ -1130,201 +1115,390 @@ export default function ServiceCRM() {
           No se encontraron citas en el rango de fechas seleccionado.
         </div>
       ) : (
-        <div className="bg-white dark:bg-gray-800 rounded-lg border border-gray-200 dark:border-gray-700 overflow-hidden">
-          <div className="overflow-x-auto">
-            <table className="min-w-full divide-y divide-gray-200 dark:divide-gray-700">
-              <thead className="bg-gray-50 dark:bg-gray-900">
-                <tr>
-                  <th className="px-6 py-3 text-left text-xs font-semibold text-gray-600 dark:text-gray-300 uppercase tracking-wider">
-                    Fecha y Hora
-                  </th>
-                  <th className="px-6 py-3 text-left text-xs font-semibold text-gray-600 dark:text-gray-300 uppercase tracking-wider">
-                    Cliente
-                  </th>
-                  <th className="px-6 py-3 text-left text-xs font-semibold text-gray-600 dark:text-gray-300 uppercase tracking-wider">
-                    Servicio
-                  </th>
-                  <th className="px-6 py-3 text-left text-xs font-semibold text-gray-600 dark:text-gray-300 uppercase tracking-wider">
-                    Ubicación
-                  </th>
-                  <th className="px-6 py-3 text-left text-xs font-semibold text-gray-600 dark:text-gray-300 uppercase tracking-wider">
-                    Estado
-                  </th>
-                  <th className="px-6 py-3 text-left text-xs font-semibold text-gray-600 dark:text-gray-300 uppercase tracking-wider">
-                    Pago / Método
-                  </th>
-                  <th className="px-6 py-3 text-left text-xs font-semibold text-gray-600 dark:text-gray-300 uppercase tracking-wider">
-                    Monto
-                  </th>
-                </tr>
-              </thead>
-              <tbody className="divide-y divide-gray-200 dark:divide-gray-700">
-                {filteredAppointments.map((apt) => {
-                  const service = services.find((s) => s.id === apt.serviceId);
-                  const aptDate = parseFlexDate(apt.startDatetime);
-                  const location = [apt.serviceAddress, apt.serviceCity].filter(Boolean).join(', ');
+        <>
+          {/* ── Mobile card list ── */}
+          <div className="md:hidden space-y-3">
+            {filteredAppointments.map((apt) => {
+              const service = services.find((s) => s.id === apt.serviceId);
+              const aptDate = parseFlexDate(apt.startDatetime);
+              const location = [apt.serviceAddress, apt.serviceCity].filter(Boolean).join(', ');
+              const isEditingThis = editingPayment?.aptId === apt.id;
 
-                  return (
-                    <tr
-                      key={apt.id}
-                      className="hover:bg-gray-50 dark:hover:bg-gray-700/50 transition"
-                    >
-                      <td className="px-6 py-4">
-                        <div className="text-sm font-medium text-gray-900 dark:text-white">
-                          {aptDate.toLocaleDateString('es-CO', {
-                            day: 'numeric',
-                            month: 'short',
-                            year: 'numeric',
-                          })}
-                        </div>
-                        <div className="text-xs text-gray-500 dark:text-gray-400">
-                          {aptDate.toLocaleTimeString('es-CO', {
-                            hour: '2-digit',
-                            minute: '2-digit',
-                          })}
-                        </div>
-                      </td>
-                      <td className="px-6 py-4">
-                        <div className="text-sm font-medium text-gray-900 dark:text-white">
-                          {apt.customerName}
-                        </div>
-                        <div className="flex items-center gap-2 mt-1">
-                          <span className="text-xs text-gray-500 dark:text-gray-400 flex items-center gap-1">
-                            <Mail className="h-3 w-3" /> {apt.customerEmail}
+              return (
+                <div
+                  key={apt.id}
+                  className="bg-white dark:bg-gray-800 rounded-xl border border-gray-200 dark:border-gray-700 overflow-hidden"
+                >
+                  {/* Card header: date + amount */}
+                  <div className="flex items-center justify-between px-4 py-3 bg-gray-50 dark:bg-gray-900/50 border-b border-gray-200 dark:border-gray-700">
+                    <div className="flex items-center gap-2">
+                      <Calendar className="h-4 w-4 text-gray-400" />
+                      <span className="text-sm font-semibold text-gray-900 dark:text-white">
+                        {aptDate.toLocaleDateString('es-CO', {
+                          day: 'numeric',
+                          month: 'short',
+                          year: 'numeric',
+                        })}
+                      </span>
+                      <span className="text-xs text-gray-500 dark:text-gray-400">
+                        {aptDate.toLocaleTimeString('es-CO', {
+                          hour: '2-digit',
+                          minute: '2-digit',
+                        })}
+                      </span>
+                    </div>
+                    <span className="text-sm font-bold text-fourth-base">
+                      {service ? formatCOP(service.priceAmount) : '—'}
+                    </span>
+                  </div>
+
+                  {/* Card body */}
+                  <div className="px-4 py-3 space-y-3">
+                    {/* Customer */}
+                    <div>
+                      <p className="text-sm font-semibold text-gray-900 dark:text-white">
+                        {apt.customerName}
+                      </p>
+                      <div className="flex flex-wrap gap-x-3 gap-y-1 mt-1">
+                        {apt.customerEmail && (
+                          <span className="flex items-center gap-1 text-xs text-gray-500 dark:text-gray-400">
+                            <Mail className="h-3 w-3 flex-shrink-0" />
+                            {apt.customerEmail}
                           </span>
-                        </div>
-                        <div className="text-xs text-gray-500 dark:text-gray-400 flex items-center gap-1 mt-0.5">
-                          <Phone className="h-3 w-3" /> {apt.customerPhone}
-                        </div>
-                      </td>
-                      <td className="px-6 py-4">
-                        <div className="text-sm text-gray-900 dark:text-white font-medium">
+                        )}
+                        {apt.customerPhone && (
+                          <span className="flex items-center gap-1 text-xs text-gray-500 dark:text-gray-400">
+                            <Phone className="h-3 w-3 flex-shrink-0" />
+                            {apt.customerPhone}
+                          </span>
+                        )}
+                      </div>
+                    </div>
+
+                    {/* Service + notes */}
+                    <div className="flex items-start gap-2">
+                      <DollarSign className="h-4 w-4 text-gray-400 mt-0.5 flex-shrink-0" />
+                      <div>
+                        <p className="text-sm text-gray-800 dark:text-gray-200 font-medium">
                           {service?.name || 'Sin servicio'}
-                        </div>
+                        </p>
                         {apt.notes && (
-                          <div className="text-xs text-gray-500 dark:text-gray-400 mt-1 max-w-xs truncate">
+                          <p className="text-xs text-gray-500 dark:text-gray-400 mt-0.5 line-clamp-2">
                             {apt.notes}
-                          </div>
+                          </p>
                         )}
-                      </td>
-                      <td className="px-6 py-4">
-                        {location ? (
-                          <div className="text-sm text-gray-700 dark:text-gray-300 max-w-xs">
-                            {location}
-                            {apt.serviceReference && (
-                              <div className="text-xs text-gray-500 dark:text-gray-400 mt-1">
-                                {apt.serviceReference}
-                              </div>
-                            )}
-                          </div>
-                        ) : (
-                          <span className="text-xs text-gray-400">—</span>
-                        )}
-                      </td>
-                      <td className="px-6 py-4">
-                        <span className="inline-flex px-2.5 py-0.5 rounded-full text-xs font-medium bg-gray-100 dark:bg-gray-700 text-gray-700 dark:text-gray-300">
-                          {STATUS_LABELS[apt.status] || apt.status}
+                      </div>
+                    </div>
+
+                    {/* Location */}
+                    {location && (
+                      <p className="text-xs text-gray-500 dark:text-gray-400 flex items-start gap-1">
+                        <span className="mt-0.5">📍</span>
+                        <span>
+                          {location}
+                          {apt.serviceReference && ` · ${apt.serviceReference}`}
                         </span>
-                      </td>
-                      <td className="px-6 py-4">
-                        {editingPayment?.aptId === apt.id ? (
-                          <div
-                            className="flex flex-col gap-2 min-w-[160px]"
-                            onClick={(e) => e.stopPropagation()}
+                      </p>
+                    )}
+
+                    {/* Status row */}
+                    <div className="flex items-center justify-between pt-1 border-t border-gray-100 dark:border-gray-700">
+                      <span className="inline-flex px-2.5 py-0.5 rounded-full text-xs font-medium bg-gray-100 dark:bg-gray-700 text-gray-700 dark:text-gray-300">
+                        {STATUS_LABELS[apt.status] || apt.status}
+                      </span>
+
+                      {/* Payment editor */}
+                      {isEditingThis ? (
+                        <div
+                          className="flex flex-col gap-2 w-48"
+                          onClick={(e) => e.stopPropagation()}
+                        >
+                          <select
+                            value={editingPayment!.status}
+                            onChange={(e) =>
+                              setEditingPayment((prev) =>
+                                prev ? { ...prev, status: e.target.value } : prev
+                              )
+                            }
+                            className="w-full text-xs px-2 py-1.5 border border-gray-300 dark:border-gray-600 rounded-md bg-white dark:bg-gray-900 text-gray-900 dark:text-white focus:outline-none focus:ring-2 focus:ring-fourth-base"
                           >
-                            <select
-                              value={editingPayment.status}
-                              onChange={(e) =>
-                                setEditingPayment((prev) =>
-                                  prev ? { ...prev, status: e.target.value } : prev
-                                )
-                              }
-                              className="w-full text-xs px-2 py-1.5 border border-gray-300 dark:border-gray-600 rounded-md bg-white dark:bg-gray-900 text-gray-900 dark:text-white focus:outline-none focus:ring-2 focus:ring-fourth-base"
+                            {Object.entries(PAYMENT_LABELS).map(([k, v]) => (
+                              <option key={k} value={k}>
+                                {v}
+                              </option>
+                            ))}
+                          </select>
+                          <select
+                            value={editingPayment!.method}
+                            onChange={(e) =>
+                              setEditingPayment((prev) =>
+                                prev ? { ...prev, method: e.target.value } : prev
+                              )
+                            }
+                            className="w-full text-xs px-2 py-1.5 border border-gray-300 dark:border-gray-600 rounded-md bg-white dark:bg-gray-900 text-gray-900 dark:text-white focus:outline-none focus:ring-2 focus:ring-fourth-base"
+                          >
+                            <option value="">Sin método</option>
+                            {Object.entries(PAYMENT_METHOD_LABELS).map(([k, v]) => (
+                              <option key={k} value={k}>
+                                {v}
+                              </option>
+                            ))}
+                          </select>
+                          <div className="flex gap-1">
+                            <button
+                              onClick={handleSavePayment}
+                              disabled={paymentSaving}
+                              className="flex-1 flex items-center justify-center gap-1 text-xs px-2 py-1.5 bg-fourth-base text-white rounded-md hover:opacity-90 disabled:opacity-50"
                             >
-                              {Object.entries(PAYMENT_LABELS).map(([k, v]) => (
-                                <option key={k} value={k}>
-                                  {v}
-                                </option>
-                              ))}
-                            </select>
-                            <select
-                              value={editingPayment.method}
-                              onChange={(e) =>
-                                setEditingPayment((prev) =>
-                                  prev ? { ...prev, method: e.target.value } : prev
-                                )
-                              }
-                              className="w-full text-xs px-2 py-1.5 border border-gray-300 dark:border-gray-600 rounded-md bg-white dark:bg-gray-900 text-gray-900 dark:text-white focus:outline-none focus:ring-2 focus:ring-fourth-base"
+                              {paymentSaving ? (
+                                <Loader2 className="h-3 w-3 animate-spin" />
+                              ) : (
+                                <Save className="h-3 w-3" />
+                              )}
+                              {paymentSaving ? 'Guardando' : 'Guardar'}
+                            </button>
+                            <button
+                              onClick={() => setEditingPayment(null)}
+                              className="px-2 py-1.5 text-xs bg-gray-100 dark:bg-gray-700 text-gray-700 dark:text-gray-300 rounded-md hover:bg-gray-200 dark:hover:bg-gray-600"
                             >
-                              <option value="">Sin método</option>
-                              {Object.entries(PAYMENT_METHOD_LABELS).map(([k, v]) => (
-                                <option key={k} value={k}>
-                                  {v}
-                                </option>
-                              ))}
-                            </select>
-                            <div className="flex gap-1">
-                              <button
-                                onClick={handleSavePayment}
-                                disabled={paymentSaving}
-                                className="flex-1 flex items-center justify-center gap-1 text-xs px-2 py-1.5 bg-fourth-base text-white rounded-md hover:opacity-90 disabled:opacity-50 transition-opacity"
-                              >
-                                {paymentSaving ? (
-                                  <Loader2 className="h-3 w-3 animate-spin" />
-                                ) : (
-                                  <Save className="h-3 w-3" />
-                                )}
-                                {paymentSaving ? 'Guardando' : 'Guardar'}
-                              </button>
-                              <button
-                                onClick={() => setEditingPayment(null)}
-                                className="px-2 py-1.5 text-xs bg-gray-100 dark:bg-gray-700 text-gray-700 dark:text-gray-300 rounded-md hover:bg-gray-200 dark:hover:bg-gray-600 transition-colors"
-                              >
-                                <X className="h-3 w-3" />
-                              </button>
-                            </div>
+                              <X className="h-3 w-3" />
+                            </button>
                           </div>
-                        ) : (
-                          <button
-                            onClick={(e) => openPaymentEditor(e, apt)}
-                            className="group flex flex-col gap-0.5 text-left"
-                            title="Click para editar pago"
-                          >
-                            <span
-                              className={`inline-flex items-center gap-1 px-2.5 py-0.5 rounded-full text-xs font-medium transition-opacity group-hover:opacity-80 ${
-                                apt.paymentStatus === 'PAID'
-                                  ? 'bg-green-100 text-green-800 dark:bg-green-900 dark:text-green-300'
-                                  : apt.paymentStatus === 'PENDING'
-                                    ? 'bg-yellow-100 text-yellow-800 dark:bg-yellow-900 dark:text-yellow-300'
-                                    : apt.paymentStatus === 'PARTIAL'
-                                      ? 'bg-blue-100 text-blue-800 dark:bg-blue-900 dark:text-blue-300'
-                                      : 'bg-gray-100 text-gray-800 dark:bg-gray-700 dark:text-gray-300'
-                              }`}
-                            >
-                              {PAYMENT_LABELS[apt.paymentStatus] || apt.paymentStatus}
-                              <ChevronDownIcon className="h-3 w-3 opacity-50 group-hover:opacity-100" />
-                            </span>
-                            {apt.paymentMethod && (
-                              <span className="flex items-center gap-1 text-xs text-gray-500 dark:text-gray-400 pl-0.5">
-                                <CreditCard className="h-3 w-3" />
-                                {PAYMENT_METHOD_LABELS[apt.paymentMethod] || apt.paymentMethod}
-                              </span>
-                            )}
-                          </button>
-                        )}
-                      </td>
-                      <td className="px-6 py-4">
-                        <div className="text-sm font-semibold text-fourth-base">
-                          {service ? formatCOP(service.priceAmount) : '—'}
                         </div>
-                      </td>
-                    </tr>
-                  );
-                })}
-              </tbody>
-            </table>
+                      ) : (
+                        <button
+                          onClick={(e) => openPaymentEditor(e, apt)}
+                          className="group flex flex-col items-end gap-0.5"
+                          title="Editar pago"
+                        >
+                          <span
+                            className={`inline-flex items-center gap-1 px-2.5 py-0.5 rounded-full text-xs font-medium group-hover:opacity-80 ${
+                              apt.paymentStatus === 'PAID'
+                                ? 'bg-green-100 text-green-800 dark:bg-green-900 dark:text-green-300'
+                                : apt.paymentStatus === 'PENDING'
+                                  ? 'bg-yellow-100 text-yellow-800 dark:bg-yellow-900 dark:text-yellow-300'
+                                  : apt.paymentStatus === 'PARTIAL'
+                                    ? 'bg-blue-100 text-blue-800 dark:bg-blue-900 dark:text-blue-300'
+                                    : 'bg-gray-100 text-gray-800 dark:bg-gray-700 dark:text-gray-300'
+                            }`}
+                          >
+                            {PAYMENT_LABELS[apt.paymentStatus] || apt.paymentStatus}
+                            <ChevronDownIcon className="h-3 w-3 opacity-50" />
+                          </span>
+                          {apt.paymentMethod && (
+                            <span className="flex items-center gap-1 text-xs text-gray-500 dark:text-gray-400">
+                              <CreditCard className="h-3 w-3" />
+                              {PAYMENT_METHOD_LABELS[apt.paymentMethod] || apt.paymentMethod}
+                            </span>
+                          )}
+                        </button>
+                      )}
+                    </div>
+                  </div>
+                </div>
+              );
+            })}
           </div>
-        </div>
+
+          {/* ── Desktop table ── */}
+          <div className="hidden md:block bg-white dark:bg-gray-800 rounded-lg border border-gray-200 dark:border-gray-700 overflow-hidden">
+            <div className="overflow-x-auto">
+              <table className="min-w-full divide-y divide-gray-200 dark:divide-gray-700">
+                <thead className="bg-gray-50 dark:bg-gray-900">
+                  <tr>
+                    <th className="px-6 py-3 text-left text-xs font-semibold text-gray-600 dark:text-gray-300 uppercase tracking-wider">
+                      Fecha y Hora
+                    </th>
+                    <th className="px-6 py-3 text-left text-xs font-semibold text-gray-600 dark:text-gray-300 uppercase tracking-wider">
+                      Cliente
+                    </th>
+                    <th className="px-6 py-3 text-left text-xs font-semibold text-gray-600 dark:text-gray-300 uppercase tracking-wider">
+                      Servicio
+                    </th>
+                    <th className="px-6 py-3 text-left text-xs font-semibold text-gray-600 dark:text-gray-300 uppercase tracking-wider">
+                      Ubicación
+                    </th>
+                    <th className="px-6 py-3 text-left text-xs font-semibold text-gray-600 dark:text-gray-300 uppercase tracking-wider">
+                      Estado
+                    </th>
+                    <th className="px-6 py-3 text-left text-xs font-semibold text-gray-600 dark:text-gray-300 uppercase tracking-wider">
+                      Pago / Método
+                    </th>
+                    <th className="px-6 py-3 text-left text-xs font-semibold text-gray-600 dark:text-gray-300 uppercase tracking-wider">
+                      Monto
+                    </th>
+                  </tr>
+                </thead>
+                <tbody className="divide-y divide-gray-200 dark:divide-gray-700">
+                  {filteredAppointments.map((apt) => {
+                    const service = services.find((s) => s.id === apt.serviceId);
+                    const aptDate = parseFlexDate(apt.startDatetime);
+                    const location = [apt.serviceAddress, apt.serviceCity]
+                      .filter(Boolean)
+                      .join(', ');
+
+                    return (
+                      <tr
+                        key={apt.id}
+                        className="hover:bg-gray-50 dark:hover:bg-gray-700/50 transition"
+                      >
+                        <td className="px-6 py-4">
+                          <div className="text-sm font-medium text-gray-900 dark:text-white">
+                            {aptDate.toLocaleDateString('es-CO', {
+                              day: 'numeric',
+                              month: 'short',
+                              year: 'numeric',
+                            })}
+                          </div>
+                          <div className="text-xs text-gray-500 dark:text-gray-400">
+                            {aptDate.toLocaleTimeString('es-CO', {
+                              hour: '2-digit',
+                              minute: '2-digit',
+                            })}
+                          </div>
+                        </td>
+                        <td className="px-6 py-4">
+                          <div className="text-sm font-medium text-gray-900 dark:text-white">
+                            {apt.customerName}
+                          </div>
+                          <div className="flex items-center gap-2 mt-1">
+                            <span className="text-xs text-gray-500 dark:text-gray-400 flex items-center gap-1">
+                              <Mail className="h-3 w-3" /> {apt.customerEmail}
+                            </span>
+                          </div>
+                          <div className="text-xs text-gray-500 dark:text-gray-400 flex items-center gap-1 mt-0.5">
+                            <Phone className="h-3 w-3" /> {apt.customerPhone}
+                          </div>
+                        </td>
+                        <td className="px-6 py-4">
+                          <div className="text-sm text-gray-900 dark:text-white font-medium">
+                            {service?.name || 'Sin servicio'}
+                          </div>
+                          {apt.notes && (
+                            <div className="text-xs text-gray-500 dark:text-gray-400 mt-1 max-w-xs truncate">
+                              {apt.notes}
+                            </div>
+                          )}
+                        </td>
+                        <td className="px-6 py-4">
+                          {location ? (
+                            <div className="text-sm text-gray-700 dark:text-gray-300 max-w-xs">
+                              {location}
+                              {apt.serviceReference && (
+                                <div className="text-xs text-gray-500 dark:text-gray-400 mt-1">
+                                  {apt.serviceReference}
+                                </div>
+                              )}
+                            </div>
+                          ) : (
+                            <span className="text-xs text-gray-400">—</span>
+                          )}
+                        </td>
+                        <td className="px-6 py-4">
+                          <span className="inline-flex px-2.5 py-0.5 rounded-full text-xs font-medium bg-gray-100 dark:bg-gray-700 text-gray-700 dark:text-gray-300">
+                            {STATUS_LABELS[apt.status] || apt.status}
+                          </span>
+                        </td>
+                        <td className="px-6 py-4">
+                          {editingPayment?.aptId === apt.id ? (
+                            <div
+                              className="flex flex-col gap-2 min-w-[160px]"
+                              onClick={(e) => e.stopPropagation()}
+                            >
+                              <select
+                                value={editingPayment.status}
+                                onChange={(e) =>
+                                  setEditingPayment((prev) =>
+                                    prev ? { ...prev, status: e.target.value } : prev
+                                  )
+                                }
+                                className="w-full text-xs px-2 py-1.5 border border-gray-300 dark:border-gray-600 rounded-md bg-white dark:bg-gray-900 text-gray-900 dark:text-white focus:outline-none focus:ring-2 focus:ring-fourth-base"
+                              >
+                                {Object.entries(PAYMENT_LABELS).map(([k, v]) => (
+                                  <option key={k} value={k}>
+                                    {v}
+                                  </option>
+                                ))}
+                              </select>
+                              <select
+                                value={editingPayment.method}
+                                onChange={(e) =>
+                                  setEditingPayment((prev) =>
+                                    prev ? { ...prev, method: e.target.value } : prev
+                                  )
+                                }
+                                className="w-full text-xs px-2 py-1.5 border border-gray-300 dark:border-gray-600 rounded-md bg-white dark:bg-gray-900 text-gray-900 dark:text-white focus:outline-none focus:ring-2 focus:ring-fourth-base"
+                              >
+                                <option value="">Sin método</option>
+                                {Object.entries(PAYMENT_METHOD_LABELS).map(([k, v]) => (
+                                  <option key={k} value={k}>
+                                    {v}
+                                  </option>
+                                ))}
+                              </select>
+                              <div className="flex gap-1">
+                                <button
+                                  onClick={handleSavePayment}
+                                  disabled={paymentSaving}
+                                  className="flex-1 flex items-center justify-center gap-1 text-xs px-2 py-1.5 bg-fourth-base text-white rounded-md hover:opacity-90 disabled:opacity-50 transition-opacity"
+                                >
+                                  {paymentSaving ? (
+                                    <Loader2 className="h-3 w-3 animate-spin" />
+                                  ) : (
+                                    <Save className="h-3 w-3" />
+                                  )}
+                                  {paymentSaving ? 'Guardando' : 'Guardar'}
+                                </button>
+                                <button
+                                  onClick={() => setEditingPayment(null)}
+                                  className="px-2 py-1.5 text-xs bg-gray-100 dark:bg-gray-700 text-gray-700 dark:text-gray-300 rounded-md hover:bg-gray-200 dark:hover:bg-gray-600 transition-colors"
+                                >
+                                  <X className="h-3 w-3" />
+                                </button>
+                              </div>
+                            </div>
+                          ) : (
+                            <button
+                              onClick={(e) => openPaymentEditor(e, apt)}
+                              className="group flex flex-col gap-0.5 text-left"
+                              title="Click para editar pago"
+                            >
+                              <span
+                                className={`inline-flex items-center gap-1 px-2.5 py-0.5 rounded-full text-xs font-medium transition-opacity group-hover:opacity-80 ${
+                                  apt.paymentStatus === 'PAID'
+                                    ? 'bg-green-100 text-green-800 dark:bg-green-900 dark:text-green-300'
+                                    : apt.paymentStatus === 'PENDING'
+                                      ? 'bg-yellow-100 text-yellow-800 dark:bg-yellow-900 dark:text-yellow-300'
+                                      : apt.paymentStatus === 'PARTIAL'
+                                        ? 'bg-blue-100 text-blue-800 dark:bg-blue-900 dark:text-blue-300'
+                                        : 'bg-gray-100 text-gray-800 dark:bg-gray-700 dark:text-gray-300'
+                                }`}
+                              >
+                                {PAYMENT_LABELS[apt.paymentStatus] || apt.paymentStatus}
+                                <ChevronDownIcon className="h-3 w-3 opacity-50 group-hover:opacity-100" />
+                              </span>
+                              {apt.paymentMethod && (
+                                <span className="flex items-center gap-1 text-xs text-gray-500 dark:text-gray-400 pl-0.5">
+                                  <CreditCard className="h-3 w-3" />
+                                  {PAYMENT_METHOD_LABELS[apt.paymentMethod] || apt.paymentMethod}
+                                </span>
+                              )}
+                            </button>
+                          )}
+                        </td>
+                        <td className="px-6 py-4">
+                          <div className="text-sm font-semibold text-fourth-base">
+                            {service ? formatCOP(service.priceAmount) : '—'}
+                          </div>
+                        </td>
+                      </tr>
+                    );
+                  })}
+                </tbody>
+              </table>
+            </div>
+          </div>
+        </>
       )}
 
       {/* Edit Client Modal */}
