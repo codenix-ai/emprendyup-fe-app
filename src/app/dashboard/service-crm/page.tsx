@@ -186,7 +186,7 @@ export default function ServiceCRM() {
   const [sortDir, setSortDir] = useState<'asc' | 'desc'>('desc');
   const [expandedEmail, setExpandedEmail] = useState<string | null>(null);
   const [viewMode, setViewMode] = useState<'clients' | 'appointments'>('clients');
-  const [dateRange, setDateRange] = useState<'week' | 'month' | 'all'>('month');
+  const [dateRange, setDateRange] = useState<'week' | 'month' | 'all'>('all');
   const [filterType, setFilterType] = useState<'all' | 'recurring' | 'vip'>('all');
 
   // Calculate date range based on selection
@@ -266,7 +266,11 @@ export default function ServiceCRM() {
     skip: !serviceProviderId,
   });
 
-  const { data: appointmentsData } = useQuery(GET_ALL_APPOINTMENTS, {
+  const {
+    data: appointmentsData,
+    loading: loadingAppointments,
+    error: appointmentsError,
+  } = useQuery(GET_ALL_APPOINTMENTS, {
     variables: { serviceProviderId: serviceProviderId || '' },
     skip: !serviceProviderId,
   });
@@ -483,6 +487,8 @@ export default function ServiceCRM() {
       URL.revokeObjectURL(url);
     }
   };
+
+  const isLoading = loadingClients || loadingAppointments;
 
   if (!serviceProviderId) {
     return (
@@ -708,7 +714,7 @@ export default function ServiceCRM() {
       )}
 
       {/* Table */}
-      {loadingClients ? (
+      {isLoading ? (
         <div className="flex items-center justify-center py-16">
           <div className="animate-spin rounded-full h-10 w-10 border-b-2 border-fourth-base" />
         </div>
@@ -720,6 +726,12 @@ export default function ServiceCRM() {
               <div className="flex items-center justify-center gap-2 text-red-500 mb-3">
                 <AlertCircle className="h-5 w-5" />
                 <span className="text-sm">Error al cargar clientes: {clientsError.message}</span>
+              </div>
+            )}
+            {appointmentsError && (
+              <div className="flex items-center justify-center gap-2 text-red-500 mb-3">
+                <AlertCircle className="h-5 w-5" />
+                <span className="text-sm">Error al cargar citas: {appointmentsError.message}</span>
               </div>
             )}
             <p className="text-gray-500 dark:text-gray-400">
