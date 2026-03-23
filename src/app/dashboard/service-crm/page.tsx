@@ -18,57 +18,6 @@ import {
   AlertCircle,
 } from 'lucide-react';
 
-const FREQUENT_CLIENTS = gql`
-  query FrequentClients(
-    $serviceProviderId: String!
-    $startDate: DateTime
-    $endDate: DateTime
-    $limit: Float
-  ) {
-    frequentClients(
-      serviceProviderId: $serviceProviderId
-      startDate: $startDate
-      endDate: $endDate
-      limit: $limit
-    ) {
-      customerId
-      customerName
-      customerEmail
-      customerPhone
-      totalAppointments
-      totalRevenue
-      lastAppointmentDate
-      firstAppointmentDate
-      isRecurrent
-      isVIP
-      appointmentHistory {
-        id
-        date
-        serviceName
-        status
-        paymentStatus
-        amount
-      }
-    }
-  }
-`;
-
-const NEW_VS_RECURRENT = gql`
-  query NewVsRecurrent($serviceProviderId: String!, $startDate: DateTime!, $endDate: DateTime!) {
-    newVsRecurrentClients(
-      serviceProviderId: $serviceProviderId
-      startDate: $startDate
-      endDate: $endDate
-    ) {
-      newClients
-      recurrentClients
-      totalClients
-      percentageNew
-      percentageRecurrent
-    }
-  }
-`;
-
 const GET_ALL_APPOINTMENTS = gql`
   query GetAllAppointmentsCRM($serviceProviderId: String!) {
     appointmentsByProvider(serviceProviderId: $serviceProviderId) {
@@ -81,7 +30,6 @@ const GET_ALL_APPOINTMENTS = gql`
       endDatetime
       status
       paymentStatus
-      paymentMethod
       notes
       serviceAddress
       serviceCity
@@ -134,7 +82,6 @@ interface Appointment {
   endDatetime: string;
   status: string;
   paymentStatus: string;
-  paymentMethod?: string;
   notes?: string;
   serviceAddress?: string;
   serviceCity?: string;
@@ -230,41 +177,8 @@ export default function ServiceCRM() {
     };
   }, [dateRange]);
 
-  // Convert dates to DateTime format for GraphQL
-  const startDateTime = useMemo(() => {
-    const d = new Date(dateFrom);
-    d.setHours(0, 0, 0, 0);
-    return d.toISOString();
-  }, [dateFrom]);
-
-  const endDateTime = useMemo(() => {
-    const d = new Date(dateTo);
-    d.setHours(23, 59, 59, 999);
-    return d.toISOString();
-  }, [dateTo]);
-
-  const {
-    data: clientsData,
-    loading: loadingClients,
-    error: clientsError,
-  } = useQuery(FREQUENT_CLIENTS, {
-    variables: {
-      serviceProviderId: serviceProviderId || '',
-      startDate: startDateTime,
-      endDate: endDateTime,
-      limit: null,
-    },
-    skip: !serviceProviderId,
-  });
-
-  const { data: statsData } = useQuery(NEW_VS_RECURRENT, {
-    variables: {
-      serviceProviderId: serviceProviderId || '',
-      startDate: startDateTime,
-      endDate: endDateTime,
-    },
-    skip: !serviceProviderId,
-  });
+  // frequentClients endpoint not available — derive clients from appointments
+  const loadingClients = false;
 
   const {
     data: appointmentsData,
@@ -280,12 +194,8 @@ export default function ServiceCRM() {
     skip: !serviceProviderId,
   });
 
-  const clients: FrequentClient[] = useMemo(
-    () => clientsData?.frequentClients || [],
-    [clientsData]
-  );
-
-  const newVsRecurrentStats = useMemo(() => statsData?.newVsRecurrentClients, [statsData]);
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  const clients = useMemo((): FrequentClient[] => [], []);
 
   const appointments: Appointment[] = useMemo(
     () => appointmentsData?.appointmentsByProvider || [],
@@ -624,7 +534,7 @@ export default function ServiceCRM() {
           {[
             {
               label: 'Total Clientes',
-              value: newVsRecurrentStats?.totalClients || effectiveClients.length,
+              value: effectiveClients.length,
               icon: Users,
               color: 'blue',
             },
@@ -722,12 +632,6 @@ export default function ServiceCRM() {
         // Clients Table
         filtered.length === 0 ? (
           <div className="bg-white dark:bg-gray-800 rounded-lg border border-gray-200 dark:border-gray-700 p-12 text-center">
-            {clientsError && (
-              <div className="flex items-center justify-center gap-2 text-red-500 mb-3">
-                <AlertCircle className="h-5 w-5" />
-                <span className="text-sm">Error al cargar clientes: {clientsError.message}</span>
-              </div>
-            )}
             {appointmentsError && (
               <div className="flex items-center justify-center gap-2 text-red-500 mb-3">
                 <AlertCircle className="h-5 w-5" />
