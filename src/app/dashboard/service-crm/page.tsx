@@ -904,210 +904,364 @@ export default function ServiceCRM() {
             </p>
           </div>
         ) : (
-          <div className="bg-white dark:bg-gray-800 rounded-lg border border-gray-200 dark:border-gray-700 overflow-hidden">
-            <div className="overflow-x-auto">
-              <table className="min-w-full divide-y divide-gray-200 dark:divide-gray-700">
-                <thead className="bg-gray-50 dark:bg-gray-900">
-                  <tr>
-                    <th className="px-6 py-3 text-left text-xs font-semibold text-gray-600 dark:text-gray-300 uppercase tracking-wider">
-                      Cliente
-                    </th>
-                    <th
-                      className="px-6 py-3 text-left text-xs font-semibold text-gray-600 dark:text-gray-300 uppercase tracking-wider cursor-pointer hover:text-gray-900 dark:hover:text-white select-none"
-                      onClick={() => toggleSort('totalAppointments')}
-                    >
-                      Citas <SortIcon k="totalAppointments" />
-                    </th>
-                    <th
-                      className="px-6 py-3 text-left text-xs font-semibold text-gray-600 dark:text-gray-300 uppercase tracking-wider cursor-pointer hover:text-gray-900 dark:hover:text-white select-none"
-                      onClick={() => toggleSort('totalRevenue')}
-                    >
-                      Ingresos <SortIcon k="totalRevenue" />
-                    </th>
-                    <th className="px-6 py-3 text-left text-xs font-semibold text-gray-600 dark:text-gray-300 uppercase tracking-wider">
-                      Estado de Pagos
-                    </th>
-                    <th
-                      className="px-6 py-3 text-left text-xs font-semibold text-gray-600 dark:text-gray-300 uppercase tracking-wider cursor-pointer hover:text-gray-900 dark:hover:text-white select-none"
-                      onClick={() => toggleSort('lastAppointmentDate')}
-                    >
-                      Última visita <SortIcon k="lastAppointmentDate" />
-                    </th>
-                    <th className="px-6 py-3 text-left text-xs font-semibold text-gray-600 dark:text-gray-300 uppercase tracking-wider">
-                      Tipo
-                    </th>
-                    <th className="px-6 py-3" />
-                  </tr>
-                </thead>
-                <tbody className="divide-y divide-gray-200 dark:divide-gray-700">
-                  {filtered.map((client, idx) => {
-                    const paidAmount = client.appointmentHistory
-                      .filter((apt) => apt.paymentStatus === 'PAID')
-                      .reduce((sum, apt) => sum + apt.amount, 0);
-                    const pendingAmount = client.totalRevenue - paidAmount;
+          <>
+            {/* ── Mobile client cards ── */}
+            <div className="md:hidden space-y-3">
+              {filtered.map((client, idx) => {
+                const paidAmount = client.appointmentHistory
+                  .filter((apt) => apt.paymentStatus === 'PAID')
+                  .reduce((sum, apt) => sum + apt.amount, 0);
+                const pendingAmount = client.totalRevenue - paidAmount;
+                const isExpanded = expandedEmail === client.customerEmail;
 
-                    return (
-                      <>
-                        <tr
-                          key={client.customerEmail}
-                          className="hover:bg-gray-50 dark:hover:bg-gray-700/50 transition cursor-pointer"
-                          onClick={() =>
-                            setExpandedEmail(
-                              expandedEmail === client.customerEmail ? null : client.customerEmail
-                            )
-                          }
+                return (
+                  <div
+                    key={client.customerEmail}
+                    className="bg-white dark:bg-gray-800 rounded-xl border border-gray-200 dark:border-gray-700 overflow-hidden"
+                  >
+                    {/* Card header */}
+                    <div
+                      className="flex items-center justify-between px-4 py-3 bg-gray-50 dark:bg-gray-900/50 border-b border-gray-200 dark:border-gray-700 cursor-pointer"
+                      onClick={() => setExpandedEmail(isExpanded ? null : client.customerEmail)}
+                    >
+                      <div className="flex items-center gap-2 min-w-0">
+                        <span className="text-xs font-bold text-gray-400 flex-shrink-0">
+                          #{idx + 1}
+                        </span>
+                        <span className="text-sm font-semibold text-gray-900 dark:text-white truncate">
+                          {client.customerName}
+                        </span>
+                        {client.isVIP ? (
+                          <span className="inline-flex items-center gap-1 px-1.5 py-0.5 rounded-full text-xs font-medium bg-purple-100 text-purple-800 dark:bg-purple-900 dark:text-purple-300 flex-shrink-0">
+                            <Crown className="h-2.5 w-2.5" /> VIP
+                          </span>
+                        ) : client.isRecurrent ? (
+                          <span className="inline-flex items-center gap-1 px-1.5 py-0.5 rounded-full text-xs font-medium bg-yellow-100 text-yellow-800 dark:bg-yellow-900 dark:text-yellow-300 flex-shrink-0">
+                            <Star className="h-2.5 w-2.5" /> Recurrente
+                          </span>
+                        ) : null}
+                      </div>
+                      <div className="flex items-center gap-2 flex-shrink-0">
+                        <button
+                          onClick={(e) => openEdit(e, client)}
+                          className="p-1 rounded-md text-gray-400 hover:text-fourth-base hover:bg-gray-100 dark:hover:bg-gray-700"
+                          data-testid="edit-client-btn"
                         >
-                          <td className="px-6 py-4">
-                            <div className="font-medium text-gray-900 dark:text-white text-sm">
-                              #{idx + 1} {client.customerName}
-                            </div>
-                            <div className="flex items-center gap-3 mt-1">
-                              <span className="text-xs text-gray-500 dark:text-gray-400 flex items-center gap-1">
-                                <Mail className="h-3 w-3" /> {client.customerEmail}
-                              </span>
-                              <span className="text-xs text-gray-500 dark:text-gray-400 flex items-center gap-1">
-                                <Phone className="h-3 w-3" /> {client.customerPhone}
-                              </span>
-                            </div>
-                          </td>
-                          <td className="px-6 py-4 text-sm font-semibold text-gray-900 dark:text-white">
-                            <span className="flex items-center gap-1">
-                              <Calendar className="h-3.5 w-3.5 text-gray-400" />
-                              {client.totalAppointments}
-                            </span>
-                          </td>
-                          <td className="px-6 py-4 text-sm font-semibold text-fourth-base">
-                            {formatCOP(client.totalRevenue)}
-                          </td>
-                          <td className="px-6 py-4">
-                            <div className="text-xs font-medium text-green-600 dark:text-green-400">
-                              ✓ {formatCOP(paidAmount)}
-                            </div>
-                            <div className="text-xs text-yellow-600 dark:text-yellow-400">
-                              ⏳ {formatCOP(pendingAmount)}
-                            </div>
-                          </td>
-                          <td className="px-6 py-4 text-sm text-gray-600 dark:text-gray-400">
-                            {parseFlexDate(client.lastAppointmentDate).toLocaleDateString('es-CO', {
-                              day: 'numeric',
-                              month: 'short',
-                              year: 'numeric',
-                            })}
-                          </td>
-                          <td className="px-6 py-4">
-                            {client.isVIP ? (
-                              <span className="inline-flex items-center gap-1 px-2.5 py-0.5 rounded-full text-xs font-medium bg-purple-100 text-purple-800 dark:bg-purple-900 dark:text-purple-300">
-                                <Crown className="h-3 w-3" /> VIP
-                              </span>
-                            ) : client.isRecurrent ? (
-                              <span className="inline-flex items-center gap-1 px-2.5 py-0.5 rounded-full text-xs font-medium bg-yellow-100 text-yellow-800 dark:bg-yellow-900 dark:text-yellow-300">
-                                <Star className="h-3 w-3" /> Recurrente
-                              </span>
-                            ) : (
-                              <span className="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-gray-100 text-gray-700 dark:bg-gray-700 dark:text-gray-300">
-                                Nuevo
-                              </span>
-                            )}
-                          </td>
-                          <td className="px-6 py-4">
-                            <div className="flex items-center gap-2 justify-end">
-                              <button
-                                onClick={(e) => openEdit(e, client)}
-                                className="p-1.5 rounded-md text-gray-400 hover:text-fourth-base hover:bg-gray-100 dark:hover:bg-gray-700 transition-colors"
-                                title="Editar cliente"
-                                data-testid="edit-client-btn"
-                              >
-                                <Pencil className="h-3.5 w-3.5" />
-                              </button>
-                              <span className="text-gray-400">
-                                {expandedEmail === client.customerEmail ? (
-                                  <ChevronUp className="h-4 w-4" />
-                                ) : (
-                                  <ChevronDown className="h-4 w-4" />
-                                )}
-                              </span>
-                            </div>
-                          </td>
-                        </tr>
+                          <Pencil className="h-3.5 w-3.5" />
+                        </button>
+                        {isExpanded ? (
+                          <ChevronUp className="h-4 w-4 text-gray-400" />
+                        ) : (
+                          <ChevronDown className="h-4 w-4 text-gray-400" />
+                        )}
+                      </div>
+                    </div>
 
-                        {/* Expanded appointment history */}
-                        {expandedEmail === client.customerEmail && (
-                          <tr key={client.customerEmail + '-detail'}>
-                            <td colSpan={7} className="px-6 pb-4 bg-gray-50 dark:bg-gray-900/30">
-                              <p className="text-xs font-semibold text-gray-500 dark:text-gray-400 uppercase mt-3 mb-2">
-                                Historial de Citas
-                              </p>
-                              <div className="rounded-lg border border-gray-200 dark:border-gray-700 overflow-hidden">
-                                <table className="min-w-full divide-y divide-gray-200 dark:divide-gray-700 text-sm">
-                                  <thead className="bg-white dark:bg-gray-800">
-                                    <tr>
-                                      {['Fecha', 'Servicio', 'Estado', 'Pago', 'Monto'].map((h) => (
-                                        <th
-                                          key={h}
-                                          className="px-4 py-2 text-left text-xs font-medium text-gray-500 dark:text-gray-400 uppercase"
-                                        >
-                                          {h}
-                                        </th>
-                                      ))}
-                                    </tr>
-                                  </thead>
-                                  <tbody className="divide-y divide-gray-100 dark:divide-gray-700">
-                                    {client.appointmentHistory
-                                      .slice()
-                                      .sort(
-                                        (a, b) =>
-                                          new Date(b.date).getTime() - new Date(a.date).getTime()
-                                      )
-                                      .map((apt) => (
-                                        <tr
-                                          key={apt.id}
-                                          className="hover:bg-gray-50 dark:hover:bg-gray-700/30"
-                                        >
-                                          <td className="px-4 py-2 text-gray-700 dark:text-gray-300">
-                                            {parseFlexDate(apt.date).toLocaleDateString('es-CO', {
-                                              day: 'numeric',
-                                              month: 'short',
-                                              year: 'numeric',
-                                            })}
-                                          </td>
-                                          <td className="px-4 py-2 text-gray-700 dark:text-gray-300">
-                                            {apt.serviceName || '—'}
-                                          </td>
-                                          <td className="px-4 py-2">
-                                            <span className="text-xs px-2 py-0.5 rounded-full bg-gray-100 dark:bg-gray-700 text-gray-700 dark:text-gray-300">
-                                              {STATUS_LABELS[apt.status] || apt.status}
-                                            </span>
-                                          </td>
-                                          <td className="px-4 py-2">
-                                            <span
-                                              className={`text-xs px-2 py-0.5 rounded-full ${
-                                                apt.paymentStatus === 'PAID'
-                                                  ? 'bg-green-100 text-green-800 dark:bg-green-900 dark:text-green-300'
-                                                  : 'bg-yellow-100 text-yellow-800 dark:bg-yellow-900 dark:text-yellow-300'
-                                              }`}
-                                            >
-                                              {PAYMENT_LABELS[apt.paymentStatus] ||
-                                                apt.paymentStatus}
-                                            </span>
-                                          </td>
-                                          <td className="px-4 py-2 text-gray-700 dark:text-gray-300 font-medium">
-                                            {formatCOP(apt.amount)}
-                                          </td>
-                                        </tr>
-                                      ))}
-                                  </tbody>
-                                </table>
+                    {/* Card body */}
+                    <div className="px-4 py-3 space-y-2">
+                      <div className="flex flex-wrap gap-x-3 gap-y-1">
+                        {client.customerEmail && (
+                          <span className="flex items-center gap-1 text-xs text-gray-500 dark:text-gray-400">
+                            <Mail className="h-3 w-3 flex-shrink-0" />
+                            {client.customerEmail}
+                          </span>
+                        )}
+                        {client.customerPhone && (
+                          <span className="flex items-center gap-1 text-xs text-gray-500 dark:text-gray-400">
+                            <Phone className="h-3 w-3 flex-shrink-0" />
+                            {client.customerPhone}
+                          </span>
+                        )}
+                      </div>
+                      <div className="flex items-center justify-between text-sm">
+                        <div className="flex items-center gap-1 text-gray-700 dark:text-gray-300">
+                          <Calendar className="h-3.5 w-3.5 text-gray-400" />
+                          <span className="font-semibold">{client.totalAppointments}</span>
+                          <span className="text-xs text-gray-400">citas</span>
+                        </div>
+                        <span className="font-semibold text-fourth-base">
+                          {formatCOP(client.totalRevenue)}
+                        </span>
+                      </div>
+                      <div className="flex items-center gap-3 text-xs">
+                        <span className="text-green-600 dark:text-green-400 font-medium">
+                          ✓ {formatCOP(paidAmount)}
+                        </span>
+                        <span className="text-yellow-600 dark:text-yellow-400">
+                          ⏳ {formatCOP(pendingAmount)}
+                        </span>
+                      </div>
+                      <div className="text-xs text-gray-400">
+                        Última visita:{' '}
+                        {parseFlexDate(client.lastAppointmentDate).toLocaleDateString('es-CO', {
+                          day: 'numeric',
+                          month: 'short',
+                          year: 'numeric',
+                        })}
+                      </div>
+                    </div>
+
+                    {/* Expanded appointment history */}
+                    {isExpanded && (
+                      <div className="border-t border-gray-200 dark:border-gray-700 px-4 pb-4 bg-gray-50 dark:bg-gray-900/30">
+                        <p className="text-xs font-semibold text-gray-500 dark:text-gray-400 uppercase mt-3 mb-2">
+                          Historial de Citas
+                        </p>
+                        <div className="space-y-2">
+                          {client.appointmentHistory
+                            .slice()
+                            .sort((a, b) => new Date(b.date).getTime() - new Date(a.date).getTime())
+                            .map((apt) => (
+                              <div
+                                key={apt.id}
+                                className="bg-white dark:bg-gray-800 rounded-lg border border-gray-200 dark:border-gray-700 px-3 py-2 flex items-center justify-between gap-2"
+                              >
+                                <div className="min-w-0">
+                                  <p className="text-xs font-medium text-gray-800 dark:text-gray-200">
+                                    {parseFlexDate(apt.date).toLocaleDateString('es-CO', {
+                                      day: 'numeric',
+                                      month: 'short',
+                                      year: 'numeric',
+                                    })}
+                                  </p>
+                                  <p className="text-xs text-gray-500 dark:text-gray-400 truncate">
+                                    {apt.serviceName || '—'}
+                                  </p>
+                                </div>
+                                <div className="flex flex-col items-end gap-1 flex-shrink-0">
+                                  <span className="text-xs px-2 py-0.5 rounded-full bg-gray-100 dark:bg-gray-700 text-gray-700 dark:text-gray-300">
+                                    {STATUS_LABELS[apt.status] || apt.status}
+                                  </span>
+                                  <span
+                                    className={`text-xs px-2 py-0.5 rounded-full ${apt.paymentStatus === 'PAID' ? 'bg-green-100 text-green-800 dark:bg-green-900 dark:text-green-300' : 'bg-yellow-100 text-yellow-800 dark:bg-yellow-900 dark:text-yellow-300'}`}
+                                  >
+                                    {PAYMENT_LABELS[apt.paymentStatus] || apt.paymentStatus}
+                                  </span>
+                                  <span className="text-xs font-medium text-gray-700 dark:text-gray-300">
+                                    {formatCOP(apt.amount)}
+                                  </span>
+                                </div>
+                              </div>
+                            ))}
+                        </div>
+                      </div>
+                    )}
+                  </div>
+                );
+              })}
+            </div>
+
+            {/* ── Desktop table ── */}
+            <div className="hidden md:block bg-white dark:bg-gray-800 rounded-lg border border-gray-200 dark:border-gray-700 overflow-hidden">
+              <div className="overflow-x-auto">
+                <table className="min-w-full divide-y divide-gray-200 dark:divide-gray-700">
+                  <thead className="bg-gray-50 dark:bg-gray-900">
+                    <tr>
+                      <th className="px-6 py-3 text-left text-xs font-semibold text-gray-600 dark:text-gray-300 uppercase tracking-wider">
+                        Cliente
+                      </th>
+                      <th
+                        className="px-6 py-3 text-left text-xs font-semibold text-gray-600 dark:text-gray-300 uppercase tracking-wider cursor-pointer hover:text-gray-900 dark:hover:text-white select-none"
+                        onClick={() => toggleSort('totalAppointments')}
+                      >
+                        Citas <SortIcon k="totalAppointments" />
+                      </th>
+                      <th
+                        className="px-6 py-3 text-left text-xs font-semibold text-gray-600 dark:text-gray-300 uppercase tracking-wider cursor-pointer hover:text-gray-900 dark:hover:text-white select-none"
+                        onClick={() => toggleSort('totalRevenue')}
+                      >
+                        Ingresos <SortIcon k="totalRevenue" />
+                      </th>
+                      <th className="px-6 py-3 text-left text-xs font-semibold text-gray-600 dark:text-gray-300 uppercase tracking-wider">
+                        Estado de Pagos
+                      </th>
+                      <th
+                        className="px-6 py-3 text-left text-xs font-semibold text-gray-600 dark:text-gray-300 uppercase tracking-wider cursor-pointer hover:text-gray-900 dark:hover:text-white select-none"
+                        onClick={() => toggleSort('lastAppointmentDate')}
+                      >
+                        Última visita <SortIcon k="lastAppointmentDate" />
+                      </th>
+                      <th className="px-6 py-3 text-left text-xs font-semibold text-gray-600 dark:text-gray-300 uppercase tracking-wider">
+                        Tipo
+                      </th>
+                      <th className="px-6 py-3" />
+                    </tr>
+                  </thead>
+                  <tbody className="divide-y divide-gray-200 dark:divide-gray-700">
+                    {filtered.map((client, idx) => {
+                      const paidAmount = client.appointmentHistory
+                        .filter((apt) => apt.paymentStatus === 'PAID')
+                        .reduce((sum, apt) => sum + apt.amount, 0);
+                      const pendingAmount = client.totalRevenue - paidAmount;
+
+                      return (
+                        <>
+                          <tr
+                            key={client.customerEmail}
+                            className="hover:bg-gray-50 dark:hover:bg-gray-700/50 transition cursor-pointer"
+                            onClick={() =>
+                              setExpandedEmail(
+                                expandedEmail === client.customerEmail ? null : client.customerEmail
+                              )
+                            }
+                          >
+                            <td className="px-6 py-4">
+                              <div className="font-medium text-gray-900 dark:text-white text-sm">
+                                #{idx + 1} {client.customerName}
+                              </div>
+                              <div className="flex items-center gap-3 mt-1">
+                                <span className="text-xs text-gray-500 dark:text-gray-400 flex items-center gap-1">
+                                  <Mail className="h-3 w-3" /> {client.customerEmail}
+                                </span>
+                                <span className="text-xs text-gray-500 dark:text-gray-400 flex items-center gap-1">
+                                  <Phone className="h-3 w-3" /> {client.customerPhone}
+                                </span>
+                              </div>
+                            </td>
+                            <td className="px-6 py-4 text-sm font-semibold text-gray-900 dark:text-white">
+                              <span className="flex items-center gap-1">
+                                <Calendar className="h-3.5 w-3.5 text-gray-400" />
+                                {client.totalAppointments}
+                              </span>
+                            </td>
+                            <td className="px-6 py-4 text-sm font-semibold text-fourth-base">
+                              {formatCOP(client.totalRevenue)}
+                            </td>
+                            <td className="px-6 py-4">
+                              <div className="text-xs font-medium text-green-600 dark:text-green-400">
+                                ✓ {formatCOP(paidAmount)}
+                              </div>
+                              <div className="text-xs text-yellow-600 dark:text-yellow-400">
+                                ⏳ {formatCOP(pendingAmount)}
+                              </div>
+                            </td>
+                            <td className="px-6 py-4 text-sm text-gray-600 dark:text-gray-400">
+                              {parseFlexDate(client.lastAppointmentDate).toLocaleDateString(
+                                'es-CO',
+                                {
+                                  day: 'numeric',
+                                  month: 'short',
+                                  year: 'numeric',
+                                }
+                              )}
+                            </td>
+                            <td className="px-6 py-4">
+                              {client.isVIP ? (
+                                <span className="inline-flex items-center gap-1 px-2.5 py-0.5 rounded-full text-xs font-medium bg-purple-100 text-purple-800 dark:bg-purple-900 dark:text-purple-300">
+                                  <Crown className="h-3 w-3" /> VIP
+                                </span>
+                              ) : client.isRecurrent ? (
+                                <span className="inline-flex items-center gap-1 px-2.5 py-0.5 rounded-full text-xs font-medium bg-yellow-100 text-yellow-800 dark:bg-yellow-900 dark:text-yellow-300">
+                                  <Star className="h-3 w-3" /> Recurrente
+                                </span>
+                              ) : (
+                                <span className="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-gray-100 text-gray-700 dark:bg-gray-700 dark:text-gray-300">
+                                  Nuevo
+                                </span>
+                              )}
+                            </td>
+                            <td className="px-6 py-4">
+                              <div className="flex items-center gap-2 justify-end">
+                                <button
+                                  onClick={(e) => openEdit(e, client)}
+                                  className="p-1.5 rounded-md text-gray-400 hover:text-fourth-base hover:bg-gray-100 dark:hover:bg-gray-700 transition-colors"
+                                  title="Editar cliente"
+                                  data-testid="edit-client-btn"
+                                >
+                                  <Pencil className="h-3.5 w-3.5" />
+                                </button>
+                                <span className="text-gray-400">
+                                  {expandedEmail === client.customerEmail ? (
+                                    <ChevronUp className="h-4 w-4" />
+                                  ) : (
+                                    <ChevronDown className="h-4 w-4" />
+                                  )}
+                                </span>
                               </div>
                             </td>
                           </tr>
-                        )}
-                      </>
-                    );
-                  })}
-                </tbody>
-              </table>
+
+                          {/* Expanded appointment history */}
+                          {expandedEmail === client.customerEmail && (
+                            <tr key={client.customerEmail + '-detail'}>
+                              <td colSpan={7} className="px-6 pb-4 bg-gray-50 dark:bg-gray-900/30">
+                                <p className="text-xs font-semibold text-gray-500 dark:text-gray-400 uppercase mt-3 mb-2">
+                                  Historial de Citas
+                                </p>
+                                <div className="rounded-lg border border-gray-200 dark:border-gray-700 overflow-hidden">
+                                  <table className="min-w-full divide-y divide-gray-200 dark:divide-gray-700 text-sm">
+                                    <thead className="bg-white dark:bg-gray-800">
+                                      <tr>
+                                        {['Fecha', 'Servicio', 'Estado', 'Pago', 'Monto'].map(
+                                          (h) => (
+                                            <th
+                                              key={h}
+                                              className="px-4 py-2 text-left text-xs font-medium text-gray-500 dark:text-gray-400 uppercase"
+                                            >
+                                              {h}
+                                            </th>
+                                          )
+                                        )}
+                                      </tr>
+                                    </thead>
+                                    <tbody className="divide-y divide-gray-100 dark:divide-gray-700">
+                                      {client.appointmentHistory
+                                        .slice()
+                                        .sort(
+                                          (a, b) =>
+                                            new Date(b.date).getTime() - new Date(a.date).getTime()
+                                        )
+                                        .map((apt) => (
+                                          <tr
+                                            key={apt.id}
+                                            className="hover:bg-gray-50 dark:hover:bg-gray-700/30"
+                                          >
+                                            <td className="px-4 py-2 text-gray-700 dark:text-gray-300">
+                                              {parseFlexDate(apt.date).toLocaleDateString('es-CO', {
+                                                day: 'numeric',
+                                                month: 'short',
+                                                year: 'numeric',
+                                              })}
+                                            </td>
+                                            <td className="px-4 py-2 text-gray-700 dark:text-gray-300">
+                                              {apt.serviceName || '—'}
+                                            </td>
+                                            <td className="px-4 py-2">
+                                              <span className="text-xs px-2 py-0.5 rounded-full bg-gray-100 dark:bg-gray-700 text-gray-700 dark:text-gray-300">
+                                                {STATUS_LABELS[apt.status] || apt.status}
+                                              </span>
+                                            </td>
+                                            <td className="px-4 py-2">
+                                              <span
+                                                className={`text-xs px-2 py-0.5 rounded-full ${
+                                                  apt.paymentStatus === 'PAID'
+                                                    ? 'bg-green-100 text-green-800 dark:bg-green-900 dark:text-green-300'
+                                                    : 'bg-yellow-100 text-yellow-800 dark:bg-yellow-900 dark:text-yellow-300'
+                                                }`}
+                                              >
+                                                {PAYMENT_LABELS[apt.paymentStatus] ||
+                                                  apt.paymentStatus}
+                                              </span>
+                                            </td>
+                                            <td className="px-4 py-2 text-gray-700 dark:text-gray-300 font-medium">
+                                              {formatCOP(apt.amount)}
+                                            </td>
+                                          </tr>
+                                        ))}
+                                    </tbody>
+                                  </table>
+                                </div>
+                              </td>
+                            </tr>
+                          )}
+                        </>
+                      );
+                    })}
+                  </tbody>
+                </table>
+              </div>
             </div>
-          </div>
+          </>
         )
       ) : // Appointments Table
       filteredAppointments.length === 0 ? (
