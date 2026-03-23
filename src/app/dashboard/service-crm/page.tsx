@@ -1278,7 +1278,13 @@ export default function ServiceCRM() {
                               value={editingPayment.method}
                               onChange={(e) =>
                                 setEditingPayment((prev) =>
-                                  prev ? { ...prev, method: e.target.value } : prev
+                                  prev
+                                    ? {
+                                        ...prev,
+                                        method: e.target.value,
+                                        ...(e.target.value ? { status: 'PAID' } : {}),
+                                      }
+                                    : prev
                                 )
                               }
                               className="w-full text-xs px-2 py-1.5 border border-gray-300 dark:border-gray-600 rounded-md bg-white dark:bg-gray-900 text-gray-900 dark:text-white focus:outline-none focus:ring-2 focus:ring-fourth-base"
