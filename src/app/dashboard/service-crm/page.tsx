@@ -305,6 +305,8 @@ export default function ServiceCRM() {
       const service = services.find((s) => s.id === apt.serviceId);
       const amount = service?.priceAmount || 0;
 
+      const aptIso = new Date(parseInt(apt.startDatetime)).toISOString();
+
       if (!clientMap.has(key)) {
         clientMap.set(key, {
           customerId: apt.customerEmail,
@@ -313,8 +315,8 @@ export default function ServiceCRM() {
           customerPhone: apt.customerPhone,
           totalAppointments: 0,
           totalRevenue: 0,
-          lastAppointmentDate: apt.startDatetime,
-          firstAppointmentDate: apt.startDatetime,
+          lastAppointmentDate: aptIso,
+          firstAppointmentDate: aptIso,
           isRecurrent: false,
           isVIP: false,
           appointmentHistory: [],
@@ -326,7 +328,7 @@ export default function ServiceCRM() {
       client.totalRevenue += amount;
       client.appointmentHistory.push({
         id: apt.id,
-        date: apt.startDatetime,
+        date: aptIso,
         serviceName: service?.name || '',
         status: apt.status,
         paymentStatus: apt.paymentStatus,
