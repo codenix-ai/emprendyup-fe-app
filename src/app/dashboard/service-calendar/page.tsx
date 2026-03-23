@@ -201,6 +201,7 @@ export default function ServiceCalendar() {
   const clientComboRef = useRef<HTMLDivElement>(null);
   const clientInputRef = useRef<HTMLInputElement>(null);
   const [activeClientIndex, setActiveClientIndex] = useState(-1);
+  const [isSubmitting, setIsSubmitting] = useState(false);
 
   // GraphQL
   const { data: servicesData } = useQuery(GET_SERVICES, {
@@ -410,11 +411,16 @@ export default function ServiceCalendar() {
   };
 
   const handleCreateAppointment = async () => {
+    if (isSubmitting) return;
+    setIsSubmitting(true);
     try {
       const service = servicesData?.servicesByProvider?.find(
         (s: any) => s.id === appointmentForm.serviceId
       );
-      if (!service) return;
+      if (!service) {
+        setIsSubmitting(false);
+        return;
+      }
 
       const startDate = new Date(appointmentForm.startDatetime);
       const endDate = new Date(startDate.getTime() + service.durationMinutes * 60000);
@@ -452,11 +458,14 @@ export default function ServiceCalendar() {
       resetAppointmentForm();
     } catch (error) {
       console.error('Error creating appointment:', error);
+    } finally {
+      setIsSubmitting(false);
     }
   };
 
   const handleUpdateAppointment = async () => {
-    if (!selectedEvent?.extendedProps.appointmentId) return;
+    if (!selectedEvent?.extendedProps.appointmentId || isSubmitting) return;
+    setIsSubmitting(true);
     try {
       // Convert datetime-local to ISO-8601 format
       const startDate = new Date(appointmentForm.startDatetime);
@@ -499,6 +508,8 @@ export default function ServiceCalendar() {
       resetAppointmentForm();
     } catch (error) {
       console.error('Error updating appointment:', error);
+    } finally {
+      setIsSubmitting(false);
     }
   };
 
@@ -517,6 +528,7 @@ export default function ServiceCalendar() {
   };
 
   const resetAppointmentForm = () => {
+    setIsSubmitting(false);
     setClientQuery('');
     setShowClientSuggestions(false);
     setAppointmentForm({
@@ -1117,9 +1129,33 @@ export default function ServiceCalendar() {
                 </button>
                 <button
                   onClick={selectedEvent ? handleUpdateAppointment : handleCreateAppointment}
-                  className="inline-flex items-center justify-center px-4 py-2.5 bg-fourth-base text-white rounded-lg hover:opacity-90 transition-colors text-sm sm:text-base w-full sm:w-auto"
+                  disabled={isSubmitting}
+                  className="inline-flex items-center justify-center px-4 py-2.5 bg-fourth-base text-white rounded-lg hover:opacity-90 transition-colors text-sm sm:text-base w-full sm:w-auto disabled:opacity-60 disabled:cursor-not-allowed"
                 >
-                  <Check className="h-4 w-4 mr-2" />
+                  {isSubmitting ? (
+                    <svg
+                      className="animate-spin h-4 w-4 mr-2 text-white"
+                      xmlns="http://www.w3.org/2000/svg"
+                      fill="none"
+                      viewBox="0 0 24 24"
+                    >
+                      <circle
+                        className="opacity-25"
+                        cx="12"
+                        cy="12"
+                        r="10"
+                        stroke="currentColor"
+                        strokeWidth="4"
+                      />
+                      <path
+                        className="opacity-75"
+                        fill="currentColor"
+                        d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4z"
+                      />
+                    </svg>
+                  ) : (
+                    <Check className="h-4 w-4 mr-2" />
+                  )}
                   {selectedEvent ? 'Actualizar' : 'Crear Cita'}
                 </button>
               </div>
