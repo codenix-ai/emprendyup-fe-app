@@ -301,7 +301,7 @@ export default function ServiceCRM() {
     to.setHours(23, 59, 59, 999);
 
     const rangeApts = appointments.filter((apt) => {
-      const aptDate = new Date(parseInt(apt.startDatetime));
+      const aptDate = parseFlexDate(apt.startDatetime);
       return aptDate >= from && aptDate <= to;
     });
 
@@ -312,7 +312,7 @@ export default function ServiceCRM() {
       const service = services.find((s) => s.id === apt.serviceId);
       const amount = service?.priceAmount || 0;
 
-      const aptIso = new Date(parseInt(apt.startDatetime)).toISOString();
+      const aptIso = parseFlexDate(apt.startDatetime).toISOString();
 
       if (!clientMap.has(key)) {
         clientMap.set(key, {
@@ -342,7 +342,7 @@ export default function ServiceCRM() {
         amount,
       });
 
-      const aptTime = parseInt(apt.startDatetime);
+      const aptTime = parseFlexDate(apt.startDatetime).getTime();
       if (aptTime > parseFlexDate(client.lastAppointmentDate).getTime())
         client.lastAppointmentDate = aptIso;
       if (aptTime < parseFlexDate(client.firstAppointmentDate).getTime())
@@ -374,11 +374,11 @@ export default function ServiceCRM() {
 
     return appointments
       .filter((apt) => {
-        const aptDate = new Date(parseInt(apt.startDatetime));
+        const aptDate = parseFlexDate(apt.startDatetime);
         return aptDate >= from && aptDate <= to;
       })
       .sort((a, b) => {
-        return parseInt(b.startDatetime) - parseInt(a.startDatetime);
+        return parseFlexDate(b.startDatetime).getTime() - parseFlexDate(a.startDatetime).getTime();
       });
   }, [appointments, dateFrom, dateTo]);
 
@@ -456,7 +456,7 @@ export default function ServiceCRM() {
       ];
       const rows = filteredAppointments.map((apt) => {
         const service = services.find((s) => s.id === apt.serviceId);
-        const aptDate = new Date(parseInt(apt.startDatetime));
+        const aptDate = parseFlexDate(apt.startDatetime);
         return [
           aptDate.toLocaleDateString('es-CO'),
           aptDate.toLocaleTimeString('es-CO', { hour: '2-digit', minute: '2-digit' }),
@@ -957,7 +957,7 @@ export default function ServiceCRM() {
               <tbody className="divide-y divide-gray-200 dark:divide-gray-700">
                 {filteredAppointments.map((apt) => {
                   const service = services.find((s) => s.id === apt.serviceId);
-                  const aptDate = new Date(parseInt(apt.startDatetime));
+                  const aptDate = parseFlexDate(apt.startDatetime);
                   const location = [apt.serviceAddress, apt.serviceCity].filter(Boolean).join(', ');
 
                   return (
