@@ -129,8 +129,7 @@ const getServiceNavigationGroups = () => {
     { name: 'Servicios', icon: LayoutList, href: '/dashboard/service-catalog', isSingle: true },
     { name: 'Calendario', icon: Calendar, href: '/dashboard/service-calendar', isSingle: true },
     { name: 'Gastos', icon: Receipt, href: '/dashboard/service-expenses', isSingle: true },
-    { name: 'Clientes CRM', icon: UserCheck, href: '/dashboard/service-crm', isSingle: true },
-    { name: 'Imágenes', icon: Package, href: '/dashboard/service-images', isSingle: true },
+    { name: 'Clientes', icon: UserCheck, href: '/dashboard/service-crm', isSingle: true },
     { name: 'Usuarios', icon: Users, href: '/dashboard/user-by-service', isSingle: true },
     { name: 'Bonos', icon: Gift, href: '/dashboard/bonuses', isSingle: true },
     { name: 'Ferias', icon: Calendar, href: '/dashboard/fairs', isSingle: true },
@@ -165,13 +164,16 @@ const getRestaurantNavigationGroups = () => {
 
 // Función para obtener la navegación según el tipo de negocio del usuario
 const getStoreAdminNavigationGroups = (user: any) => {
+  let items;
   if (user?.serviceProviderId) {
-    return getServiceNavigationGroups();
+    items = getServiceNavigationGroups();
   } else if (user?.restaurantId) {
-    return getRestaurantNavigationGroups();
+    items = getRestaurantNavigationGroups();
+  } else {
+    items = getStoreNavigationGroups();
   }
-  // Default: tienda
-  return getStoreNavigationGroups();
+  // Usuarios is only visible to admins
+  return items.filter((item) => item.name !== 'Usuarios');
 };
 
 export default function DashboardLayout({ children }: { children: React.ReactNode }) {

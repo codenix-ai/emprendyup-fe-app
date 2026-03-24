@@ -51,6 +51,7 @@ export default function PlansPage() {
   } = useQuery(GET_SUBSCRIPTION_PRODUCTS, {
     variables: { storeId },
     skip: !storeId,
+    fetchPolicy: 'network-only',
   });
 
   // Get subscription products directly from DB
@@ -112,13 +113,13 @@ export default function PlansPage() {
 
     // Use productsData directly, not filtered subscriptionProducts
     if (!productsData?.productsByStore?.items || productsData.productsByStore.items.length === 0) {
-      return [];
+      return null; // null = use PricingPlans default plans
     }
 
     const allProducts = productsData.productsByStore.items;
 
-    // Filter products by selected billing cycle (monthly or annual)
-    const filteredProducts = allProducts.filter((product: any) => {
+    // Filter products by selected billing cycle — include products with no cycle info as a fallback
+    const matchCycle = (product: any): boolean => {
       let meta: Record<string, unknown> = {};
       try {
         meta = product.metadata ? JSON.parse(product.metadata) : {};
@@ -128,14 +129,22 @@ export default function PlansPage() {
       const metaCycle = (meta.billingCycle as string | undefined)?.toLowerCase();
       const productName = product.name.toLowerCase();
 
-      if (selectedCycle === 'annual') {
-        if (metaCycle) return metaCycle === 'annual' || metaCycle === 'anual';
-        return productName.includes('anual') || productName.includes('annual');
-      } else {
-        if (metaCycle) return metaCycle === 'monthly' || metaCycle === 'mensual';
-        return productName.includes('mensual') || productName.includes('monthly');
+      if (metaCycle) {
+        return selectedCycle === 'annual'
+          ? metaCycle === 'annual' || metaCycle === 'anual'
+          : metaCycle === 'monthly' || metaCycle === 'mensual';
       }
-    });
+      // fallback: match by name keywords
+      const hasAnnual = productName.includes('anual') || productName.includes('annual');
+      const hasMonthly = productName.includes('mensual') || productName.includes('monthly');
+      if (hasAnnual || hasMonthly) {
+        return selectedCycle === 'annual' ? hasAnnual : hasMonthly;
+      }
+      // no cycle info at all — include in both views
+      return true;
+    };
+
+    const filteredProducts = allProducts.filter(matchCycle);
 
     // Transform each product into a plan card
     const plans = filteredProducts.map((product: any) => {
@@ -175,7 +184,7 @@ export default function PlansPage() {
     // Sort plans by price (ascending order)
     const sortedPlans = plans.sort((a: Plan, b: Plan) => parseFloat(a.price) - parseFloat(b.price));
 
-    return sortedPlans;
+    return sortedPlans.length > 0 ? sortedPlans : null; // null = fall back to PricingPlans defaults
   }, [productsData, selectedCycle]);
 
   useEffect(() => {
@@ -377,7 +386,7 @@ export default function PlansPage() {
               onPlanSelect={handlePlanSelect}
               selectedCycle={selectedCycle}
               onCycleChange={setSelectedCycle}
-              customPlans={transformedPlans}
+              customPlans={transformedPlans ?? undefined}
             />
 
             {/* Modal de creación de orden */}

@@ -76,26 +76,68 @@ const PAYMENT_METHOD_LABELS: Record<string, string> = {
   OTHER: 'Otro',
 };
 
-const CREATE_APPOINTMENT_CRM = gql`
-  mutation CreateAppointmentCRM($data: CreateAppointmentInput!) {
-    createAppointment(data: $data) {
+const GET_CLIENTS_BY_BUSINESS = gql`
+  query ClientsByBusiness(
+    $businessId: String!
+    $businessType: BusinessType!
+    $search: String
+    $skip: Int
+    $take: Int
+  ) {
+    clientsByBusiness(
+      businessId: $businessId
+      businessType: $businessType
+      search: $search
+      skip: $skip
+      take: $take
+    ) {
       id
-      customerName
-      customerEmail
-      customerPhone
-      startDatetime
-      endDatetime
+      name
+      email
+      phone
+      whatsappNumber
+      isMarketingSubscribed
+      tags
+      notes
+      createdAt
+      businessLinks {
+        businessType
+        businessId
+        source
+        visitCount
+        totalSpent
+        firstVisitAt
+        lastVisitAt
+      }
     }
   }
 `;
 
-const UPDATE_CLIENT_APPOINTMENTS = gql`
-  mutation UpdateClientContact($id: String!, $data: UpdateAppointmentInput!) {
-    updateAppointment(id: $id, data: $data) {
+const UPSERT_CLIENT = gql`
+  mutation UpsertClient($data: UpsertClientInput!) {
+    upsertClient(data: $data) {
       id
-      customerName
-      customerEmail
-      customerPhone
+      name
+      email
+      phone
+      isMarketingSubscribed
+      createdAt
+    }
+  }
+`;
+
+const UPDATE_CLIENT = gql`
+  mutation UpdateClient($id: ID!, $data: UpdateClientInput!) {
+    updateClient(id: $id, data: $data) {
+      id
+      name
+      email
+      phone
+      whatsappNumber
+      isMarketingSubscribed
+      tags
+      notes
+      updatedAt
     }
   }
 `;
@@ -141,21 +183,44 @@ interface Appointment {
   createdAt: string;
 }
 
+interface BusinessLink {
+  businessType: string;
+  businessId: string;
+  source: string;
+  visitCount: number;
+  totalSpent: number;
+  firstVisitAt: string;
+  lastVisitAt: string;
+}
+
+interface ClientRecord {
+  id: string;
+  name: string;
+  email: string;
+  phone: string;
+  whatsappNumber?: string;
+  isMarketingSubscribed: boolean;
+  tags?: string[];
+  notes?: string;
+  createdAt: string;
+  businessLinks: BusinessLink[];
+}
+
 interface EditClientForm {
-  customerName: string;
-  customerEmail: string;
-  customerPhone: string;
+  name: string;
+  email: string;
+  phone: string;
+  whatsappNumber: string;
+  isMarketingSubscribed: boolean;
+  notes: string;
 }
 
 interface NewClientForm {
-  customerName: string;
-  customerEmail: string;
-  customerPhone: string;
-  customerWhatsapp: string;
-  serviceId: string;
-  appointmentDate: string;
-  appointmentTime: string;
-  notes: string;
+  name: string;
+  email: string;
+  phone: string;
+  whatsappNumber: string;
+  isMarketingSubscribed: boolean;
 }
 
 interface Service {
@@ -208,17 +273,20 @@ export default function ServiceCRM() {
 
   const [editingClient, setEditingClient] = useState<FrequentClient | null>(null);
   const [editForm, setEditForm] = useState<EditClientForm>({
-    customerName: '',
-    customerEmail: '',
-    customerPhone: '',
+    name: '',
+    email: '',
+    phone: '',
+    whatsappNumber: '',
+    isMarketingSubscribed: false,
+    notes: '',
   });
   const [isSaving, setIsSaving] = useState(false);
   const [saveError, setSaveError] = useState<string | null>(null);
   const editNameRef = useRef<HTMLInputElement>(null);
 
-  const [updateClientMutation] = useMutation(UPDATE_CLIENT_APPOINTMENTS);
+  const [upsertClientMutation] = useMutation(UPSERT_CLIENT);
+  const [updateClientMutation] = useMutation(UPDATE_CLIENT);
   const [updatePaymentMutation] = useMutation(UPDATE_APPOINTMENT_PAYMENT);
-  const [createAppointmentMutation] = useMutation(CREATE_APPOINTMENT_CRM);
 
   const [editingPayment, setEditingPayment] = useState<{
     aptId: string;
@@ -263,14 +331,11 @@ export default function ServiceCRM() {
 
   const [isNewClientOpen, setIsNewClientOpen] = useState(false);
   const [newClientForm, setNewClientForm] = useState<NewClientForm>({
-    customerName: '',
-    customerEmail: '',
-    customerPhone: '',
-    customerWhatsapp: '',
-    serviceId: '',
-    appointmentDate: '',
-    appointmentTime: '09:00',
-    notes: '',
+    name: '',
+    email: '',
+    phone: '',
+    whatsappNumber: '',
+    isMarketingSubscribed: false,
   });
   const [newClientSaving, setNewClientSaving] = useState(false);
   const [newClientError, setNewClientError] = useState<string | null>(null);
@@ -283,63 +348,40 @@ export default function ServiceCRM() {
   };
 
   const handleCreateClient = async () => {
-    if (!newClientForm.customerName.trim()) {
+    if (!newClientForm.name.trim()) {
       setNewClientError('El nombre es requerido');
       return;
     }
-    if (!newClientForm.customerEmail.trim()) {
+    if (!newClientForm.email.trim()) {
       setNewClientError('El email es requerido');
       return;
     }
-    if (!newClientForm.serviceId) {
-      setNewClientError('Selecciona un servicio');
-      return;
-    }
-    if (!newClientForm.appointmentDate) {
-      setNewClientError('Selecciona una fecha');
-      return;
-    }
-
     setNewClientSaving(true);
     setNewClientError(null);
-
     try {
-      const startDate = new Date(
-        `${newClientForm.appointmentDate}T${newClientForm.appointmentTime}:00`
-      );
-      const service = servicesData?.servicesByProvider?.find(
-        (s: Service) => s.id === newClientForm.serviceId
-      );
-      const durationMs = (service?.durationMinutes ?? 60) * 60000;
-      const endDate = new Date(startDate.getTime() + durationMs);
-
-      await createAppointmentMutation({
+      await upsertClientMutation({
         variables: {
           data: {
-            serviceProviderId,
-            serviceId: newClientForm.serviceId,
-            customerName: newClientForm.customerName.trim(),
-            customerEmail: newClientForm.customerEmail.trim(),
-            customerPhone: newClientForm.customerPhone.trim() || undefined,
-            customerWhatsappNumber: newClientForm.customerWhatsapp.trim() || undefined,
-            startDatetime: startDate.toISOString(),
-            endDatetime: endDate.toISOString(),
-            notes: newClientForm.notes.trim() || undefined,
+            name: newClientForm.name.trim(),
+            email: newClientForm.email.trim(),
+            phone: newClientForm.phone.trim() || undefined,
+            whatsappNumber: newClientForm.whatsappNumber.trim() || undefined,
+            businessId: serviceProviderId,
+            businessType: 'SERVICE_PROVIDER',
+            source: 'MANUAL',
+            amountSpent: 0,
+            isMarketingSubscribed: newClientForm.isMarketingSubscribed,
           },
         },
       });
-
-      await refetchAppointments();
+      await refetchClients();
       setIsNewClientOpen(false);
       setNewClientForm({
-        customerName: '',
-        customerEmail: '',
-        customerPhone: '',
-        customerWhatsapp: '',
-        serviceId: '',
-        appointmentDate: '',
-        appointmentTime: '09:00',
-        notes: '',
+        name: '',
+        email: '',
+        phone: '',
+        whatsappNumber: '',
+        isMarketingSubscribed: false,
       });
     } catch (err: unknown) {
       const msg =
@@ -393,8 +435,20 @@ export default function ServiceCRM() {
     };
   }, [dateRange]);
 
-  // frequentClients endpoint not available — derive clients from appointments
-  const loadingClients = false;
+  const {
+    data: clientsData,
+    loading: loadingClients,
+    refetch: refetchClients,
+  } = useQuery(GET_CLIENTS_BY_BUSINESS, {
+    variables: {
+      businessId: serviceProviderId ?? '',
+      businessType: 'SERVICE_PROVIDER',
+      skip: 0,
+      take: 100,
+    },
+    skip: !serviceProviderId,
+    fetchPolicy: 'network-only',
+  });
 
   const {
     data: appointmentsData,
@@ -411,9 +465,6 @@ export default function ServiceCRM() {
     skip: !serviceProviderId,
   });
 
-  // eslint-disable-next-line react-hooks/exhaustive-deps
-  const clients = useMemo((): FrequentClient[] => [], []);
-
   const appointments: Appointment[] = useMemo(
     () => appointmentsData?.appointmentsByProvider || [],
     [appointmentsData]
@@ -421,80 +472,57 @@ export default function ServiceCRM() {
 
   const services: Service[] = useMemo(() => servicesData?.servicesByProvider || [], [servicesData]);
 
-  // Fallback: derive clients from appointmentsByProvider when frequentClients is empty or errored
-  const derivedClients = useMemo((): FrequentClient[] => {
-    if (clients.length > 0) return [];
-    if (!appointments.length) return [];
+  const clientsFromAPI = useMemo((): FrequentClient[] => {
+    const rawClients: ClientRecord[] = clientsData?.clientsByBusiness ?? [];
+    if (!rawClients.length) return [];
 
-    const from = new Date(dateFrom);
-    from.setHours(0, 0, 0, 0);
-    const to = new Date(dateTo);
-    to.setHours(23, 59, 59, 999);
+    const mapped = rawClients.map((client) => {
+      const link = client.businessLinks?.find((l) => l.businessId === serviceProviderId);
+      const visitCount = link?.visitCount ?? 0;
+      const totalSpent = link?.totalSpent ?? 0;
+      const lastVisitAt = link?.lastVisitAt ?? client.createdAt;
+      const firstVisitAt = link?.firstVisitAt ?? client.createdAt;
 
-    const rangeApts = appointments.filter((apt) => {
-      const aptDate = parseFlexDate(apt.startDatetime);
-      return aptDate >= from && aptDate <= to;
+      // Build appointment history from raw appointments
+      const clientApts = appointments.filter((apt) => apt.customerEmail === client.email);
+      const appointmentHistory: AppointmentHistory[] = clientApts
+        .map((apt) => {
+          const service = services.find((s) => s.id === apt.serviceId);
+          return {
+            id: apt.id,
+            date: parseFlexDate(apt.startDatetime).toISOString(),
+            serviceName: service?.name ?? '',
+            status: apt.status,
+            paymentStatus: apt.paymentStatus,
+            amount: service?.priceAmount ?? 0,
+          };
+        })
+        .sort((a, b) => new Date(b.date).getTime() - new Date(a.date).getTime());
+
+      return {
+        customerId: client.id,
+        customerName: client.name,
+        customerEmail: client.email,
+        customerPhone: client.phone,
+        totalAppointments: visitCount,
+        totalRevenue: totalSpent,
+        lastAppointmentDate: lastVisitAt,
+        firstAppointmentDate: firstVisitAt,
+        isRecurrent: visitCount > 1,
+        isVIP: false,
+        appointmentHistory,
+      };
     });
 
-    const clientMap = new Map<string, FrequentClient>();
+    // Mark top 10% as VIP
+    mapped.sort((a, b) => b.totalAppointments - a.totalAppointments);
+    const vipCount = Math.max(1, Math.ceil(mapped.length * 0.1));
+    for (let i = 0; i < vipCount; i++) mapped[i].isVIP = true;
 
-    for (const apt of rangeApts) {
-      const key = apt.customerEmail || apt.customerName;
-      const service = services.find((s) => s.id === apt.serviceId);
-      const amount = service?.priceAmount || 0;
+    return mapped;
+  }, [clientsData, appointments, services, serviceProviderId]);
 
-      const aptIso = parseFlexDate(apt.startDatetime).toISOString();
-
-      if (!clientMap.has(key)) {
-        clientMap.set(key, {
-          customerId: apt.customerEmail,
-          customerName: apt.customerName,
-          customerEmail: apt.customerEmail,
-          customerPhone: apt.customerPhone,
-          totalAppointments: 0,
-          totalRevenue: 0,
-          lastAppointmentDate: aptIso,
-          firstAppointmentDate: aptIso,
-          isRecurrent: false,
-          isVIP: false,
-          appointmentHistory: [],
-        });
-      }
-
-      const client = clientMap.get(key)!;
-      client.totalAppointments++;
-      client.totalRevenue += amount;
-      client.appointmentHistory.push({
-        id: apt.id,
-        date: aptIso,
-        serviceName: service?.name || '',
-        status: apt.status,
-        paymentStatus: apt.paymentStatus,
-        amount,
-      });
-
-      const aptTime = parseFlexDate(apt.startDatetime).getTime();
-      if (aptTime > parseFlexDate(client.lastAppointmentDate).getTime())
-        client.lastAppointmentDate = aptIso;
-      if (aptTime < parseFlexDate(client.firstAppointmentDate).getTime())
-        client.firstAppointmentDate = aptIso;
-    }
-
-    const list = Array.from(clientMap.values());
-    list.forEach((c) => {
-      c.isRecurrent = c.totalAppointments > 1;
-    });
-
-    if (list.length > 0) {
-      list.sort((a, b) => b.totalAppointments - a.totalAppointments);
-      const vipCount = Math.max(1, Math.ceil(list.length * 0.1));
-      for (let i = 0; i < vipCount; i++) list[i].isVIP = true;
-    }
-
-    return list;
-  }, [clients, appointments, services, dateFrom, dateTo]);
-
-  const effectiveClients = clients.length > 0 ? clients : derivedClients;
+  const effectiveClients = clientsFromAPI;
 
   // Filter appointments by date range
   const filteredAppointments = useMemo(() => {
@@ -618,10 +646,17 @@ export default function ServiceCRM() {
   const openEdit = (e: React.MouseEvent, client: FrequentClient) => {
     e.stopPropagation();
     setEditingClient(client);
+    // Find original client record for extra fields
+    const original = clientsData?.clientsByBusiness?.find(
+      (c: ClientRecord) => c.id === client.customerId
+    );
     setEditForm({
-      customerName: client.customerName,
-      customerEmail: client.customerEmail,
-      customerPhone: client.customerPhone,
+      name: client.customerName,
+      email: client.customerEmail,
+      phone: client.customerPhone,
+      whatsappNumber: original?.whatsappNumber ?? client.customerPhone ?? '',
+      isMarketingSubscribed: original?.isMarketingSubscribed ?? false,
+      notes: original?.notes ?? '',
     });
     setSaveError(null);
     setTimeout(() => editNameRef.current?.focus(), 50);
@@ -637,26 +672,20 @@ export default function ServiceCRM() {
     setIsSaving(true);
     setSaveError(null);
     try {
-      const clientAppointments = appointments.filter(
-        (apt) =>
-          (apt.customerEmail && apt.customerEmail === editingClient.customerEmail) ||
-          (!apt.customerEmail && apt.customerName === editingClient.customerName)
-      );
-      await Promise.all(
-        clientAppointments.map((apt) =>
-          updateClientMutation({
-            variables: {
-              id: apt.id,
-              data: {
-                customerName: editForm.customerName,
-                customerEmail: editForm.customerEmail,
-                customerPhone: editForm.customerPhone,
-              },
-            },
-          })
-        )
-      );
-      await refetchAppointments();
+      await updateClientMutation({
+        variables: {
+          id: editingClient.customerId,
+          data: {
+            name: editForm.name.trim(),
+            email: editForm.email.trim(),
+            phone: editForm.phone.trim() || undefined,
+            whatsappNumber: editForm.whatsappNumber.trim() || undefined,
+            isMarketingSubscribed: editForm.isMarketingSubscribed,
+            notes: editForm.notes.trim() || undefined,
+          },
+        },
+      });
+      await refetchClients();
       closeEdit();
     } catch (err) {
       setSaveError(err instanceof Error ? err.message : 'Error al guardar');
@@ -1164,9 +1193,6 @@ export default function ServiceCRM() {
                     Ubicación
                   </th>
                   <th className="px-2 py-2 sm:px-6 sm:py-3 text-left text-xs font-semibold text-gray-600 dark:text-gray-300 uppercase tracking-wider">
-                    Estado
-                  </th>
-                  <th className="px-2 py-2 sm:px-6 sm:py-3 text-left text-xs font-semibold text-gray-600 dark:text-gray-300 uppercase tracking-wider">
                     Pago / Método
                   </th>
                   <th className="hidden sm:table-cell px-2 py-2 sm:px-6 sm:py-3 text-left text-xs font-semibold text-gray-600 dark:text-gray-300 uppercase tracking-wider">
@@ -1247,11 +1273,6 @@ export default function ServiceCRM() {
                         ) : (
                           <span className="text-xs text-gray-400">—</span>
                         )}
-                      </td>
-                      <td className="px-2 py-2 sm:px-6 sm:py-4">
-                        <span className="inline-flex px-2.5 py-0.5 rounded-full text-xs font-medium bg-gray-100 dark:bg-gray-700 text-gray-700 dark:text-gray-300">
-                          {STATUS_LABELS[apt.status] || apt.status}
-                        </span>
                       </td>
                       <td className="px-2 py-2 sm:px-6 sm:py-4">
                         {editingPayment?.aptId === apt.id ? (
@@ -1371,7 +1392,7 @@ export default function ServiceCRM() {
                   Editar Cliente
                 </h3>
                 <p className="text-xs text-gray-500 dark:text-gray-400 mt-0.5">
-                  Los cambios se aplican a todas las citas de este cliente
+                  Actualiza los datos de contacto del cliente
                 </p>
               </div>
               <button
@@ -1391,8 +1412,8 @@ export default function ServiceCRM() {
                 <input
                   ref={editNameRef}
                   type="text"
-                  value={editForm.customerName}
-                  onChange={(e) => setEditForm((f) => ({ ...f, customerName: e.target.value }))}
+                  value={editForm.name}
+                  onChange={(e) => setEditForm((f) => ({ ...f, name: e.target.value }))}
                   className="w-full px-3 py-2 rounded-lg border border-gray-300 dark:border-gray-600 bg-white dark:bg-gray-700 text-gray-900 dark:text-white text-sm focus:outline-none focus:ring-2 focus:ring-fourth-base focus:border-transparent"
                   placeholder="Nombre del cliente"
                 />
@@ -1406,8 +1427,8 @@ export default function ServiceCRM() {
                   <Mail className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-gray-400" />
                   <input
                     type="email"
-                    value={editForm.customerEmail}
-                    onChange={(e) => setEditForm((f) => ({ ...f, customerEmail: e.target.value }))}
+                    value={editForm.email}
+                    onChange={(e) => setEditForm((f) => ({ ...f, email: e.target.value }))}
                     className="w-full pl-9 pr-3 py-2 rounded-lg border border-gray-300 dark:border-gray-600 bg-white dark:bg-gray-700 text-gray-900 dark:text-white text-sm focus:outline-none focus:ring-2 focus:ring-fourth-base focus:border-transparent"
                     placeholder="correo@ejemplo.com"
                   />
@@ -1416,19 +1437,52 @@ export default function ServiceCRM() {
 
               <div>
                 <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">
-                  Teléfono
+                  WhatsApp
                 </label>
                 <div className="relative">
-                  <Phone className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-gray-400" />
+                  <MessageCircle className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-gray-400" />
                   <input
                     type="tel"
-                    value={editForm.customerPhone}
-                    onChange={(e) => setEditForm((f) => ({ ...f, customerPhone: e.target.value }))}
+                    value={editForm.whatsappNumber}
+                    onChange={(e) =>
+                      setEditForm((f) => ({
+                        ...f,
+                        whatsappNumber: e.target.value,
+                        phone: e.target.value,
+                      }))
+                    }
                     className="w-full pl-9 pr-3 py-2 rounded-lg border border-gray-300 dark:border-gray-600 bg-white dark:bg-gray-700 text-gray-900 dark:text-white text-sm focus:outline-none focus:ring-2 focus:ring-fourth-base focus:border-transparent"
-                    placeholder="+57 300 000 0000"
+                    placeholder="3001234567"
                   />
                 </div>
               </div>
+
+              <div>
+                <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">
+                  Notas
+                </label>
+                <textarea
+                  value={editForm.notes}
+                  onChange={(e) => setEditForm((f) => ({ ...f, notes: e.target.value }))}
+                  rows={2}
+                  placeholder="Observaciones..."
+                  className="w-full px-3 py-2 rounded-lg border border-gray-300 dark:border-gray-600 bg-white dark:bg-gray-700 text-gray-900 dark:text-white text-sm focus:outline-none focus:ring-2 focus:ring-fourth-base focus:border-transparent resize-none"
+                />
+              </div>
+
+              <label className="flex items-center gap-3 cursor-pointer">
+                <input
+                  type="checkbox"
+                  checked={editForm.isMarketingSubscribed}
+                  onChange={(e) =>
+                    setEditForm((f) => ({ ...f, isMarketingSubscribed: e.target.checked }))
+                  }
+                  className="w-4 h-4 rounded border-gray-300 text-fourth-base focus:ring-fourth-base"
+                />
+                <span className="text-sm text-gray-700 dark:text-gray-300">
+                  Suscrito a marketing
+                </span>
+              </label>
 
               {saveError && (
                 <div className="flex items-center gap-2 text-sm text-red-600 dark:text-red-400 bg-red-50 dark:bg-red-900/20 rounded-lg px-3 py-2">
@@ -1449,7 +1503,7 @@ export default function ServiceCRM() {
               </button>
               <button
                 onClick={saveEdit}
-                disabled={isSaving || !editForm.customerName.trim()}
+                disabled={isSaving || !editForm.name.trim()}
                 className="flex-1 px-4 py-2 text-sm font-medium text-white bg-fourth-base rounded-lg hover:opacity-90 transition-opacity disabled:opacity-50 flex items-center justify-center gap-2"
                 data-testid="save-client-btn"
               >
@@ -1495,8 +1549,8 @@ export default function ServiceCRM() {
                 </label>
                 <input
                   type="text"
-                  name="customerName"
-                  value={newClientForm.customerName}
+                  name="name"
+                  value={newClientForm.name}
                   onChange={handleNewClientChange}
                   placeholder="Nombre completo"
                   data-testid="new-client-name"
@@ -1513,8 +1567,8 @@ export default function ServiceCRM() {
                   <Mail className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-gray-400" />
                   <input
                     type="email"
-                    name="customerEmail"
-                    value={newClientForm.customerEmail}
+                    name="email"
+                    value={newClientForm.email}
                     onChange={handleNewClientChange}
                     placeholder="cliente@email.com"
                     data-testid="new-client-email"
@@ -1523,112 +1577,49 @@ export default function ServiceCRM() {
                 </div>
               </div>
 
-              {/* Phone + WhatsApp */}
-              <div className="grid grid-cols-2 gap-3">
-                <div>
-                  <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">
-                    Teléfono
-                  </label>
-                  <div className="relative">
-                    <Phone className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-gray-400" />
-                    <input
-                      type="tel"
-                      name="customerPhone"
-                      value={newClientForm.customerPhone}
-                      onChange={handleNewClientChange}
-                      placeholder="3001234567"
-                      data-testid="new-client-phone"
-                      className="w-full pl-9 pr-3 py-2 text-sm border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-900 text-gray-900 dark:text-white placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-green-500"
-                    />
-                  </div>
-                </div>
-                <div>
-                  <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">
-                    WhatsApp
-                  </label>
-                  <div className="relative">
-                    <MessageCircle className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-gray-400" />
-                    <input
-                      type="tel"
-                      name="customerWhatsapp"
-                      value={newClientForm.customerWhatsapp}
-                      onChange={handleNewClientChange}
-                      placeholder="3001234567"
-                      data-testid="new-client-whatsapp"
-                      className="w-full pl-9 pr-3 py-2 text-sm border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-900 text-gray-900 dark:text-white placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-green-500"
-                    />
-                  </div>
-                </div>
-              </div>
-
-              <hr className="border-gray-200 dark:border-gray-700" />
-
-              {/* Service */}
+              {/* WhatsApp */}
               <div>
                 <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">
-                  Servicio <span className="text-red-500">*</span>
+                  WhatsApp
                 </label>
-                <select
-                  name="serviceId"
-                  value={newClientForm.serviceId}
-                  onChange={handleNewClientChange}
-                  data-testid="new-client-service"
-                  className="w-full px-3 py-2 text-sm border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-900 text-gray-900 dark:text-white focus:outline-none focus:ring-2 focus:ring-green-500"
-                >
-                  <option value="">Selecciona un servicio</option>
-                  {(servicesData?.servicesByProvider ?? []).map((s: Service) => (
-                    <option key={s.id} value={s.id}>
-                      {s.name} — {formatCOP(s.priceAmount)}
-                    </option>
-                  ))}
-                </select>
-              </div>
-
-              {/* Date + Time */}
-              <div className="grid grid-cols-2 gap-3">
-                <div>
-                  <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">
-                    Fecha <span className="text-red-500">*</span>
-                  </label>
+                <div className="relative">
+                  <MessageCircle className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-gray-400" />
                   <input
-                    type="date"
-                    name="appointmentDate"
-                    value={newClientForm.appointmentDate}
-                    onChange={handleNewClientChange}
-                    data-testid="new-client-date"
-                    className="w-full px-3 py-2 text-sm border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-900 text-gray-900 dark:text-white focus:outline-none focus:ring-2 focus:ring-green-500"
-                  />
-                </div>
-                <div>
-                  <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">
-                    Hora
-                  </label>
-                  <input
-                    type="time"
-                    name="appointmentTime"
-                    value={newClientForm.appointmentTime}
-                    onChange={handleNewClientChange}
-                    data-testid="new-client-time"
-                    className="w-full px-3 py-2 text-sm border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-900 text-gray-900 dark:text-white focus:outline-none focus:ring-2 focus:ring-green-500"
+                    type="tel"
+                    name="whatsappNumber"
+                    value={newClientForm.whatsappNumber}
+                    onChange={(e) =>
+                      setNewClientForm((prev) => ({
+                        ...prev,
+                        whatsappNumber: e.target.value,
+                        phone: e.target.value,
+                      }))
+                    }
+                    placeholder="3001234567"
+                    data-testid="new-client-whatsapp"
+                    className="w-full pl-9 pr-3 py-2 text-sm border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-900 text-gray-900 dark:text-white placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-green-500"
                   />
                 </div>
               </div>
 
-              {/* Notes */}
-              <div>
-                <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">
-                  Notas
-                </label>
-                <textarea
-                  name="notes"
-                  value={newClientForm.notes}
-                  onChange={handleNewClientChange}
-                  placeholder="Observaciones sobre el cliente o la cita..."
-                  rows={3}
-                  data-testid="new-client-notes"
-                  className="w-full px-3 py-2 text-sm border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-900 text-gray-900 dark:text-white placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-green-500 resize-none"
+              {/* Marketing subscription */}
+              <label className="flex items-center gap-3 cursor-pointer">
+                <input
+                  type="checkbox"
+                  checked={newClientForm.isMarketingSubscribed}
+                  onChange={(e) =>
+                    setNewClientForm((prev) => ({
+                      ...prev,
+                      isMarketingSubscribed: e.target.checked,
+                    }))
+                  }
+                  className="w-4 h-4 rounded border-gray-300 text-green-600 focus:ring-green-500"
+                  data-testid="new-client-marketing"
                 />
-              </div>
+                <span className="text-sm text-gray-700 dark:text-gray-300">
+                  Suscribir a comunicaciones de marketing
+                </span>
+              </label>
 
               {newClientError && (
                 <div className="flex items-center gap-2 text-sm text-red-600 dark:text-red-400 bg-red-50 dark:bg-red-900/20 rounded-lg px-3 py-2">
