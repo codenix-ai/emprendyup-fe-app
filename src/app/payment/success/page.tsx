@@ -1,9 +1,31 @@
 'use client';
 
+import { useEffect, useState } from 'react';
 import { CheckCircle, ArrowLeft } from 'lucide-react';
 import Link from 'next/link';
+import { readLastConversionSummary, readReferralAttribution } from '@/lib/referrals/attribution';
 
 export default function PaymentSuccessPage() {
+  const [referralMessage, setReferralMessage] = useState('');
+
+  useEffect(() => {
+    const attribution = readReferralAttribution();
+    const conversion = readLastConversionSummary();
+
+    if (
+      attribution?.validationState === 'valid' &&
+      attribution.referralApplied &&
+      conversion?.transactionId
+    ) {
+      setReferralMessage('Codigo de referido aplicado correctamente a tu compra.');
+      return;
+    }
+
+    if (attribution && attribution.validationState !== 'valid') {
+      setReferralMessage('Codigo invalido o expirado.');
+    }
+  }, []);
+
   return (
     <div className="min-h-screen bg-gray-900 flex items-center justify-center p-4">
       <div className="max-w-md w-full bg-gray-800 rounded-2xl p-8 text-center shadow-2xl border border-gray-700">
@@ -15,6 +37,12 @@ export default function PaymentSuccessPage() {
           Tu suscripción ha sido activada correctamente. Ya puedes disfrutar de todas las
           funcionalidades de tu plan.
         </p>
+
+        {referralMessage && (
+          <p className="text-sm mb-6 rounded-lg border border-green-500/40 bg-green-500/10 px-4 py-3 text-green-300">
+            {referralMessage}
+          </p>
+        )}
 
         <div className="flex flex-col gap-3">
           <Link

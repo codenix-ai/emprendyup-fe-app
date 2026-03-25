@@ -319,12 +319,31 @@ export const GET_USER = gql`
       id
       name
       membershipLevel
+      status
       email
       role
       store {
         id
         name
       }
+    }
+  }
+`;
+
+export const USER_PLAN_BY_USER_ID = gql`
+  query UserPlanByUserId($userId: String!) {
+    userPlanByUserId(userId: $userId) {
+      userId
+      planId
+      planName
+      planStatus
+      planPeriod
+      startedAt
+      currentPeriodStart
+      currentPeriodEnd
+      cancelledAt
+      createdAt
+      updatedAt
     }
   }
 `;
@@ -429,6 +448,7 @@ export const GET_SUBSCRIPTION_PRODUCTS = gql`
         name
         title
         description
+        metadata
         price
         currency
         available

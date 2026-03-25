@@ -13,6 +13,7 @@ interface OrderCreationModalProps {
   planAmount: number;
   planId: string;
   billingCycle: 'monthly' | 'annual';
+  billingStoreId: string;
 }
 
 export default function OrderCreationModal({
@@ -23,6 +24,7 @@ export default function OrderCreationModal({
   planAmount,
   planId,
   billingCycle,
+  billingStoreId,
 }: OrderCreationModalProps) {
   const [step, setStep] = useState<'confirm' | 'creating' | 'success'>('confirm');
   const [orderId, setOrderId] = useState<string>('');
@@ -38,7 +40,7 @@ export default function OrderCreationModal({
 
     try {
       const user = JSON.parse(localStorage.getItem('user') || '{}');
-      const storeId = process.env.NEXT_PUBLIC_DEFAULT_STORE_ID;
+      const storeId = billingStoreId;
 
       if (!storeId) {
         throw new Error('No se encontró información de la tienda');

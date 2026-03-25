@@ -316,7 +316,9 @@ function ForgotPassword() {
                     </form>
                   )}
                   <div className="text-center">
-                    <p className="mb-0 text-slate-400">© {new Date().getFullYear()} Emprendy.ai.</p>
+                    <p className="mb-0 text-slate-400">
+                      © {new Date().getFullYear()} Emprendy.ai.
+                    </p>
                   </div>
                 </div>
               </div>
