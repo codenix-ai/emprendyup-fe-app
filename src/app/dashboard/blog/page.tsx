@@ -62,7 +62,7 @@ interface PaginatedPosts {
 // ─── GraphQL Documents ────────────────────────────────────────────────────────
 
 const LIST_POSTS_BY_STORE = gql`
-  query ListPostsByStore($storeId: String!, $status: PostStatus, $page: Int, $pageSize: Int) {
+  query ListPostsByStore($storeId: ID!, $status: PostStatus, $page: Int, $pageSize: Int) {
     listPostsByStore(storeId: $storeId, status: $status, page: $page, pageSize: $pageSize) {
       items {
         id
@@ -90,12 +90,7 @@ const LIST_POSTS_BY_STORE = gql`
 `;
 
 const LIST_POSTS_BY_RESTAURANT = gql`
-  query ListPostsByRestaurant(
-    $restaurantId: String!
-    $status: PostStatus
-    $page: Int
-    $pageSize: Int
-  ) {
+  query ListPostsByRestaurant($restaurantId: ID!, $status: PostStatus, $page: Int, $pageSize: Int) {
     listPostsByRestaurant(
       restaurantId: $restaurantId
       status: $status
