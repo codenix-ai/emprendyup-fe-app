@@ -33,6 +33,7 @@ import {
   Mail,
   ExternalLink,
   LayoutList,
+  Globe,
 } from 'lucide-react';
 import Image from 'next/image';
 import { useQuery, gql } from '@apollo/client';
@@ -100,7 +101,7 @@ const adminNavigationGroups = [
 ];
 
 // Navegación para Tiendas
-const getStoreNavigationGroups = () => {
+const getStoreNavigationGroups = (storeId?: string) => {
   return [
     { name: 'Dashboard', icon: BarChart3, href: '/dashboard', isSingle: true },
     { name: 'Mi Tienda', icon: Store, href: '/dashboard/store', isSingle: true },
@@ -108,6 +109,16 @@ const getStoreNavigationGroups = () => {
     { name: 'Productos', icon: Package, href: '/dashboard/products', isSingle: true },
     { name: 'Categorías', icon: List, href: '/dashboard/categories', isSingle: true },
     { name: 'Cotizaciones', icon: ClipboardList, href: '/dashboard/quotes', isSingle: true },
+    ...(storeId
+      ? [
+          {
+            name: 'Editar página web',
+            icon: Globe,
+            href: `/dashboard/stores/${storeId}/pages/home/editor`,
+            isSingle: true,
+          },
+        ]
+      : []),
     { name: 'Usuarios', icon: Users, href: '/dashboard/user-by-store', isSingle: true },
     { name: 'Bonos', icon: Gift, href: '/dashboard/bonuses', isSingle: true },
     { name: 'Ferias', icon: Calendar, href: '/dashboard/fairs', isSingle: true },
@@ -170,7 +181,7 @@ const getStoreAdminNavigationGroups = (user: any) => {
   } else if (user?.restaurantId) {
     items = getRestaurantNavigationGroups();
   } else {
-    items = getStoreNavigationGroups();
+    items = getStoreNavigationGroups(user?.storeId);
   }
   // Usuarios is only visible to admins
   return items.filter((item) => item.name !== 'Usuarios');

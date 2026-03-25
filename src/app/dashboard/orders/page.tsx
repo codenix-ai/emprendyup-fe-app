@@ -35,6 +35,7 @@ const GET_ORDERS_BY_STORE = gql`
       shipping
       createdAt
       userName
+      userEmail
       items {
         id
         productName
@@ -50,6 +51,8 @@ const GET_ORDERS_BY_STORE = gql`
       address {
         name
         street
+        city
+        state
       }
       store {
         id
@@ -72,6 +75,7 @@ const PAGINATED_ORDERS = gql`
         shipping
         createdAt
         userName
+        userEmail
         items {
           id
           productName
@@ -87,6 +91,8 @@ const PAGINATED_ORDERS = gql`
         address {
           name
           street
+          city
+          state
         }
         store {
           id
@@ -124,6 +130,7 @@ const GET_ALL_SHIPMENTS = gql`
 export default function OrderPage() {
   const [pedidos, setPedidos] = useState<Order[]>([]);
   const [pedidosFiltrados, setPedidosFiltrados] = useState<Order[]>([]);
+  const [orderAddressMap, setOrderAddressMap] = useState<Map<string, string>>(new Map());
   const [busqueda, setBusqueda] = useState('');
   const [filtroEstado, setFiltroEstado] = useState('all');
   const [filtroProveedor, setFiltroProveedor] = useState('all');
@@ -212,60 +219,75 @@ export default function OrderPage() {
   }, [selectedOrderIdForShipment, shipmentsData]);
 
   useEffect(() => {
-    if (!isAdmin && data?.ordersByStore) {
-      const mapped: Order[] = data.ordersByStore.map((o: any) => ({
-        id: o.id,
-        storeId: o.store?.id || storeId,
-        customerId: '',
-        customerName: o.userName || (o.address?.name ?? 'Cliente'),
-        customerEmail: '',
-        items: (o.items || []).map((it: any) => ({
-          id: it.id,
-          name: it.productName || it.product?.name || '',
-          quantity: it.quantity,
-          price: it.price,
-          product: it.product
-            ? {
-                name: it.product.name,
-                images: it.product.images || [],
-              }
-            : null,
-        })),
-        total: o.total || 0,
-        status: (o.status || 'pending').toLowerCase(),
-        createdAt: o.createdAt,
-        updatedAt: o.updatedAt || o.createdAt,
-      }));
+    const buildAddress = (o: any) => {
+      const parts = [o.address?.street, o.address?.city, o.address?.state].filter(Boolean);
+      return parts.join(', ');
+    };
 
+    if (!isAdmin && data?.ordersByStore) {
+      const addrMap = new Map<string, string>();
+      const mapped: Order[] = data.ordersByStore.map((o: any) => {
+        addrMap.set(o.id, buildAddress(o));
+        return {
+          id: o.id,
+          storeId: o.store?.id || storeId,
+          customerId: '',
+          customerName: o.userName || (o.address?.name ?? 'Cliente'),
+          customerEmail: o.userEmail || '',
+          items: (o.items || []).map((it: any) => ({
+            id: it.id,
+            name: it.productName || it.product?.name || '',
+            quantity: it.quantity,
+            price: it.price,
+            product: it.product
+              ? {
+                  name: it.product.name,
+                  images: it.product.images || [],
+                }
+              : null,
+          })),
+          total: o.total || 0,
+          status: (o.status || 'pending').toLowerCase(),
+          createdAt: o.createdAt,
+          updatedAt: o.updatedAt || o.createdAt,
+        };
+      });
+
+      setOrderAddressMap(addrMap);
       setPedidos(mapped);
       setPedidosFiltrados(mapped);
     }
 
     if (isAdmin && data?.paginatedOrders?.items) {
-      const mapped: Order[] = data.paginatedOrders.items.map((o: any) => ({
-        id: o.id,
-        storeId: o.store?.id || storeId,
-        customerId: '',
-        customerName: o.userName || (o.address?.name ?? 'Cliente'),
-        customerEmail: '',
-        items: (o.items || []).map((it: any) => ({
-          id: it.id,
-          name: it.productName || it.product?.name || '',
-          quantity: it.quantity,
-          price: it.price,
-          product: it.product
-            ? {
-                name: it.product.name,
-                images: it.product.images || [],
-              }
-            : null,
-        })),
-        total: o.total || 0,
-        status: (o.status || 'pending').toLowerCase(),
-        createdAt: o.createdAt,
-        updatedAt: o.updatedAt || o.createdAt,
-      }));
+      const addrMap = new Map<string, string>();
+      const mapped: Order[] = data.paginatedOrders.items.map((o: any) => {
+        addrMap.set(o.id, buildAddress(o));
+        return {
+          id: o.id,
+          storeId: o.store?.id || storeId,
+          customerId: '',
+          customerName: o.userName || (o.address?.name ?? 'Cliente'),
+          customerEmail: o.userEmail || '',
+          items: (o.items || []).map((it: any) => ({
+            id: it.id,
+            name: it.productName || it.product?.name || '',
+            quantity: it.quantity,
+            price: it.price,
+            product: it.product
+              ? {
+                  name: it.product.name,
+                  images: it.product.images || [],
+                }
+              : null,
+          })),
+          total: o.total || 0,
+          status: (o.status || 'pending').toLowerCase(),
+          createdAt: o.createdAt,
+          updatedAt: o.updatedAt || o.createdAt,
+        };
+      });
 
+      setOrderAddressMap(addrMap);
       setPedidos(mapped);
       setPedidosFiltrados(mapped);
     }
@@ -588,6 +610,12 @@ export default function OrderPage() {
               <th className="px-6 py-4 text-left text-xs font-semibold text-gray-300 uppercase">
                 Cliente
               </th>
+              <th className="px-6 py-4 text-left text-xs font-semibold text-gray-300 uppercase hidden xl:table-cell">
+                Dirección
+              </th>
+              <th className="px-6 py-4 text-left text-xs font-semibold text-gray-300 uppercase hidden xl:table-cell">
+                Método de pago
+              </th>
               <th className="px-6 py-4 text-left text-xs font-semibold text-gray-300 uppercase">
                 Total
               </th>
@@ -645,7 +673,33 @@ export default function OrderPage() {
                     <div className="text-sm font-medium text-gray-900 dark:text-white">
                       {order.customerName}
                     </div>
-                    <div className="text-sm text-gray-400">{order.customerEmail}</div>
+                    <div className="text-sm text-gray-400">{order.customerEmail || '—'}</div>
+                  </td>
+                  <td className="px-6 py-4 hidden xl:table-cell">
+                    <div
+                      className="text-sm text-gray-400 max-w-[180px] truncate"
+                      title={orderAddressMap.get(order.id) || ''}
+                    >
+                      {orderAddressMap.get(order.id) || '—'}
+                    </div>
+                  </td>
+                  <td className="px-6 py-4 hidden xl:table-cell">
+                    {orderProviderMap.get(order.id) ? (
+                      <span className="inline-flex items-center gap-1.5 px-2.5 py-1 text-xs font-medium rounded-full bg-blue-900/30 text-blue-300 border border-blue-700">
+                        <CreditCard className="w-3 h-3" />
+                        {(() => {
+                          const p = orderProviderMap.get(order.id) || '';
+                          const labels: Record<string, string> = {
+                            woompi: 'Wompi',
+                            mercadopago: 'MercadoPago',
+                            epayco: 'ePayco',
+                          };
+                          return labels[p.toLowerCase()] || p;
+                        })()}
+                      </span>
+                    ) : (
+                      <span className="text-sm text-gray-500">—</span>
+                    )}
                   </td>
                   <td className="px-6 py-4 text-sm font-semibold text-gray-900 dark:text-white">
                     ${order.total.toLocaleString('es-CO')}
@@ -682,7 +736,7 @@ export default function OrderPage() {
                 </tr>
                 {expandedOrders.has(order.id) && (
                   <tr key={order.id + '-expanded'}>
-                    <td colSpan={6} className="px-6 py-4 bg-white dark:bg-gray-800">
+                    <td colSpan={8} className="px-6 py-4 bg-white dark:bg-gray-800">
                       <div className="space-y-4">
                         <div>
                           <h4 className="text-sm font-semibold text-gray-900 dark:text-white mb-3">
@@ -757,23 +811,58 @@ export default function OrderPage() {
           >
             <div className="flex items-center justify-between mb-3">
               <div>
-                <h3 className="text-sm font-medium text-gray-900 dark:text-white">#{order.id}</h3>
-                <p className="text-sm text-gray-400">{order.customerName}</p>
+                <h3 className="text-sm font-medium text-gray-900 dark:text-white">
+                  #{order.id.slice(-8)}
+                </h3>
+                <p className="text-sm text-gray-900 dark:text-white font-medium">
+                  {order.customerName}
+                </p>
+                {order.customerEmail && (
+                  <p className="text-xs text-gray-400 truncate max-w-[200px]">
+                    {order.customerEmail}
+                  </p>
+                )}
               </div>
               {obtenerBadgeEstado(order.status)}
             </div>
 
-            <div className="flex items-center justify-between mb-3">
-              <div className="text-sm text-gray-400">
-                <p>
-                  <strong className="text-gray-900 dark:text-white">Total:</strong> $
-                  {order.total.toLocaleString('es-CO')}
+            <div className="grid grid-cols-2 gap-2 mb-3 text-sm">
+              <div>
+                <span className="text-gray-500 text-xs uppercase font-semibold">Total</span>
+                <p className="text-gray-900 dark:text-white font-semibold">
+                  ${order.total.toLocaleString('es-CO')}
                 </p>
-                <p>
-                  <strong className="text-gray-900 dark:text-white">Fecha:</strong>{' '}
+              </div>
+              <div>
+                <span className="text-gray-500 text-xs uppercase font-semibold">Fecha</span>
+                <p className="text-gray-400">
                   {new Date(order.createdAt).toLocaleDateString('es-CO')}
                 </p>
               </div>
+              {orderAddressMap.get(order.id) && (
+                <div className="col-span-2">
+                  <span className="text-gray-500 text-xs uppercase font-semibold">Dirección</span>
+                  <p className="text-gray-400 text-xs truncate">{orderAddressMap.get(order.id)}</p>
+                </div>
+              )}
+              {orderProviderMap.get(order.id) && (
+                <div>
+                  <span className="text-gray-500 text-xs uppercase font-semibold">
+                    Método de pago
+                  </span>
+                  <p className="text-blue-400 text-xs font-medium">
+                    {(() => {
+                      const p = orderProviderMap.get(order.id) || '';
+                      const labels: Record<string, string> = {
+                        woompi: 'Wompi',
+                        mercadopago: 'MercadoPago',
+                        epayco: 'ePayco',
+                      };
+                      return labels[p.toLowerCase()] || p;
+                    })()}
+                  </p>
+                </div>
+              )}
             </div>
 
             {/* Items con imágenes */}
