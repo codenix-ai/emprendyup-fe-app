@@ -4,7 +4,7 @@ import { FiArrowLeft } from '../assets/icons/vander';
 
 export default function BackToHome() {
   return (
-    <div className="fixed bottom-3 end-3">
+    <div className="fixed bottom-20 end-3">
       <Link
         href="/"
         className="back-button size-9 inline-flex items-center justify-center tracking-wide align-middle duration-500 text-base text-center bg-fourth-base text-black rounded-full"

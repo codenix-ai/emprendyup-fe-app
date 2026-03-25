@@ -18,6 +18,7 @@ import { gql, useQuery, useMutation } from '@apollo/client';
 import toast from 'react-hot-toast';
 import { useRouter } from 'next/navigation';
 import { getUserFromLocalStorage } from '@/lib/utils/localAuth';
+import { SectionLoader } from '@/app/components/Loader';
 
 // =======================
 // GraphQL QUERIES / MUTATIONS
@@ -253,60 +254,60 @@ export default function CouponsPage() {
 
   if (loading)
     return (
-      <div className="min-h-screen bg-slate-900 p-6">
-        <p className="text-slate-400">Cargando cupones...</p>
+      <div className="min-h-screen bg-gray-50 dark:bg-slate-900 p-6">
+        <SectionLoader text="Cargando cupones..." />
       </div>
     );
   if (error)
     return (
-      <div className="min-h-screen bg-slate-900 p-6">
+      <div className="min-h-screen bg-gray-50 dark:bg-slate-900 p-6">
         <p className="text-red-400">Error al cargar cupones.</p>
       </div>
     );
 
   return (
-    <div className="min-h-screen bg-slate-900 p-6 space-y-6">
+    <div className="min-h-screen bg-gray-50 dark:bg-slate-900 p-6 space-y-6">
       {/* Header */}
 
       <div>
-        <h1 className="text-3xl font-bold text-white">Gestión de Cupones</h1>
-        <p className="text-slate-400 mt-1">
+        <h1 className="text-3xl font-bold text-gray-900 dark:text-white">Gestión de Cupones</h1>
+        <p className="text-gray-500 dark:text-slate-400 mt-1">
           Administra todos los cupones de descuento de tu tienda
         </p>
       </div>
 
       {/* KPIs */}
       <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
-        <div className="bg-slate-800 border border-slate-700 rounded-xl p-5">
+        <div className="bg-white dark:bg-slate-800 border border-gray-200 dark:border-slate-700 rounded-xl p-5">
           <div className="flex items-center gap-3 mb-2">
             <Ticket className="w-5 h-5 text-blue-400" />
-            <span className="text-slate-400 text-sm">Total cupones</span>
+            <span className="text-gray-500 dark:text-slate-400 text-sm">Total cupones</span>
           </div>
-          <div className="text-3xl font-bold text-white">{totalCoupons}</div>
+          <div className="text-3xl font-bold text-gray-900 dark:text-white">{totalCoupons}</div>
         </div>
 
-        <div className="bg-slate-800 border border-slate-700 rounded-xl p-5">
+        <div className="bg-white dark:bg-slate-800 border border-gray-200 dark:border-slate-700 rounded-xl p-5">
           <div className="flex items-center gap-3 mb-2">
             <CheckCircle className="w-5 h-5 text-green-400" />
-            <span className="text-slate-400 text-sm">Activos</span>
+            <span className="text-gray-500 dark:text-slate-400 text-sm">Activos</span>
           </div>
-          <div className="text-3xl font-bold text-white">{activeCoupons}</div>
+          <div className="text-3xl font-bold text-gray-900 dark:text-white">{activeCoupons}</div>
         </div>
 
-        <div className="bg-slate-800 border border-slate-700 rounded-xl p-5">
+        <div className="bg-white dark:bg-slate-800 border border-gray-200 dark:border-slate-700 rounded-xl p-5">
           <div className="flex items-center gap-3 mb-2">
             <Calendar className="w-5 h-5 text-orange-400" />
-            <span className="text-slate-400 text-sm">Por vencer</span>
+            <span className="text-gray-500 dark:text-slate-400 text-sm">Por vencer</span>
           </div>
-          <div className="text-3xl font-bold text-white">{expiringCoupons}</div>
+          <div className="text-3xl font-bold text-gray-900 dark:text-white">{expiringCoupons}</div>
         </div>
 
-        <div className="bg-slate-800 border border-slate-700 rounded-xl p-5">
+        <div className="bg-white dark:bg-slate-800 border border-gray-200 dark:border-slate-700 rounded-xl p-5">
           <div className="flex items-center gap-3 mb-2">
             <Users className="w-5 h-5 text-purple-400" />
-            <span className="text-slate-400 text-sm">Usos totales</span>
+            <span className="text-gray-500 dark:text-slate-400 text-sm">Usos totales</span>
           </div>
-          <div className="text-3xl font-bold text-white">0</div>
+          <div className="text-3xl font-bold text-gray-900 dark:text-white">0</div>
         </div>
       </div>
 
@@ -317,7 +318,7 @@ export default function CouponsPage() {
           placeholder="Buscar cupón..."
           value={searchTerm}
           onChange={(e) => setSearchTerm(e.target.value)}
-          className="w-full sm:w-96 bg-slate-800 border border-slate-700 rounded-xl px-4 py-3 text-white placeholder-slate-500 focus:outline-none focus:ring-2 focus:ring-blue-500"
+          className="w-full sm:w-96 bg-white dark:bg-slate-800 border border-gray-200 dark:border-slate-700 rounded-xl px-4 py-3 text-gray-900 dark:text-white placeholder-slate-500 focus:outline-none focus:ring-2 focus:ring-blue-500"
         />
 
         <div className="flex items-center gap-3">
@@ -340,10 +341,10 @@ export default function CouponsPage() {
       {/* Tabla */}
       {/* Tabla Desktop / Cards Mobile */}
       {/* Desktop Table */}
-      <div className="hidden md:block bg-slate-800 border border-slate-700 rounded-xl overflow-hidden">
+      <div className="hidden md:block bg-white dark:bg-slate-800 border border-gray-200 dark:border-slate-700 rounded-xl overflow-hidden">
         <div className="overflow-x-auto">
           <table className="w-full text-left">
-            <thead className="bg-slate-700/50 text-slate-300 text-sm uppercase">
+            <thead className="bg-gray-100 dark:bg-slate-700/50 text-gray-700 dark:text-slate-300 text-sm uppercase">
               <tr>
                 <th className="px-6 py-3">Nombre</th>
                 <th className="px-6 py-3">Código</th>
@@ -354,16 +355,16 @@ export default function CouponsPage() {
                 <th className="px-6 py-3 text-right">Acciones</th>
               </tr>
             </thead>
-            <tbody className="divide-y divide-slate-700">
+            <tbody className="divide-y divide-gray-200 dark:divide-slate-700">
               {filteredCoupons.length === 0 ? (
                 <tr>
-                  <td colSpan={7} className="text-center py-8 text-slate-400">
+                  <td colSpan={7} className="text-center py-8 text-gray-500 dark:text-slate-400">
                     No se encontraron cupones
                   </td>
                 </tr>
               ) : (
                 filteredCoupons.map((coupon: any) => (
-                  <tr key={coupon.id} className="hover:bg-slate-700/30">
+                  <tr key={coupon.id} className="hover:bg-gray-100 dark:bg-slate-700/30">
                     <td className="px-6 py-4">{coupon.name}</td>
                     <td className="px-6 py-4 font-mono">{coupon.code}</td>
                     <td className="px-6 py-4">
@@ -380,7 +381,7 @@ export default function CouponsPage() {
                       {coupon.isActive ? (
                         <span className="text-green-400">Activo</span>
                       ) : (
-                        <span className="text-slate-400">Inactivo</span>
+                        <span className="text-gray-500 dark:text-slate-400">Inactivo</span>
                       )}
                     </td>
                     <td className="px-6 py-4">
@@ -391,13 +392,13 @@ export default function CouponsPage() {
                     <td className="px-6 py-4 text-right">
                       <button
                         onClick={() => openEdit(coupon)}
-                        className="p-2 text-slate-400 hover:text-blue-400"
+                        className="p-2 text-gray-500 dark:text-slate-400 hover:text-blue-400"
                       >
                         <Edit className="w-4 h-4" />
                       </button>
                       <button
                         onClick={() => handleDelete(coupon.id)}
-                        className="p-2 text-slate-400 hover:text-red-400"
+                        className="p-2 text-gray-500 dark:text-slate-400 hover:text-red-400"
                       >
                         <Trash2 className="w-4 h-4" />
                       </button>
@@ -413,40 +414,44 @@ export default function CouponsPage() {
       {/* Mobile Cards */}
       <div className="md:hidden space-y-4">
         {filteredCoupons.length === 0 ? (
-          <div className="bg-slate-800 border border-slate-700 rounded-xl p-8 text-center">
-            <p className="text-slate-400">No se encontraron cupones</p>
+          <div className="bg-white dark:bg-slate-800 border border-gray-200 dark:border-slate-700 rounded-xl p-8 text-center">
+            <p className="text-gray-500 dark:text-slate-400">No se encontraron cupones</p>
           </div>
         ) : (
           filteredCoupons.map((coupon: any) => (
             <div
               key={coupon.id}
-              className="bg-slate-800 border border-slate-700 rounded-xl p-4 space-y-3"
+              className="bg-white dark:bg-slate-800 border border-gray-200 dark:border-slate-700 rounded-xl p-4 space-y-3"
             >
               <div className="flex items-start justify-between">
                 <div className="flex-1">
-                  <h3 className="text-white font-semibold text-lg">{coupon.name}</h3>
-                  <p className="text-slate-400 font-mono text-sm mt-1">{coupon.code}</p>
+                  <h3 className="text-gray-900 dark:text-white font-semibold text-lg">
+                    {coupon.name}
+                  </h3>
+                  <p className="text-gray-500 dark:text-slate-400 font-mono text-sm mt-1">
+                    {coupon.code}
+                  </p>
                 </div>
                 <div className="flex items-center gap-2">
                   <button
                     onClick={() => openEdit(coupon)}
-                    className="p-2 text-slate-400 hover:text-blue-400"
+                    className="p-2 text-gray-500 dark:text-slate-400 hover:text-blue-400"
                   >
                     <Edit className="w-5 h-5" />
                   </button>
                   <button
                     onClick={() => handleDelete(coupon.id)}
-                    className="p-2 text-slate-400 hover:text-red-400"
+                    className="p-2 text-gray-500 dark:text-slate-400 hover:text-red-400"
                   >
                     <Trash2 className="w-5 h-5" />
                   </button>
                 </div>
               </div>
 
-              <div className="grid grid-cols-2 gap-3 pt-3 border-t border-slate-700">
+              <div className="grid grid-cols-2 gap-3 pt-3 border-t border-gray-200 dark:border-slate-700">
                 <div>
                   <p className="text-slate-500 text-xs uppercase mb-1">Tipo</p>
-                  <p className="text-white text-sm">
+                  <p className="text-gray-900 dark:text-white text-sm">
                     {coupon.type === 'PERCENTAGE'
                       ? 'Porcentaje'
                       : coupon.type === 'FIXED_AMOUNT'
@@ -456,7 +461,7 @@ export default function CouponsPage() {
                 </div>
                 <div>
                   <p className="text-slate-500 text-xs uppercase mb-1">Valor</p>
-                  <p className="text-white text-sm font-semibold">
+                  <p className="text-gray-900 dark:text-white text-sm font-semibold">
                     {coupon.isPercentage ? `${coupon.value}%` : formatCurrency(coupon.value)}
                   </p>
                 </div>
@@ -466,13 +471,13 @@ export default function CouponsPage() {
                     {coupon.isActive ? (
                       <span className="text-green-400">Activo</span>
                     ) : (
-                      <span className="text-slate-400">Inactivo</span>
+                      <span className="text-gray-500 dark:text-slate-400">Inactivo</span>
                     )}
                   </p>
                 </div>
                 <div>
                   <p className="text-slate-500 text-xs uppercase mb-1">Expira</p>
-                  <p className="text-white text-sm">
+                  <p className="text-gray-900 dark:text-white text-sm">
                     {coupon.expiresAt
                       ? new Date(coupon.expiresAt).toLocaleDateString('es-CO')
                       : 'Sin fecha'}
@@ -487,15 +492,15 @@ export default function CouponsPage() {
       {/* Modal */}
       {openModal && (
         <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/70 backdrop-blur-sm">
-          <div className="bg-slate-800 border border-slate-700 w-full max-w-2xl rounded-xl p-6 relative">
+          <div className="bg-white dark:bg-slate-800 border border-gray-200 dark:border-slate-700 w-full max-w-2xl rounded-xl p-6 relative">
             <button
               onClick={() => setOpenModal(false)}
-              className="absolute top-4 right-4 text-slate-400 hover:text-white text-xl"
+              className="absolute top-4 right-4 text-gray-500 dark:text-slate-400 hover:text-gray-900 dark:text-white text-xl"
             >
               ✕
             </button>
 
-            <h2 className="text-2xl font-bold text-white mb-4">
+            <h2 className="text-2xl font-bold text-gray-900 dark:text-white mb-4">
               {editingCoupon ? 'Editar Cupón' : 'Nuevo Cupón'}
             </h2>
 
@@ -505,36 +510,42 @@ export default function CouponsPage() {
                 { name: 'name', label: 'Nombre *', placeholder: 'Descuento de verano' },
               ].map((f) => (
                 <div key={f.name}>
-                  <label className="block text-sm text-slate-300 mb-2">{f.label}</label>
+                  <label className="block text-sm text-gray-700 dark:text-slate-300 mb-2">
+                    {f.label}
+                  </label>
                   <input
                     name={f.name}
                     value={formData[f.name]}
                     onChange={handleInputChange}
                     disabled={f.name === 'code' && !!editingCoupon}
-                    className="w-full bg-slate-700 border border-slate-600 rounded-lg px-4 py-2.5 text-white focus:ring-2 focus:ring-blue-500"
+                    className="w-full bg-gray-100 dark:bg-slate-700 border border-gray-300 dark:border-slate-600 rounded-lg px-4 py-2.5 text-gray-900 dark:text-white focus:ring-2 focus:ring-blue-500"
                     placeholder={f.placeholder}
                   />
                 </div>
               ))}
 
               <div className="md:col-span-2">
-                <label className="block text-sm text-slate-300 mb-2">Descripción</label>
+                <label className="block text-sm text-gray-700 dark:text-slate-300 mb-2">
+                  Descripción
+                </label>
                 <input
                   name="description"
                   value={formData.description}
                   onChange={handleInputChange}
-                  className="w-full bg-slate-700 border border-slate-600 rounded-lg px-4 py-2.5 text-white focus:ring-2 focus:ring-blue-500"
+                  className="w-full bg-gray-100 dark:bg-slate-700 border border-gray-300 dark:border-slate-600 rounded-lg px-4 py-2.5 text-gray-900 dark:text-white focus:ring-2 focus:ring-blue-500"
                   placeholder="Descripción del cupón"
                 />
               </div>
 
               <div>
-                <label className="block text-sm text-slate-300 mb-2">Tipo *</label>
+                <label className="block text-sm text-gray-700 dark:text-slate-300 mb-2">
+                  Tipo *
+                </label>
                 <select
                   name="type"
                   value={formData.type}
                   onChange={handleInputChange}
-                  className="w-full bg-slate-700 border border-slate-600 rounded-lg px-4 py-2.5 text-white"
+                  className="w-full bg-gray-100 dark:bg-slate-700 border border-gray-300 dark:border-slate-600 rounded-lg px-4 py-2.5 text-gray-900 dark:text-white"
                 >
                   <option value="PERCENTAGE">Porcentaje</option>
                   <option value="FIXED_AMOUNT">Monto fijo</option>
@@ -543,68 +554,80 @@ export default function CouponsPage() {
               </div>
 
               <div>
-                <label className="block text-sm text-slate-300 mb-2">Valor *</label>
+                <label className="block text-sm text-gray-700 dark:text-slate-300 mb-2">
+                  Valor *
+                </label>
                 <input
                   name="value"
                   type="number"
                   value={formData.value}
                   onChange={handleInputChange}
-                  className="w-full bg-slate-700 border border-slate-600 rounded-lg px-4 py-2.5 text-white"
+                  className="w-full bg-gray-100 dark:bg-slate-700 border border-gray-300 dark:border-slate-600 rounded-lg px-4 py-2.5 text-gray-900 dark:text-white"
                 />
               </div>
 
               <div>
-                <label className="block text-sm text-slate-300 mb-2">Monto mínimo</label>
+                <label className="block text-sm text-gray-700 dark:text-slate-300 mb-2">
+                  Monto mínimo
+                </label>
                 <input
                   name="minimumAmount"
                   type="number"
                   value={formData.minimumAmount}
                   onChange={handleInputChange}
-                  className="w-full bg-slate-700 border border-slate-600 rounded-lg px-4 py-2.5 text-white"
+                  className="w-full bg-gray-100 dark:bg-slate-700 border border-gray-300 dark:border-slate-600 rounded-lg px-4 py-2.5 text-gray-900 dark:text-white"
                 />
               </div>
 
               <div>
-                <label className="block text-sm text-slate-300 mb-2">Descuento máximo</label>
+                <label className="block text-sm text-gray-700 dark:text-slate-300 mb-2">
+                  Descuento máximo
+                </label>
                 <input
                   name="maximumDiscount"
                   type="number"
                   value={formData.maximumDiscount}
                   onChange={handleInputChange}
-                  className="w-full bg-slate-700 border border-slate-600 rounded-lg px-4 py-2.5 text-white"
+                  className="w-full bg-gray-100 dark:bg-slate-700 border border-gray-300 dark:border-slate-600 rounded-lg px-4 py-2.5 text-gray-900 dark:text-white"
                 />
               </div>
 
               <div>
-                <label className="block text-sm text-slate-300 mb-2">Límite total de uso</label>
+                <label className="block text-sm text-gray-700 dark:text-slate-300 mb-2">
+                  Límite total de uso
+                </label>
                 <input
                   name="usageLimit"
                   type="number"
                   value={formData.usageLimit}
                   onChange={handleInputChange}
-                  className="w-full bg-slate-700 border border-slate-600 rounded-lg px-4 py-2.5 text-white"
+                  className="w-full bg-gray-100 dark:bg-slate-700 border border-gray-300 dark:border-slate-600 rounded-lg px-4 py-2.5 text-gray-900 dark:text-white"
                 />
               </div>
 
               <div>
-                <label className="block text-sm text-slate-300 mb-2">Límite por usuario</label>
+                <label className="block text-sm text-gray-700 dark:text-slate-300 mb-2">
+                  Límite por usuario
+                </label>
                 <input
                   name="userUsageLimit"
                   type="number"
                   value={formData.userUsageLimit}
                   onChange={handleInputChange}
-                  className="w-full bg-slate-700 border border-slate-600 rounded-lg px-4 py-2.5 text-white"
+                  className="w-full bg-gray-100 dark:bg-slate-700 border border-gray-300 dark:border-slate-600 rounded-lg px-4 py-2.5 text-gray-900 dark:text-white"
                 />
               </div>
 
               <div>
-                <label className="block text-sm text-slate-300 mb-2">Fecha de expiración</label>
+                <label className="block text-sm text-gray-700 dark:text-slate-300 mb-2">
+                  Fecha de expiración
+                </label>
                 <input
                   name="expiresAt"
                   type="date"
                   value={formData.expiresAt}
                   onChange={handleInputChange}
-                  className="w-full bg-slate-700 border border-slate-600 rounded-lg px-4 py-2.5 text-white"
+                  className="w-full bg-gray-100 dark:bg-slate-700 border border-gray-300 dark:border-slate-600 rounded-lg px-4 py-2.5 text-gray-900 dark:text-white"
                 />
               </div>
             </div>
@@ -612,7 +635,7 @@ export default function CouponsPage() {
             <div className="flex justify-end mt-6 gap-3">
               <button
                 onClick={() => setOpenModal(false)}
-                className="px-5 py-2.5 bg-slate-700 hover:bg-slate-600 text-white rounded-lg transition"
+                className="px-5 py-2.5 bg-gray-100 dark:bg-slate-700 hover:bg-gray-200 dark:hover:bg-slate-600 text-gray-900 dark:text-white rounded-lg transition"
               >
                 Cancelar
               </button>
@@ -623,7 +646,7 @@ export default function CouponsPage() {
                 className={`px-5 py-2.5 rounded-lg font-medium transition ${
                   isFormValid
                     ? 'bg-blue-600 hover:bg-blue-700 text-white'
-                    : 'bg-slate-600 text-slate-400 cursor-not-allowed'
+                    : 'bg-slate-600 text-gray-500 dark:text-slate-400 cursor-not-allowed'
                 }`}
               >
                 {editingCoupon ? 'Actualizar' : 'Crear'}

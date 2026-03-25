@@ -22,6 +22,7 @@ import { useParams } from 'next/navigation';
 import ShipmentFormModal from '@/app/components/ShipmentFormModal';
 import { Shipment } from '@/app/utils/types/types';
 import { GET_PAYMENTS } from '@/lib/graphql/queries';
+import { SectionLoader } from '@/app/components/Loader';
 
 const GET_ORDERS_BY_STORE = gql`
   query OrdersByStore($storeId: String!) {
@@ -123,6 +124,7 @@ const GET_ALL_SHIPMENTS = gql`
 export default function OrderPage() {
   const [pedidos, setPedidos] = useState<Order[]>([]);
   const [pedidosFiltrados, setPedidosFiltrados] = useState<Order[]>([]);
+  const [orderAddressMap, setOrderAddressMap] = useState<Map<string, string>>(new Map());
   const [busqueda, setBusqueda] = useState('');
   const [filtroEstado, setFiltroEstado] = useState('all');
   const [filtroProveedor, setFiltroProveedor] = useState('all');
@@ -211,60 +213,74 @@ export default function OrderPage() {
   }, [selectedOrderIdForShipment, shipmentsData]);
 
   useEffect(() => {
-    if (!isAdmin && data?.ordersByStore) {
-      const mapped: Order[] = data.ordersByStore.map((o: any) => ({
-        id: o.id,
-        storeId: o.store?.id || storeId,
-        customerId: '',
-        customerName: o.userName || (o.address?.name ?? 'Cliente'),
-        customerEmail: '',
-        items: (o.items || []).map((it: any) => ({
-          id: it.id,
-          name: it.productName || it.product?.name || '',
-          quantity: it.quantity,
-          price: it.price,
-          product: it.product
-            ? {
-                name: it.product.name,
-                images: it.product.images || [],
-              }
-            : null,
-        })),
-        total: o.total || 0,
-        status: (o.status || 'pending').toLowerCase(),
-        createdAt: o.createdAt,
-        updatedAt: o.updatedAt || o.createdAt,
-      }));
+    const buildAddress = (o: any) => {
+      return o.address?.street || '';
+    };
 
+    if (!isAdmin && data?.ordersByStore) {
+      const addrMap = new Map<string, string>();
+      const mapped: Order[] = data.ordersByStore.map((o: any) => {
+        addrMap.set(o.id, buildAddress(o));
+        return {
+          id: o.id,
+          storeId: o.store?.id || storeId,
+          customerId: '',
+          customerName: o.userName || (o.address?.name ?? 'Cliente'),
+          customerEmail: o.address?.name || '',
+          items: (o.items || []).map((it: any) => ({
+            id: it.id,
+            name: it.productName || it.product?.name || '',
+            quantity: it.quantity,
+            price: it.price,
+            product: it.product
+              ? {
+                  name: it.product.name,
+                  images: it.product.images || [],
+                }
+              : null,
+          })),
+          total: o.total || 0,
+          status: (o.status || 'pending').toLowerCase(),
+          createdAt: o.createdAt,
+          updatedAt: o.updatedAt || o.createdAt,
+        };
+      });
+
+      setOrderAddressMap(addrMap);
       setPedidos(mapped);
       setPedidosFiltrados(mapped);
     }
 
     if (isAdmin && data?.paginatedOrders?.items) {
-      const mapped: Order[] = data.paginatedOrders.items.map((o: any) => ({
-        id: o.id,
-        storeId: o.store?.id || storeId,
-        customerId: '',
-        customerName: o.userName || (o.address?.name ?? 'Cliente'),
-        customerEmail: '',
-        items: (o.items || []).map((it: any) => ({
-          id: it.id,
-          name: it.productName || it.product?.name || '',
-          quantity: it.quantity,
-          price: it.price,
-          product: it.product
-            ? {
-                name: it.product.name,
-                images: it.product.images || [],
-              }
-            : null,
-        })),
-        total: o.total || 0,
-        status: (o.status || 'pending').toLowerCase(),
-        createdAt: o.createdAt,
-        updatedAt: o.updatedAt || o.createdAt,
-      }));
+      const addrMap = new Map<string, string>();
+      const mapped: Order[] = data.paginatedOrders.items.map((o: any) => {
+        addrMap.set(o.id, buildAddress(o));
+        return {
+          id: o.id,
+          storeId: o.store?.id || storeId,
+          customerId: '',
+          customerName: o.userName || (o.address?.name ?? 'Cliente'),
+          customerEmail: o.address?.name || '',
+          items: (o.items || []).map((it: any) => ({
+            id: it.id,
+            name: it.productName || it.product?.name || '',
+            quantity: it.quantity,
+            price: it.price,
+            product: it.product
+              ? {
+                  name: it.product.name,
+                  images: it.product.images || [],
+                }
+              : null,
+          })),
+          total: o.total || 0,
+          status: (o.status || 'pending').toLowerCase(),
+          createdAt: o.createdAt,
+          updatedAt: o.updatedAt || o.createdAt,
+        };
+      });
 
+      setOrderAddressMap(addrMap);
       setPedidos(mapped);
       setPedidosFiltrados(mapped);
     }
@@ -425,18 +441,18 @@ export default function OrderPage() {
       <div className="space-y-6">
         <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4">
           <div>
-            <h1 className="text-2xl font-bold text-white">Pedidos</h1>
-            <p className="text-gray-400">Cargando pedidos...</p>
+            <h1 className="text-2xl font-bold text-gray-900 dark:text-white">Pedidos</h1>
+            <SectionLoader text="Cargando pedidos..." />
           </div>
         </div>
         <div className="animate-pulse space-y-4 p-6">
           {[...Array(5)].map((_, i) => (
             <div key={i} className="flex space-x-4">
-              <div className="h-4 bg-gray-700 rounded w-1/6"></div>
-              <div className="h-4 bg-gray-700 rounded w-1/4"></div>
-              <div className="h-4 bg-gray-700 rounded w-1/6"></div>
-              <div className="h-4 bg-gray-700 rounded w-1/6"></div>
-              <div className="h-4 bg-gray-700 rounded w-1/6"></div>
+              <div className="h-4 bg-gray-100 dark:bg-gray-700 rounded w-1/6"></div>
+              <div className="h-4 bg-gray-100 dark:bg-gray-700 rounded w-1/4"></div>
+              <div className="h-4 bg-gray-100 dark:bg-gray-700 rounded w-1/6"></div>
+              <div className="h-4 bg-gray-100 dark:bg-gray-700 rounded w-1/6"></div>
+              <div className="h-4 bg-gray-100 dark:bg-gray-700 rounded w-1/6"></div>
             </div>
           ))}
         </div>
@@ -475,7 +491,7 @@ export default function OrderPage() {
       {/* Header */}
       <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4">
         <div>
-          <h1 className="text-2xl font-bold text-white">Pedidos</h1>
+          <h1 className="text-2xl font-bold text-gray-900 dark:text-white">Pedidos</h1>
           <p className="text-gray-400">Administra y rastrea los pedidos de tu tienda</p>
           <p className="text-sm text-gray-500">Mostrando {pedidosFiltrados.length} pedidos</p>
         </div>
@@ -499,7 +515,7 @@ export default function OrderPage() {
             value={busqueda}
             onChange={(e) => setBusqueda(e.target.value)}
             placeholder="Buscar por cliente, email o ID de orden..."
-            className="w-full pl-10 pr-3 py-3 border border-gray-600 rounded-lg bg-gray-800 text-white focus:ring-2 focus:ring-fourth-base focus:border-fourth-base transition-all placeholder-gray-400"
+            className="w-full pl-10 pr-3 py-3 border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-800 text-gray-900 dark:text-white focus:ring-2 focus:ring-fourth-base focus:border-fourth-base transition-all placeholder-gray-400"
           />
         </div>
 
@@ -508,7 +524,7 @@ export default function OrderPage() {
           <select
             value={filtroEstado}
             onChange={(e) => setFiltroEstado(e.target.value)}
-            className="px-3 py-3 border border-gray-600 rounded-lg bg-gray-800 text-white focus:ring-2 focus:ring-fourth-base focus:border-fourth-base"
+            className="px-3 py-3 border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-800 text-gray-900 dark:text-white focus:ring-2 focus:ring-fourth-base focus:border-fourth-base"
           >
             <option value="all">Todos los estados</option>
             <option value="pending">Pendiente</option>
@@ -577,15 +593,21 @@ export default function OrderPage() {
       </div>
 
       {/* Desktop Table */}
-      <div className="hidden lg:block bg-gray-900 border border-gray-700 rounded-xl overflow-hidden shadow-sm">
-        <table className="min-w-full divide-y divide-gray-700">
-          <thead className="bg-gray-800">
+      <div className="hidden lg:block bg-gray-50 dark:bg-gray-900 border border-gray-200 dark:border-gray-700 rounded-xl overflow-hidden shadow-sm">
+        <table className="min-w-full divide-y divide-gray-200 dark:divide-gray-700">
+          <thead className="bg-white dark:bg-gray-800">
             <tr>
               <th className="px-6 py-4 text-left text-xs font-semibold text-gray-300 uppercase">
                 Productos
               </th>
               <th className="px-6 py-4 text-left text-xs font-semibold text-gray-300 uppercase">
                 Cliente
+              </th>
+              <th className="px-6 py-4 text-left text-xs font-semibold text-gray-300 uppercase hidden xl:table-cell">
+                Dirección
+              </th>
+              <th className="px-6 py-4 text-left text-xs font-semibold text-gray-300 uppercase hidden xl:table-cell">
+                Método de pago
               </th>
               <th className="px-6 py-4 text-left text-xs font-semibold text-gray-300 uppercase">
                 Total
@@ -601,10 +623,10 @@ export default function OrderPage() {
               </th>
             </tr>
           </thead>
-          <tbody className="bg-gray-900 divide-y divide-gray-800">
+          <tbody className="bg-gray-50 dark:bg-gray-900 divide-y divide-gray-800">
             {paginatedOrders.map((order) => (
               <React.Fragment key={order.id}>
-                <tr className="hover:bg-gray-800 transition-colors">
+                <tr className="hover:bg-white dark:bg-gray-800 transition-colors">
                   <td className="px-6 py-4">
                     <div className="flex items-center space-x-3">
                       {order.items.slice(0, 2).map((item: any, index) => {
@@ -615,7 +637,7 @@ export default function OrderPage() {
 
                         return (
                           <div key={item.id} className="relative">
-                            <div className="relative w-12 h-12 rounded-lg overflow-hidden bg-gray-700 border border-gray-600">
+                            <div className="relative w-12 h-12 rounded-lg overflow-hidden bg-gray-100 dark:bg-gray-700 border border-gray-300 dark:border-gray-600">
                               <img
                                 src={imageUrl}
                                 alt={item.name}
@@ -634,17 +656,45 @@ export default function OrderPage() {
                         );
                       })}
                       {order.items.length === 0 && (
-                        <div className="relative w-12 h-12 rounded-lg overflow-hidden bg-gray-700 border border-gray-600 flex items-center justify-center">
+                        <div className="relative w-12 h-12 rounded-lg overflow-hidden bg-gray-100 dark:bg-gray-700 border border-gray-300 dark:border-gray-600 flex items-center justify-center">
                           <Package className="w-6 h-6 text-gray-400" />
                         </div>
                       )}
                     </div>
                   </td>
                   <td className="px-6 py-4">
-                    <div className="text-sm font-medium text-white">{order.customerName}</div>
-                    <div className="text-sm text-gray-400">{order.customerEmail}</div>
+                    <div className="text-sm font-medium text-gray-900 dark:text-white">
+                      {order.customerName}
+                    </div>
+                    <div className="text-sm text-gray-400">{order.customerEmail || '—'}</div>
                   </td>
-                  <td className="px-6 py-4 text-sm font-semibold text-white">
+                  <td className="px-6 py-4 hidden xl:table-cell">
+                    <div
+                      className="text-sm text-gray-400 max-w-[180px] truncate"
+                      title={orderAddressMap.get(order.id) || ''}
+                    >
+                      {orderAddressMap.get(order.id) || '—'}
+                    </div>
+                  </td>
+                  <td className="px-6 py-4 hidden xl:table-cell">
+                    {orderProviderMap.get(order.id) ? (
+                      <span className="inline-flex items-center gap-1.5 px-2.5 py-1 text-xs font-medium rounded-full bg-blue-900/30 text-blue-300 border border-blue-700">
+                        <CreditCard className="w-3 h-3" />
+                        {(() => {
+                          const p = orderProviderMap.get(order.id) || '';
+                          const labels: Record<string, string> = {
+                            woompi: 'Wompi',
+                            mercadopago: 'MercadoPago',
+                            epayco: 'ePayco',
+                          };
+                          return labels[p.toLowerCase()] || p;
+                        })()}
+                      </span>
+                    ) : (
+                      <span className="text-sm text-gray-500">—</span>
+                    )}
+                  </td>
+                  <td className="px-6 py-4 text-sm font-semibold text-gray-900 dark:text-white">
                     ${order.total.toLocaleString('es-CO')}
                   </td>
                   <td className="px-6 py-4">{obtenerBadgeEstado(order.status)}</td>
@@ -662,14 +712,14 @@ export default function OrderPage() {
                           setSelectedOrderIdForShipment(order.id);
                           setShipmentModalOpen(true);
                         }}
-                        className="p-2 text-gray-400 hover:bg-gray-800 hover:text-fourth-base rounded-lg transition-colors"
+                        className="p-2 text-gray-400 hover:bg-white dark:bg-gray-800 hover:text-fourth-base rounded-lg transition-colors"
                         title="Gestionar envío"
                       >
                         <Truck className="w-4 h-4" />
                       </button>
                       <button
                         onClick={() => toggleOrderExpansion(order.id)}
-                        className="p-2 text-gray-400 hover:bg-gray-800 hover:text-white rounded-lg transition-colors"
+                        className="p-2 text-gray-400 hover:bg-white dark:bg-gray-800 hover:text-gray-900 dark:text-white rounded-lg transition-colors"
                         title="Ver detalles"
                       >
                         <Eye className="w-4 h-4" />
@@ -679,10 +729,10 @@ export default function OrderPage() {
                 </tr>
                 {expandedOrders.has(order.id) && (
                   <tr key={order.id + '-expanded'}>
-                    <td colSpan={6} className="px-6 py-4 bg-gray-800">
+                    <td colSpan={8} className="px-6 py-4 bg-white dark:bg-gray-800">
                       <div className="space-y-4">
                         <div>
-                          <h4 className="text-sm font-semibold text-white mb-3">
+                          <h4 className="text-sm font-semibold text-gray-900 dark:text-white mb-3">
                             Productos ({order.items.length})
                           </h4>
                           <div className="grid gap-3 md:grid-cols-2">
@@ -695,7 +745,7 @@ export default function OrderPage() {
                               return (
                                 <div
                                   key={item.id}
-                                  className="flex items-center space-x-3 p-3 bg-gray-700 rounded-lg border border-gray-600"
+                                  className="flex items-center space-x-3 p-3 bg-gray-100 dark:bg-gray-700 rounded-lg border border-gray-300 dark:border-gray-600"
                                 >
                                   <div className="flex-shrink-0">
                                     <div className="relative w-12 h-12 rounded-lg overflow-hidden bg-gray-600 border border-gray-500">
@@ -710,18 +760,18 @@ export default function OrderPage() {
                                     </div>
                                   </div>
                                   <div className="flex-grow min-w-0">
-                                    <p className="text-sm font-medium text-white truncate">
+                                    <p className="text-sm font-medium text-gray-900 dark:text-white truncate">
                                       {item.name}
                                     </p>
                                     <div className="flex items-center justify-between mt-1">
                                       <span className="text-xs text-gray-400">
                                         Cantidad:{' '}
-                                        <span className="font-semibold text-white">
+                                        <span className="font-semibold text-gray-900 dark:text-white">
                                           {item.quantity}
                                         </span>
                                       </span>
                                       <div className="text-right">
-                                        <div className="text-sm font-semibold text-white">
+                                        <div className="text-sm font-semibold text-gray-900 dark:text-white">
                                           ${(item.price * item.quantity).toLocaleString('es-CO')}
                                         </div>
                                         <div className="text-xs text-gray-400">
@@ -750,27 +800,62 @@ export default function OrderPage() {
         {paginatedOrders.map((order) => (
           <div
             key={order.id}
-            className="p-4 bg-gray-800 rounded-lg border border-gray-700 shadow-sm"
+            className="p-4 bg-white dark:bg-gray-800 rounded-lg border border-gray-200 dark:border-gray-700 shadow-sm"
           >
             <div className="flex items-center justify-between mb-3">
               <div>
-                <h3 className="text-sm font-medium text-white">#{order.id}</h3>
-                <p className="text-sm text-gray-400">{order.customerName}</p>
+                <h3 className="text-sm font-medium text-gray-900 dark:text-white">
+                  #{order.id.slice(-8)}
+                </h3>
+                <p className="text-sm text-gray-900 dark:text-white font-medium">
+                  {order.customerName}
+                </p>
+                {order.customerEmail && (
+                  <p className="text-xs text-gray-400 truncate max-w-[200px]">
+                    {order.customerEmail}
+                  </p>
+                )}
               </div>
               {obtenerBadgeEstado(order.status)}
             </div>
 
-            <div className="flex items-center justify-between mb-3">
-              <div className="text-sm text-gray-400">
-                <p>
-                  <strong className="text-white">Total:</strong> $
-                  {order.total.toLocaleString('es-CO')}
+            <div className="grid grid-cols-2 gap-2 mb-3 text-sm">
+              <div>
+                <span className="text-gray-500 text-xs uppercase font-semibold">Total</span>
+                <p className="text-gray-900 dark:text-white font-semibold">
+                  ${order.total.toLocaleString('es-CO')}
                 </p>
-                <p>
-                  <strong className="text-white">Fecha:</strong>{' '}
+              </div>
+              <div>
+                <span className="text-gray-500 text-xs uppercase font-semibold">Fecha</span>
+                <p className="text-gray-400">
                   {new Date(order.createdAt).toLocaleDateString('es-CO')}
                 </p>
               </div>
+              {orderAddressMap.get(order.id) && (
+                <div className="col-span-2">
+                  <span className="text-gray-500 text-xs uppercase font-semibold">Dirección</span>
+                  <p className="text-gray-400 text-xs truncate">{orderAddressMap.get(order.id)}</p>
+                </div>
+              )}
+              {orderProviderMap.get(order.id) && (
+                <div>
+                  <span className="text-gray-500 text-xs uppercase font-semibold">
+                    Método de pago
+                  </span>
+                  <p className="text-blue-400 text-xs font-medium">
+                    {(() => {
+                      const p = orderProviderMap.get(order.id) || '';
+                      const labels: Record<string, string> = {
+                        woompi: 'Wompi',
+                        mercadopago: 'MercadoPago',
+                        epayco: 'ePayco',
+                      };
+                      return labels[p.toLowerCase()] || p;
+                    })()}
+                  </p>
+                </div>
+              )}
             </div>
 
             {/* Items con imágenes */}
@@ -784,7 +869,7 @@ export default function OrderPage() {
                 return (
                   <div
                     key={item.id}
-                    className="flex items-center space-x-3 p-3 bg-gray-700 rounded-lg border border-gray-600"
+                    className="flex items-center space-x-3 p-3 bg-gray-100 dark:bg-gray-700 rounded-lg border border-gray-300 dark:border-gray-600"
                   >
                     <div className="flex-shrink-0">
                       <div className="relative w-12 h-12 rounded-lg overflow-hidden bg-gray-600 border border-gray-500">
@@ -799,14 +884,18 @@ export default function OrderPage() {
                       </div>
                     </div>
                     <div className="flex-grow min-w-0">
-                      <p className="text-sm font-medium text-white truncate">{item.name}</p>
+                      <p className="text-sm font-medium text-gray-900 dark:text-white truncate">
+                        {item.name}
+                      </p>
                       <div className="flex items-center justify-between mt-1">
                         <span className="text-xs text-gray-400">
                           Cantidad:{' '}
-                          <span className="font-semibold text-white">{item.quantity}</span>
+                          <span className="font-semibold text-gray-900 dark:text-white">
+                            {item.quantity}
+                          </span>
                         </span>
                         <div className="text-right">
-                          <div className="text-sm font-semibold text-white">
+                          <div className="text-sm font-semibold text-gray-900 dark:text-white">
                             ${(item.price * item.quantity).toLocaleString('es-CO')}
                           </div>
                           <div className="text-xs text-gray-400">
@@ -826,7 +915,7 @@ export default function OrderPage() {
                   setSelectedOrderIdForShipment(order.id);
                   setShipmentModalOpen(true);
                 }}
-                className="px-3 py-2 bg-gray-700 text-white rounded-lg text-sm hover:bg-gray-600 transition-colors flex items-center gap-1"
+                className="px-3 py-2 bg-gray-100 dark:bg-gray-700 text-gray-900 dark:text-white rounded-lg text-sm hover:bg-gray-600 transition-colors flex items-center gap-1"
               >
                 <Truck className="w-4 h-4" />
                 Envío
@@ -845,10 +934,10 @@ export default function OrderPage() {
       {/* Empty State */}
       {pedidosFiltrados.length === 0 && !loading && (
         <div className="text-center py-12">
-          <div className="w-16 h-16 mx-auto mb-4 bg-gray-800 rounded-full flex items-center justify-center">
+          <div className="w-16 h-16 mx-auto mb-4 bg-white dark:bg-gray-800 rounded-full flex items-center justify-center">
             <Package className="w-6 h-6 text-gray-400" />
           </div>
-          <h3 className="text-lg font-medium text-white mb-2">
+          <h3 className="text-lg font-medium text-gray-900 dark:text-white mb-2">
             {busqueda || filtroEstado !== 'all'
               ? 'No se encontraron pedidos'
               : 'No hay pedidos aún'}
@@ -863,7 +952,7 @@ export default function OrderPage() {
 
       {/* Pagination */}
       {pedidosFiltrados.length > pageSize && (
-        <div className="flex items-center justify-between border-t border-gray-700 pt-4">
+        <div className="flex items-center justify-between border-t border-gray-200 dark:border-gray-700 pt-4">
           <div className="text-sm text-gray-400">
             Mostrando {Math.min((currentPage - 1) * pageSize + 1, pedidosFiltrados.length)} a{' '}
             {Math.min(currentPage * pageSize, pedidosFiltrados.length)} de {pedidosFiltrados.length}{' '}
@@ -873,7 +962,7 @@ export default function OrderPage() {
             <button
               onClick={() => handlePageChange(currentPage - 1)}
               disabled={currentPage === 1}
-              className="flex items-center px-3 py-2 rounded-lg border border-gray-600 bg-gray-800 text-white text-sm disabled:opacity-50 hover:bg-gray-700 transition-colors"
+              className="flex items-center px-3 py-2 rounded-lg border border-gray-300 dark:border-gray-600 bg-white dark:bg-gray-800 text-gray-900 dark:text-white text-sm disabled:opacity-50 hover:bg-gray-100 dark:bg-gray-700 transition-colors"
             >
               <ChevronLeft className="w-4 h-4 mr-1" />
               Anterior
@@ -884,7 +973,7 @@ export default function OrderPage() {
             <button
               onClick={() => handlePageChange(currentPage + 1)}
               disabled={currentPage === totalPages}
-              className="flex items-center px-3 py-2 rounded-lg border border-gray-600 bg-gray-800 text-white text-sm disabled:opacity-50 hover:bg-gray-700 transition-colors"
+              className="flex items-center px-3 py-2 rounded-lg border border-gray-300 dark:border-gray-600 bg-white dark:bg-gray-800 text-gray-900 dark:text-white text-sm disabled:opacity-50 hover:bg-gray-100 dark:bg-gray-700 transition-colors"
             >
               Siguiente
               <ChevronRight className="w-4 h-4 ml-1" />

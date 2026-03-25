@@ -23,6 +23,7 @@ import {
 } from 'lucide-react';
 import { gql, useQuery, useMutation } from '@apollo/client';
 import toast from 'react-hot-toast';
+import { SectionLoader } from '@/app/components/Loader';
 
 const CREATE_EVENT = gql`
   mutation CreateEvent($input: CreateEventInput!) {
@@ -957,7 +958,7 @@ const EventsPage = () => {
       <div className="min-h-screen bg-gray-50 dark:bg-gray-900 p-4 sm:p-6 flex items-center justify-center">
         <div className="text-center">
           <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-blue-600 mx-auto mb-4"></div>
-          <p className="text-gray-600 dark:text-gray-400">Cargando asistentes...</p>
+          <SectionLoader text="Cargando asistentes..." />
         </div>
       </div>
     );
@@ -1040,7 +1041,7 @@ const EventsPage = () => {
                       onChange={handleInputChange}
                       required
                       className="w-full px-4 py-2 border border-gray-300 dark:border-gray-600 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 bg-white dark:bg-gray-700 text-gray-900 dark:text-white"
-                      placeholder="Ej: Gran Lanzamiento EmprendyUp"
+                      placeholder="Ej: Gran Lanzamiento Emprendy.ai"
                     />
                   </div>
 
@@ -1313,7 +1314,7 @@ const EventsPage = () => {
                       onChange={handleInputChange}
                       required
                       className="w-full px-4 py-2 border border-gray-300 dark:border-gray-600 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 bg-white dark:bg-gray-700 text-gray-900 dark:text-white"
-                      placeholder="EmprendyUp"
+                      placeholder="Emprendy.ai"
                     />
                   </div>
 

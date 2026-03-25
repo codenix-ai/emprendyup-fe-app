@@ -20,6 +20,7 @@ import {
   ChevronUp,
   User,
 } from 'lucide-react';
+import { SectionLoader } from '@/app/components/Loader';
 
 const GET_EMPLOYEES = gql`
   query GetEmployeesByRestaurant($restaurantId: String!) {
@@ -381,7 +382,7 @@ export default function RestaurantPayroll() {
     return (
       <div className="flex flex-col items-center justify-center min-h-[400px] gap-3">
         <div className="w-8 h-8 border-4 border-fourth-base border-t-transparent rounded-full animate-spin" />
-        <p className="text-gray-500 dark:text-gray-400">Cargando nómina...</p>
+        <SectionLoader text="Cargando nómina..." />
       </div>
     );
   }

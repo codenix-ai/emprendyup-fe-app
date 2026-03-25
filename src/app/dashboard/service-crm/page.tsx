@@ -1,7 +1,7 @@
 'use client';
 
-import { useState, useMemo } from 'react';
-import { gql, useQuery } from '@apollo/client';
+import { useState, useMemo, useRef } from 'react';
+import { gql, useQuery, useMutation } from '@apollo/client';
 import { useSessionStore } from '@/lib/store/dashboard';
 import {
   Users,
@@ -16,58 +16,15 @@ import {
   Phone,
   Mail,
   AlertCircle,
+  Pencil,
+  X,
+  Save,
+  UserPlus,
+  Loader2,
+  MessageCircle,
+  CreditCard,
+  ChevronDown as ChevronDownIcon,
 } from 'lucide-react';
-
-const FREQUENT_CLIENTS = gql`
-  query FrequentClients(
-    $serviceProviderId: String!
-    $startDate: DateTime
-    $endDate: DateTime
-    $limit: Float
-  ) {
-    frequentClients(
-      serviceProviderId: $serviceProviderId
-      startDate: $startDate
-      endDate: $endDate
-      limit: $limit
-    ) {
-      customerId
-      customerName
-      customerEmail
-      customerPhone
-      totalAppointments
-      totalRevenue
-      lastAppointmentDate
-      firstAppointmentDate
-      isRecurrent
-      isVIP
-      appointmentHistory {
-        id
-        date
-        serviceName
-        status
-        paymentStatus
-        amount
-      }
-    }
-  }
-`;
-
-const NEW_VS_RECURRENT = gql`
-  query NewVsRecurrent($serviceProviderId: String!, $startDate: DateTime!, $endDate: DateTime!) {
-    newVsRecurrentClients(
-      serviceProviderId: $serviceProviderId
-      startDate: $startDate
-      endDate: $endDate
-    ) {
-      newClients
-      recurrentClients
-      totalClients
-      percentageNew
-      percentageRecurrent
-    }
-  }
-`;
 
 const GET_ALL_APPOINTMENTS = gql`
   query GetAllAppointmentsCRM($serviceProviderId: String!) {
@@ -100,6 +57,91 @@ const GET_SERVICES = gql`
   }
 `;
 
+const UPDATE_APPOINTMENT_PAYMENT = gql`
+  mutation UpdateAppointmentPayment($id: String!, $data: UpdateAppointmentInput!) {
+    updateAppointment(id: $id, data: $data) {
+      id
+      paymentStatus
+    }
+  }
+`;
+
+const PAYMENT_METHOD_LABELS: Record<string, string> = {
+  CASH: 'Efectivo',
+  CARD: 'Tarjeta',
+  TRANSFER: 'Transferencia',
+  NEQUI: 'Nequi',
+  DAVIPLATA: 'Daviplata',
+  PSE: 'PSE',
+  OTHER: 'Otro',
+};
+
+const GET_CLIENTS_BY_BUSINESS = gql`
+  query ClientsByBusiness(
+    $businessId: String!
+    $businessType: BusinessType!
+    $search: String
+    $skip: Int
+    $take: Int
+  ) {
+    clientsByBusiness(
+      businessId: $businessId
+      businessType: $businessType
+      search: $search
+      skip: $skip
+      take: $take
+    ) {
+      id
+      name
+      email
+      phone
+      whatsappNumber
+      isMarketingSubscribed
+      tags
+      notes
+      createdAt
+      businessLinks {
+        businessType
+        businessId
+        source
+        visitCount
+        totalSpent
+        firstVisitAt
+        lastVisitAt
+      }
+    }
+  }
+`;
+
+const UPSERT_CLIENT = gql`
+  mutation UpsertClient($data: UpsertClientInput!) {
+    upsertClient(data: $data) {
+      id
+      name
+      email
+      phone
+      isMarketingSubscribed
+      createdAt
+    }
+  }
+`;
+
+const UPDATE_CLIENT = gql`
+  mutation UpdateClient($id: ID!, $data: UpdateClientInput!) {
+    updateClient(id: $id, data: $data) {
+      id
+      name
+      email
+      phone
+      whatsappNumber
+      isMarketingSubscribed
+      tags
+      notes
+      updatedAt
+    }
+  }
+`;
+
 interface AppointmentHistory {
   id: string;
   date: string;
@@ -123,14 +165,6 @@ interface FrequentClient {
   appointmentHistory: AppointmentHistory[];
 }
 
-interface NewVsRecurrentStats {
-  newClients: number;
-  recurrentClients: number;
-  totalClients: number;
-  percentageNew: number;
-  percentageRecurrent: number;
-}
-
 interface Appointment {
   id: string;
   serviceId: string;
@@ -141,6 +175,7 @@ interface Appointment {
   endDatetime: string;
   status: string;
   paymentStatus: string;
+  paymentMethod?: string;
   notes?: string;
   serviceAddress?: string;
   serviceCity?: string;
@@ -148,10 +183,51 @@ interface Appointment {
   createdAt: string;
 }
 
+interface BusinessLink {
+  businessType: string;
+  businessId: string;
+  source: string;
+  visitCount: number;
+  totalSpent: number;
+  firstVisitAt: string;
+  lastVisitAt: string;
+}
+
+interface ClientRecord {
+  id: string;
+  name: string;
+  email: string;
+  phone: string;
+  whatsappNumber?: string;
+  isMarketingSubscribed: boolean;
+  tags?: string[];
+  notes?: string;
+  createdAt: string;
+  businessLinks: BusinessLink[];
+}
+
+interface EditClientForm {
+  name: string;
+  email: string;
+  phone: string;
+  whatsappNumber: string;
+  isMarketingSubscribed: boolean;
+  notes: string;
+}
+
+interface NewClientForm {
+  name: string;
+  email: string;
+  phone: string;
+  whatsappNumber: string;
+  isMarketingSubscribed: boolean;
+}
+
 interface Service {
   id: string;
   name: string;
   priceAmount: number;
+  durationMinutes?: number;
 }
 
 const formatCOP = (n: number) =>
@@ -160,6 +236,11 @@ const formatCOP = (n: number) =>
     currency: 'COP',
     maximumFractionDigits: 0,
   }).format(n);
+
+const parseFlexDate = (val: string): Date => {
+  const n = Number(val);
+  return isNaN(n) ? new Date(val) : new Date(n);
+};
 
 const STATUS_LABELS: Record<string, string> = {
   PENDING: 'Pendiente',
@@ -187,8 +268,131 @@ export default function ServiceCRM() {
   const [sortDir, setSortDir] = useState<'asc' | 'desc'>('desc');
   const [expandedEmail, setExpandedEmail] = useState<string | null>(null);
   const [viewMode, setViewMode] = useState<'clients' | 'appointments'>('clients');
-  const [dateRange, setDateRange] = useState<'week' | 'month' | 'all'>('month');
+  const [dateRange, setDateRange] = useState<'week' | 'month' | 'all'>('all');
   const [filterType, setFilterType] = useState<'all' | 'recurring' | 'vip'>('all');
+
+  const [editingClient, setEditingClient] = useState<FrequentClient | null>(null);
+  const [editForm, setEditForm] = useState<EditClientForm>({
+    name: '',
+    email: '',
+    phone: '',
+    whatsappNumber: '',
+    isMarketingSubscribed: false,
+    notes: '',
+  });
+  const [isSaving, setIsSaving] = useState(false);
+  const [saveError, setSaveError] = useState<string | null>(null);
+  const editNameRef = useRef<HTMLInputElement>(null);
+
+  const [upsertClientMutation] = useMutation(UPSERT_CLIENT);
+  const [updateClientMutation] = useMutation(UPDATE_CLIENT);
+  const [updatePaymentMutation] = useMutation(UPDATE_APPOINTMENT_PAYMENT);
+
+  const [editingPayment, setEditingPayment] = useState<{
+    aptId: string;
+    status: string;
+    method: string;
+  } | null>(null);
+  const [paymentSaving, setPaymentSaving] = useState(false);
+
+  const openPaymentEditor = (
+    e: React.MouseEvent,
+    apt: { id: string; paymentStatus: string; paymentMethod?: string }
+  ) => {
+    e.stopPropagation();
+    setEditingPayment({
+      aptId: apt.id,
+      status: apt.paymentStatus,
+      method: apt.paymentMethod ?? '',
+    });
+  };
+
+  const handleSavePayment = async () => {
+    if (!editingPayment) return;
+    setPaymentSaving(true);
+    try {
+      await updatePaymentMutation({
+        variables: {
+          id: editingPayment.aptId,
+          data: {
+            paymentStatus: editingPayment.status,
+            ...(editingPayment.method ? { paymentMethod: editingPayment.method } : {}),
+          },
+        },
+      });
+      await refetchAppointments();
+      setEditingPayment(null);
+    } catch (err) {
+      console.error('Error updating payment:', err);
+    } finally {
+      setPaymentSaving(false);
+    }
+  };
+
+  const [isNewClientOpen, setIsNewClientOpen] = useState(false);
+  const [newClientForm, setNewClientForm] = useState<NewClientForm>({
+    name: '',
+    email: '',
+    phone: '',
+    whatsappNumber: '',
+    isMarketingSubscribed: false,
+  });
+  const [newClientSaving, setNewClientSaving] = useState(false);
+  const [newClientError, setNewClientError] = useState<string | null>(null);
+
+  const handleNewClientChange = (
+    e: React.ChangeEvent<HTMLInputElement | HTMLSelectElement | HTMLTextAreaElement>
+  ) => {
+    const { name, value } = e.target;
+    setNewClientForm((prev) => ({ ...prev, [name]: value }));
+  };
+
+  const handleCreateClient = async () => {
+    if (!newClientForm.name.trim()) {
+      setNewClientError('El nombre es requerido');
+      return;
+    }
+    if (!newClientForm.email.trim()) {
+      setNewClientError('El email es requerido');
+      return;
+    }
+    setNewClientSaving(true);
+    setNewClientError(null);
+    try {
+      await upsertClientMutation({
+        variables: {
+          data: {
+            name: newClientForm.name.trim(),
+            email: newClientForm.email.trim(),
+            phone: newClientForm.phone.trim() || undefined,
+            whatsappNumber: newClientForm.whatsappNumber.trim() || undefined,
+            businessId: serviceProviderId,
+            businessType: 'SERVICE_PROVIDER',
+            source: 'MANUAL',
+            amountSpent: 0,
+            isMarketingSubscribed: newClientForm.isMarketingSubscribed,
+          },
+        },
+      });
+      await refetchClients();
+      setIsNewClientOpen(false);
+      setNewClientForm({
+        name: '',
+        email: '',
+        phone: '',
+        whatsappNumber: '',
+        isMarketingSubscribed: false,
+      });
+    } catch (err: unknown) {
+      const msg =
+        (err as { graphQLErrors?: { message: string }[] })?.graphQLErrors?.[0]?.message ||
+        (err as Error)?.message ||
+        'Error al crear el cliente';
+      setNewClientError(msg);
+    } finally {
+      setNewClientSaving(false);
+    }
+  };
 
   // Calculate date range based on selection
   const { dateFrom, dateTo } = useMemo(() => {
@@ -231,39 +435,27 @@ export default function ServiceCRM() {
     };
   }, [dateRange]);
 
-  // Convert dates to DateTime format for GraphQL
-  const startDateTime = useMemo(() => {
-    const d = new Date(dateFrom);
-    d.setHours(0, 0, 0, 0);
-    return d.toISOString();
-  }, [dateFrom]);
-
-  const endDateTime = useMemo(() => {
-    const d = new Date(dateTo);
-    d.setHours(23, 59, 59, 999);
-    return d.toISOString();
-  }, [dateTo]);
-
-  const { data: clientsData, loading: loadingClients } = useQuery(FREQUENT_CLIENTS, {
+  const {
+    data: clientsData,
+    loading: loadingClients,
+    refetch: refetchClients,
+  } = useQuery(GET_CLIENTS_BY_BUSINESS, {
     variables: {
-      serviceProviderId: serviceProviderId || '',
-      startDate: startDateTime,
-      endDate: endDateTime,
-      limit: null,
+      businessId: serviceProviderId ?? '',
+      businessType: 'SERVICE_PROVIDER',
+      skip: 0,
+      take: 100,
     },
     skip: !serviceProviderId,
+    fetchPolicy: 'network-only',
   });
 
-  const { data: statsData } = useQuery(NEW_VS_RECURRENT, {
-    variables: {
-      serviceProviderId: serviceProviderId || '',
-      startDate: startDateTime,
-      endDate: endDateTime,
-    },
-    skip: !serviceProviderId,
-  });
-
-  const { data: appointmentsData } = useQuery(GET_ALL_APPOINTMENTS, {
+  const {
+    data: appointmentsData,
+    loading: loadingAppointments,
+    error: appointmentsError,
+    refetch: refetchAppointments,
+  } = useQuery(GET_ALL_APPOINTMENTS, {
     variables: { serviceProviderId: serviceProviderId || '' },
     skip: !serviceProviderId,
   });
@@ -273,19 +465,64 @@ export default function ServiceCRM() {
     skip: !serviceProviderId,
   });
 
-  const clients: FrequentClient[] = useMemo(
-    () => clientsData?.frequentClients || [],
-    [clientsData]
-  );
-
-  const newVsRecurrentStats = useMemo(() => statsData?.newVsRecurrentClients, [statsData]);
-
   const appointments: Appointment[] = useMemo(
     () => appointmentsData?.appointmentsByProvider || [],
     [appointmentsData]
   );
 
   const services: Service[] = useMemo(() => servicesData?.servicesByProvider || [], [servicesData]);
+
+  const clientsFromAPI = useMemo((): FrequentClient[] => {
+    const rawClients: ClientRecord[] = clientsData?.clientsByBusiness ?? [];
+    if (!rawClients.length) return [];
+
+    const mapped = rawClients.map((client) => {
+      const link = client.businessLinks?.find((l) => l.businessId === serviceProviderId);
+      const visitCount = link?.visitCount ?? 0;
+      const totalSpent = link?.totalSpent ?? 0;
+      const lastVisitAt = link?.lastVisitAt ?? client.createdAt;
+      const firstVisitAt = link?.firstVisitAt ?? client.createdAt;
+
+      // Build appointment history from raw appointments
+      const clientApts = appointments.filter((apt) => apt.customerEmail === client.email);
+      const appointmentHistory: AppointmentHistory[] = clientApts
+        .map((apt) => {
+          const service = services.find((s) => s.id === apt.serviceId);
+          return {
+            id: apt.id,
+            date: parseFlexDate(apt.startDatetime).toISOString(),
+            serviceName: service?.name ?? '',
+            status: apt.status,
+            paymentStatus: apt.paymentStatus,
+            amount: service?.priceAmount ?? 0,
+          };
+        })
+        .sort((a, b) => new Date(b.date).getTime() - new Date(a.date).getTime());
+
+      return {
+        customerId: client.id,
+        customerName: client.name,
+        customerEmail: client.email,
+        customerPhone: client.phone,
+        totalAppointments: visitCount,
+        totalRevenue: totalSpent,
+        lastAppointmentDate: lastVisitAt,
+        firstAppointmentDate: firstVisitAt,
+        isRecurrent: visitCount > 1,
+        isVIP: false,
+        appointmentHistory,
+      };
+    });
+
+    // Mark top 10% as VIP
+    mapped.sort((a, b) => b.totalAppointments - a.totalAppointments);
+    const vipCount = Math.max(1, Math.ceil(mapped.length * 0.1));
+    for (let i = 0; i < vipCount; i++) mapped[i].isVIP = true;
+
+    return mapped;
+  }, [clientsData, appointments, services, serviceProviderId]);
+
+  const effectiveClients = clientsFromAPI;
 
   // Filter appointments by date range
   const filteredAppointments = useMemo(() => {
@@ -296,16 +533,16 @@ export default function ServiceCRM() {
 
     return appointments
       .filter((apt) => {
-        const aptDate = new Date(parseInt(apt.startDatetime));
+        const aptDate = parseFlexDate(apt.startDatetime);
         return aptDate >= from && aptDate <= to;
       })
       .sort((a, b) => {
-        return parseInt(b.startDatetime) - parseInt(a.startDatetime);
+        return parseFlexDate(b.startDatetime).getTime() - parseFlexDate(a.startDatetime).getTime();
       });
   }, [appointments, dateFrom, dateTo]);
 
   const filtered = useMemo(() => {
-    let list = clients;
+    let list = effectiveClients;
     if (filterType === 'recurring') list = list.filter((c) => c.isRecurrent);
     if (filterType === 'vip') list = list.filter((c) => c.isVIP);
     return list.sort((a, b) => {
@@ -314,11 +551,12 @@ export default function ServiceCRM() {
       if (sortKey === 'totalRevenue') diff = a.totalRevenue - b.totalRevenue;
       if (sortKey === 'lastAppointmentDate') {
         diff =
-          new Date(a.lastAppointmentDate).getTime() - new Date(b.lastAppointmentDate).getTime();
+          parseFlexDate(a.lastAppointmentDate).getTime() -
+          parseFlexDate(b.lastAppointmentDate).getTime();
       }
       return sortDir === 'desc' ? -diff : diff;
     });
-  }, [clients, filterType, sortKey, sortDir]);
+  }, [effectiveClients, filterType, sortKey, sortDir]);
 
   const toggleSort = (key: SortKey) => {
     if (sortKey === key) {
@@ -347,8 +585,8 @@ export default function ServiceCRM() {
         c.customerPhone,
         c.totalAppointments,
         c.totalRevenue,
-        new Date(c.firstAppointmentDate).toLocaleDateString('es-CO'),
-        new Date(c.lastAppointmentDate).toLocaleDateString('es-CO'),
+        parseFlexDate(c.firstAppointmentDate).toLocaleDateString('es-CO'),
+        parseFlexDate(c.lastAppointmentDate).toLocaleDateString('es-CO'),
         c.isVIP ? 'VIP' : c.isRecurrent ? 'Recurrente' : 'Nuevo',
       ]);
       const csv = [headers, ...rows].map((r) => r.map(String).join(',')).join('\n');
@@ -377,7 +615,7 @@ export default function ServiceCRM() {
       ];
       const rows = filteredAppointments.map((apt) => {
         const service = services.find((s) => s.id === apt.serviceId);
-        const aptDate = new Date(parseInt(apt.startDatetime));
+        const aptDate = parseFlexDate(apt.startDatetime);
         return [
           aptDate.toLocaleDateString('es-CO'),
           aptDate.toLocaleTimeString('es-CO', { hour: '2-digit', minute: '2-digit' }),
@@ -404,6 +642,59 @@ export default function ServiceCRM() {
       URL.revokeObjectURL(url);
     }
   };
+
+  const openEdit = (e: React.MouseEvent, client: FrequentClient) => {
+    e.stopPropagation();
+    setEditingClient(client);
+    // Find original client record for extra fields
+    const original = clientsData?.clientsByBusiness?.find(
+      (c: ClientRecord) => c.id === client.customerId
+    );
+    setEditForm({
+      name: client.customerName,
+      email: client.customerEmail,
+      phone: client.customerPhone,
+      whatsappNumber: original?.whatsappNumber ?? client.customerPhone ?? '',
+      isMarketingSubscribed: original?.isMarketingSubscribed ?? false,
+      notes: original?.notes ?? '',
+    });
+    setSaveError(null);
+    setTimeout(() => editNameRef.current?.focus(), 50);
+  };
+
+  const closeEdit = () => {
+    setEditingClient(null);
+    setSaveError(null);
+  };
+
+  const saveEdit = async () => {
+    if (!editingClient) return;
+    setIsSaving(true);
+    setSaveError(null);
+    try {
+      await updateClientMutation({
+        variables: {
+          id: editingClient.customerId,
+          data: {
+            name: editForm.name.trim(),
+            email: editForm.email.trim(),
+            phone: editForm.phone.trim() || undefined,
+            whatsappNumber: editForm.whatsappNumber.trim() || undefined,
+            isMarketingSubscribed: editForm.isMarketingSubscribed,
+            notes: editForm.notes.trim() || undefined,
+          },
+        },
+      });
+      await refetchClients();
+      closeEdit();
+    } catch (err) {
+      setSaveError(err instanceof Error ? err.message : 'Error al guardar');
+    } finally {
+      setIsSaving(false);
+    }
+  };
+
+  const isLoading = loadingClients || loadingAppointments;
 
   if (!serviceProviderId) {
     return (
@@ -462,6 +753,15 @@ export default function ServiceCRM() {
               Citas
             </button>
           </div>
+          {viewMode === 'clients' && (
+            <button
+              onClick={() => setIsNewClientOpen(true)}
+              className="inline-flex items-center gap-2 px-4 py-2 bg-green-600 text-white rounded-lg hover:bg-green-700 text-sm font-medium"
+            >
+              <UserPlus className="h-4 w-4" />
+              Nuevo Cliente
+            </button>
+          )}
           <button
             onClick={handleExportCSV}
             className="inline-flex items-center gap-2 px-4 py-2 bg-fourth-base text-white rounded-lg hover:opacity-90 text-sm font-medium"
@@ -473,64 +773,49 @@ export default function ServiceCRM() {
       </div>
 
       {/* Filters */}
-      <div className="bg-white dark:bg-gray-800 rounded-lg border border-gray-200 dark:border-gray-700 p-4 flex flex-wrap gap-4 items-center">
-        <Filter className="h-4 w-4 text-gray-400 flex-shrink-0" />
+      <div className="bg-white dark:bg-gray-800 rounded-lg border border-gray-200 dark:border-gray-700 p-3 sm:p-4">
+        <div className="flex flex-wrap gap-3 items-center">
+          <Filter className="h-4 w-4 text-gray-400 flex-shrink-0 hidden sm:block" />
 
-        {/* Date range selector */}
-        <div className="flex items-center gap-2">
-          <label className="text-sm text-gray-500 whitespace-nowrap">Período:</label>
-          <div className="flex gap-1 bg-gray-100 dark:bg-gray-700 rounded-lg p-1">
-            <button
-              onClick={() => setDateRange('week')}
-              className={`px-4 py-1.5 rounded-md text-sm font-medium transition-colors whitespace-nowrap ${
-                dateRange === 'week'
-                  ? 'bg-fourth-base text-white'
-                  : 'text-gray-600 dark:text-gray-300 hover:bg-gray-200 dark:hover:bg-gray-600'
-              }`}
-            >
-              Semanal
-            </button>
-            <button
-              onClick={() => setDateRange('month')}
-              className={`px-4 py-1.5 rounded-md text-sm font-medium transition-colors whitespace-nowrap ${
-                dateRange === 'month'
-                  ? 'bg-fourth-base text-white'
-                  : 'text-gray-600 dark:text-gray-300 hover:bg-gray-200 dark:hover:bg-gray-600'
-              }`}
-            >
-              Mensual
-            </button>
-            <button
-              onClick={() => setDateRange('all')}
-              className={`px-4 py-1.5 rounded-md text-sm font-medium transition-colors whitespace-nowrap ${
-                dateRange === 'all'
-                  ? 'bg-fourth-base text-white'
-                  : 'text-gray-600 dark:text-gray-300 hover:bg-gray-200 dark:hover:bg-gray-600'
-              }`}
-            >
-              Todas
-            </button>
+          {/* Date range selector */}
+          <div className="flex items-center gap-2 w-full sm:w-auto">
+            <label className="text-xs text-gray-500 whitespace-nowrap sm:text-sm">Período:</label>
+            <div className="flex flex-1 sm:flex-none gap-1 bg-gray-100 dark:bg-gray-700 rounded-lg p-1">
+              {(['week', 'month', 'all'] as const).map((range) => (
+                <button
+                  key={range}
+                  onClick={() => setDateRange(range)}
+                  className={`flex-1 sm:flex-none px-3 py-1.5 rounded-md text-xs sm:text-sm font-medium transition-colors whitespace-nowrap ${
+                    dateRange === range
+                      ? 'bg-fourth-base text-white'
+                      : 'text-gray-600 dark:text-gray-300 hover:bg-gray-200 dark:hover:bg-gray-600'
+                  }`}
+                >
+                  {range === 'week' ? 'Semana' : range === 'month' ? 'Mes' : 'Todas'}
+                </button>
+              ))}
+            </div>
           </div>
+
+          {/* Type filter - only for clients view */}
+          {viewMode === 'clients' && (
+            <div className="flex gap-2 sm:ml-auto w-full sm:w-auto">
+              {(['all', 'recurring', 'vip'] as const).map((t) => (
+                <button
+                  key={t}
+                  onClick={() => setFilterType(t)}
+                  className={`flex-1 sm:flex-none px-3 py-1.5 rounded-lg text-xs sm:text-sm transition-colors ${
+                    filterType === t
+                      ? 'bg-fourth-base text-white'
+                      : 'bg-gray-100 dark:bg-gray-700 text-gray-600 dark:text-gray-300 hover:bg-gray-200 dark:hover:bg-gray-600'
+                  }`}
+                >
+                  {t === 'all' ? 'Todos' : t === 'recurring' ? '⭐ Recurrentes' : '👑 VIP'}
+                </button>
+              ))}
+            </div>
+          )}
         </div>
-
-        {/* Type filter - only for clients view */}
-        {viewMode === 'clients' && (
-          <div className="flex gap-2 ml-auto">
-            {(['all', 'recurring', 'vip'] as const).map((t) => (
-              <button
-                key={t}
-                onClick={() => setFilterType(t)}
-                className={`px-3 py-1.5 rounded-lg text-sm transition-colors ${
-                  filterType === t
-                    ? 'bg-fourth-base text-white'
-                    : 'bg-gray-100 dark:bg-gray-700 text-gray-600 dark:text-gray-300 hover:bg-gray-200 dark:hover:bg-gray-600'
-                }`}
-              >
-                {t === 'all' ? 'Todos' : t === 'recurring' ? '⭐ Recurrentes' : '👑 VIP'}
-              </button>
-            ))}
-          </div>
-        )}
       </div>
 
       {/* Summary - only for clients view */}
@@ -539,25 +824,25 @@ export default function ServiceCRM() {
           {[
             {
               label: 'Total Clientes',
-              value: newVsRecurrentStats?.totalClients || clients.length,
+              value: effectiveClients.length,
               icon: Users,
               color: 'blue',
             },
             {
               label: 'Recurrentes',
-              value: clients.filter((c) => c.isRecurrent).length,
+              value: effectiveClients.filter((c) => c.isRecurrent).length,
               icon: Star,
               color: 'yellow',
             },
             {
               label: 'VIP (Top 10%)',
-              value: clients.filter((c) => c.isVIP).length,
+              value: effectiveClients.filter((c) => c.isVIP).length,
               icon: Crown,
               color: 'purple',
             },
             {
               label: 'Total Ingresos',
-              value: formatCOP(clients.reduce((s, c) => s + c.totalRevenue, 0)),
+              value: formatCOP(effectiveClients.reduce((s, c) => s + c.totalRevenue, 0)),
               icon: DollarSign,
               color: 'green',
             },
@@ -629,15 +914,23 @@ export default function ServiceCRM() {
       )}
 
       {/* Table */}
-      {loadingClients ? (
+      {isLoading ? (
         <div className="flex items-center justify-center py-16">
           <div className="animate-spin rounded-full h-10 w-10 border-b-2 border-fourth-base" />
         </div>
       ) : viewMode === 'clients' ? (
         // Clients Table
         filtered.length === 0 ? (
-          <div className="bg-white dark:bg-gray-800 rounded-lg border border-gray-200 dark:border-gray-700 p-12 text-center text-gray-500 dark:text-gray-400">
-            No se encontraron clientes con los filtros aplicados.
+          <div className="bg-white dark:bg-gray-800 rounded-lg border border-gray-200 dark:border-gray-700 p-12 text-center">
+            {appointmentsError && (
+              <div className="flex items-center justify-center gap-2 text-red-500 mb-3">
+                <AlertCircle className="h-5 w-5" />
+                <span className="text-sm">Error al cargar citas: {appointmentsError.message}</span>
+              </div>
+            )}
+            <p className="text-gray-500 dark:text-gray-400">
+              No se encontraron clientes con los filtros aplicados.
+            </p>
           </div>
         ) : (
           <div className="bg-white dark:bg-gray-800 rounded-lg border border-gray-200 dark:border-gray-700 overflow-hidden">
@@ -645,34 +938,34 @@ export default function ServiceCRM() {
               <table className="min-w-full divide-y divide-gray-200 dark:divide-gray-700">
                 <thead className="bg-gray-50 dark:bg-gray-900">
                   <tr>
-                    <th className="px-6 py-3 text-left text-xs font-semibold text-gray-600 dark:text-gray-300 uppercase tracking-wider">
+                    <th className="px-2 py-2 sm:px-6 sm:py-3 text-left text-xs font-semibold text-gray-600 dark:text-gray-300 uppercase tracking-wider">
                       Cliente
                     </th>
                     <th
-                      className="px-6 py-3 text-left text-xs font-semibold text-gray-600 dark:text-gray-300 uppercase tracking-wider cursor-pointer hover:text-gray-900 dark:hover:text-white select-none"
+                      className="px-2 py-2 sm:px-6 sm:py-3 text-left text-xs font-semibold text-gray-600 dark:text-gray-300 uppercase tracking-wider cursor-pointer hover:text-gray-900 dark:hover:text-white select-none"
                       onClick={() => toggleSort('totalAppointments')}
                     >
                       Citas <SortIcon k="totalAppointments" />
                     </th>
                     <th
-                      className="px-6 py-3 text-left text-xs font-semibold text-gray-600 dark:text-gray-300 uppercase tracking-wider cursor-pointer hover:text-gray-900 dark:hover:text-white select-none"
+                      className="px-2 py-2 sm:px-6 sm:py-3 text-left text-xs font-semibold text-gray-600 dark:text-gray-300 uppercase tracking-wider cursor-pointer hover:text-gray-900 dark:hover:text-white select-none"
                       onClick={() => toggleSort('totalRevenue')}
                     >
                       Ingresos <SortIcon k="totalRevenue" />
                     </th>
-                    <th className="px-6 py-3 text-left text-xs font-semibold text-gray-600 dark:text-gray-300 uppercase tracking-wider">
+                    <th className="hidden sm:table-cell px-2 py-2 sm:px-6 sm:py-3 text-left text-xs font-semibold text-gray-600 dark:text-gray-300 uppercase tracking-wider">
                       Estado de Pagos
                     </th>
                     <th
-                      className="px-6 py-3 text-left text-xs font-semibold text-gray-600 dark:text-gray-300 uppercase tracking-wider cursor-pointer hover:text-gray-900 dark:hover:text-white select-none"
+                      className="px-2 py-2 sm:px-6 sm:py-3 text-left text-xs font-semibold text-gray-600 dark:text-gray-300 uppercase tracking-wider cursor-pointer hover:text-gray-900 dark:hover:text-white select-none"
                       onClick={() => toggleSort('lastAppointmentDate')}
                     >
                       Última visita <SortIcon k="lastAppointmentDate" />
                     </th>
-                    <th className="px-6 py-3 text-left text-xs font-semibold text-gray-600 dark:text-gray-300 uppercase tracking-wider">
+                    <th className="hidden sm:table-cell px-2 py-2 sm:px-6 sm:py-3 text-left text-xs font-semibold text-gray-600 dark:text-gray-300 uppercase tracking-wider">
                       Tipo
                     </th>
-                    <th className="px-6 py-3" />
+                    <th className="px-2 py-2 sm:px-6 sm:py-3" />
                   </tr>
                 </thead>
                 <tbody className="divide-y divide-gray-200 dark:divide-gray-700">
@@ -693,11 +986,24 @@ export default function ServiceCRM() {
                             )
                           }
                         >
-                          <td className="px-6 py-4">
-                            <div className="font-medium text-gray-900 dark:text-white text-sm">
-                              #{idx + 1} {client.customerName}
+                          <td className="px-2 py-2 sm:px-6 sm:py-4">
+                            <div className="flex items-center gap-1.5 flex-wrap">
+                              <span className="font-medium text-gray-900 dark:text-white text-sm">
+                                #{idx + 1} {client.customerName}
+                              </span>
+                              <span className="sm:hidden">
+                                {client.isVIP ? (
+                                  <span className="inline-flex items-center gap-0.5 px-1.5 py-0.5 rounded-full text-xs font-medium bg-purple-100 text-purple-800 dark:bg-purple-900 dark:text-purple-300">
+                                    <Crown className="h-2.5 w-2.5" /> VIP
+                                  </span>
+                                ) : client.isRecurrent ? (
+                                  <span className="inline-flex items-center gap-0.5 px-1.5 py-0.5 rounded-full text-xs font-medium bg-yellow-100 text-yellow-800 dark:bg-yellow-900 dark:text-yellow-300">
+                                    <Star className="h-2.5 w-2.5" /> Rec
+                                  </span>
+                                ) : null}
+                              </span>
                             </div>
-                            <div className="flex items-center gap-3 mt-1">
+                            <div className="hidden sm:flex items-center gap-3 mt-1">
                               <span className="text-xs text-gray-500 dark:text-gray-400 flex items-center gap-1">
                                 <Mail className="h-3 w-3" /> {client.customerEmail}
                               </span>
@@ -705,17 +1011,28 @@ export default function ServiceCRM() {
                                 <Phone className="h-3 w-3" /> {client.customerPhone}
                               </span>
                             </div>
+                            <div className="sm:hidden text-xs text-gray-500 dark:text-gray-400 flex items-center gap-1 mt-0.5">
+                              <Phone className="h-3 w-3" /> {client.customerPhone}
+                            </div>
                           </td>
-                          <td className="px-6 py-4 text-sm font-semibold text-gray-900 dark:text-white">
+                          <td className="px-2 py-2 sm:px-6 sm:py-4 text-sm font-semibold text-gray-900 dark:text-white">
                             <span className="flex items-center gap-1">
                               <Calendar className="h-3.5 w-3.5 text-gray-400" />
                               {client.totalAppointments}
                             </span>
                           </td>
-                          <td className="px-6 py-4 text-sm font-semibold text-fourth-base">
+                          <td className="px-2 py-2 sm:px-6 sm:py-4 text-sm font-semibold text-fourth-base">
                             {formatCOP(client.totalRevenue)}
+                            <div className="sm:hidden mt-0.5 space-y-0.5">
+                              <div className="text-xs font-medium text-green-600 dark:text-green-400">
+                                ✓ {formatCOP(paidAmount)}
+                              </div>
+                              <div className="text-xs text-yellow-600 dark:text-yellow-400">
+                                ⏳ {formatCOP(pendingAmount)}
+                              </div>
+                            </div>
                           </td>
-                          <td className="px-6 py-4">
+                          <td className="hidden sm:table-cell px-2 py-2 sm:px-6 sm:py-4">
                             <div className="text-xs font-medium text-green-600 dark:text-green-400">
                               ✓ {formatCOP(paidAmount)}
                             </div>
@@ -723,14 +1040,21 @@ export default function ServiceCRM() {
                               ⏳ {formatCOP(pendingAmount)}
                             </div>
                           </td>
-                          <td className="px-6 py-4 text-sm text-gray-600 dark:text-gray-400">
-                            {new Date(client.lastAppointmentDate).toLocaleDateString('es-CO', {
-                              day: 'numeric',
-                              month: 'short',
-                              year: 'numeric',
-                            })}
+                          <td className="px-2 py-2 sm:px-6 sm:py-4 text-xs sm:text-sm text-gray-600 dark:text-gray-400 whitespace-nowrap">
+                            <span className="hidden sm:inline">
+                              {parseFlexDate(client.lastAppointmentDate).toLocaleDateString(
+                                'es-CO',
+                                { day: 'numeric', month: 'short', year: 'numeric' }
+                              )}
+                            </span>
+                            <span className="sm:hidden">
+                              {parseFlexDate(client.lastAppointmentDate).toLocaleDateString(
+                                'es-CO',
+                                { day: 'numeric', month: 'short' }
+                              )}
+                            </span>
                           </td>
-                          <td className="px-6 py-4">
+                          <td className="hidden sm:table-cell px-2 py-2 sm:px-6 sm:py-4">
                             {client.isVIP ? (
                               <span className="inline-flex items-center gap-1 px-2.5 py-0.5 rounded-full text-xs font-medium bg-purple-100 text-purple-800 dark:bg-purple-900 dark:text-purple-300">
                                 <Crown className="h-3 w-3" /> VIP
@@ -745,12 +1069,24 @@ export default function ServiceCRM() {
                               </span>
                             )}
                           </td>
-                          <td className="px-6 py-4 text-gray-400">
-                            {expandedEmail === client.customerEmail ? (
-                              <ChevronUp className="h-4 w-4" />
-                            ) : (
-                              <ChevronDown className="h-4 w-4" />
-                            )}
+                          <td className="px-2 py-2 sm:px-6 sm:py-4">
+                            <div className="flex items-center gap-2 justify-end">
+                              <button
+                                onClick={(e) => openEdit(e, client)}
+                                className="p-1.5 rounded-md text-gray-400 hover:text-fourth-base hover:bg-gray-100 dark:hover:bg-gray-700 transition-colors"
+                                title="Editar cliente"
+                                data-testid="edit-client-btn"
+                              >
+                                <Pencil className="h-3.5 w-3.5" />
+                              </button>
+                              <span className="text-gray-400">
+                                {expandedEmail === client.customerEmail ? (
+                                  <ChevronUp className="h-4 w-4" />
+                                ) : (
+                                  <ChevronDown className="h-4 w-4" />
+                                )}
+                              </span>
+                            </div>
                           </td>
                         </tr>
 
@@ -788,7 +1124,7 @@ export default function ServiceCRM() {
                                           className="hover:bg-gray-50 dark:hover:bg-gray-700/30"
                                         >
                                           <td className="px-4 py-2 text-gray-700 dark:text-gray-300">
-                                            {new Date(apt.date).toLocaleDateString('es-CO', {
+                                            {parseFlexDate(apt.date).toLocaleDateString('es-CO', {
                                               day: 'numeric',
                                               month: 'short',
                                               year: 'numeric',
@@ -844,25 +1180,22 @@ export default function ServiceCRM() {
             <table className="min-w-full divide-y divide-gray-200 dark:divide-gray-700">
               <thead className="bg-gray-50 dark:bg-gray-900">
                 <tr>
-                  <th className="px-6 py-3 text-left text-xs font-semibold text-gray-600 dark:text-gray-300 uppercase tracking-wider">
+                  <th className="px-2 py-2 sm:px-6 sm:py-3 text-left text-xs font-semibold text-gray-600 dark:text-gray-300 uppercase tracking-wider">
                     Fecha y Hora
                   </th>
-                  <th className="px-6 py-3 text-left text-xs font-semibold text-gray-600 dark:text-gray-300 uppercase tracking-wider">
+                  <th className="px-2 py-2 sm:px-6 sm:py-3 text-left text-xs font-semibold text-gray-600 dark:text-gray-300 uppercase tracking-wider">
                     Cliente
                   </th>
-                  <th className="px-6 py-3 text-left text-xs font-semibold text-gray-600 dark:text-gray-300 uppercase tracking-wider">
+                  <th className="px-2 py-2 sm:px-6 sm:py-3 text-left text-xs font-semibold text-gray-600 dark:text-gray-300 uppercase tracking-wider">
                     Servicio
                   </th>
-                  <th className="px-6 py-3 text-left text-xs font-semibold text-gray-600 dark:text-gray-300 uppercase tracking-wider">
+                  <th className="hidden sm:table-cell px-2 py-2 sm:px-6 sm:py-3 text-left text-xs font-semibold text-gray-600 dark:text-gray-300 uppercase tracking-wider">
                     Ubicación
                   </th>
-                  <th className="px-6 py-3 text-left text-xs font-semibold text-gray-600 dark:text-gray-300 uppercase tracking-wider">
-                    Estado
+                  <th className="px-2 py-2 sm:px-6 sm:py-3 text-left text-xs font-semibold text-gray-600 dark:text-gray-300 uppercase tracking-wider">
+                    Pago / Método
                   </th>
-                  <th className="px-6 py-3 text-left text-xs font-semibold text-gray-600 dark:text-gray-300 uppercase tracking-wider">
-                    Pago
-                  </th>
-                  <th className="px-6 py-3 text-left text-xs font-semibold text-gray-600 dark:text-gray-300 uppercase tracking-wider">
+                  <th className="hidden sm:table-cell px-2 py-2 sm:px-6 sm:py-3 text-left text-xs font-semibold text-gray-600 dark:text-gray-300 uppercase tracking-wider">
                     Monto
                   </th>
                 </tr>
@@ -870,7 +1203,7 @@ export default function ServiceCRM() {
               <tbody className="divide-y divide-gray-200 dark:divide-gray-700">
                 {filteredAppointments.map((apt) => {
                   const service = services.find((s) => s.id === apt.serviceId);
-                  const aptDate = new Date(parseInt(apt.startDatetime));
+                  const aptDate = parseFlexDate(apt.startDatetime);
                   const location = [apt.serviceAddress, apt.serviceCity].filter(Boolean).join(', ');
 
                   return (
@@ -878,13 +1211,21 @@ export default function ServiceCRM() {
                       key={apt.id}
                       className="hover:bg-gray-50 dark:hover:bg-gray-700/50 transition"
                     >
-                      <td className="px-6 py-4">
-                        <div className="text-sm font-medium text-gray-900 dark:text-white">
-                          {aptDate.toLocaleDateString('es-CO', {
-                            day: 'numeric',
-                            month: 'short',
-                            year: 'numeric',
-                          })}
+                      <td className="px-2 py-2 sm:px-6 sm:py-4 whitespace-nowrap">
+                        <div className="text-xs sm:text-sm font-medium text-gray-900 dark:text-white">
+                          <span className="hidden sm:inline">
+                            {aptDate.toLocaleDateString('es-CO', {
+                              day: 'numeric',
+                              month: 'short',
+                              year: 'numeric',
+                            })}
+                          </span>
+                          <span className="sm:hidden">
+                            {aptDate.toLocaleDateString('es-CO', {
+                              day: 'numeric',
+                              month: 'short',
+                            })}
+                          </span>
                         </div>
                         <div className="text-xs text-gray-500 dark:text-gray-400">
                           {aptDate.toLocaleTimeString('es-CO', {
@@ -893,20 +1234,20 @@ export default function ServiceCRM() {
                           })}
                         </div>
                       </td>
-                      <td className="px-6 py-4">
-                        <div className="text-sm font-medium text-gray-900 dark:text-white">
+                      <td className="px-2 py-2 sm:px-6 sm:py-4">
+                        <div className="text-sm font-medium text-gray-900 dark:text-white truncate max-w-[90px] sm:max-w-none">
                           {apt.customerName}
                         </div>
-                        <div className="flex items-center gap-2 mt-1">
+                        <div className="hidden sm:flex items-center gap-2 mt-1">
                           <span className="text-xs text-gray-500 dark:text-gray-400 flex items-center gap-1">
                             <Mail className="h-3 w-3" /> {apt.customerEmail}
                           </span>
                         </div>
-                        <div className="text-xs text-gray-500 dark:text-gray-400 flex items-center gap-1 mt-0.5">
+                        <div className="hidden sm:flex text-xs text-gray-500 dark:text-gray-400 items-center gap-1 mt-0.5">
                           <Phone className="h-3 w-3" /> {apt.customerPhone}
                         </div>
                       </td>
-                      <td className="px-6 py-4">
+                      <td className="px-2 py-2 sm:px-6 sm:py-4">
                         <div className="text-sm text-gray-900 dark:text-white font-medium">
                           {service?.name || 'Sin servicio'}
                         </div>
@@ -915,8 +1256,11 @@ export default function ServiceCRM() {
                             {apt.notes}
                           </div>
                         )}
+                        <div className="sm:hidden text-xs font-semibold text-fourth-base mt-1">
+                          {service ? formatCOP(service.priceAmount) : '—'}
+                        </div>
                       </td>
-                      <td className="px-6 py-4">
+                      <td className="hidden sm:table-cell px-2 py-2 sm:px-6 sm:py-4">
                         {location ? (
                           <div className="text-sm text-gray-700 dark:text-gray-300 max-w-xs">
                             {location}
@@ -930,25 +1274,100 @@ export default function ServiceCRM() {
                           <span className="text-xs text-gray-400">—</span>
                         )}
                       </td>
-                      <td className="px-6 py-4">
-                        <span className="inline-flex px-2.5 py-0.5 rounded-full text-xs font-medium bg-gray-100 dark:bg-gray-700 text-gray-700 dark:text-gray-300">
-                          {STATUS_LABELS[apt.status] || apt.status}
-                        </span>
+                      <td className="px-2 py-2 sm:px-6 sm:py-4">
+                        {editingPayment?.aptId === apt.id ? (
+                          <div
+                            className="flex flex-col gap-2 min-w-[160px]"
+                            onClick={(e) => e.stopPropagation()}
+                          >
+                            <select
+                              value={editingPayment.status}
+                              onChange={(e) =>
+                                setEditingPayment((prev) =>
+                                  prev ? { ...prev, status: e.target.value } : prev
+                                )
+                              }
+                              className="w-full text-xs px-2 py-1.5 border border-gray-300 dark:border-gray-600 rounded-md bg-white dark:bg-gray-900 text-gray-900 dark:text-white focus:outline-none focus:ring-2 focus:ring-fourth-base"
+                            >
+                              {Object.entries(PAYMENT_LABELS).map(([k, v]) => (
+                                <option key={k} value={k}>
+                                  {v}
+                                </option>
+                              ))}
+                            </select>
+                            <select
+                              value={editingPayment.method}
+                              onChange={(e) =>
+                                setEditingPayment((prev) =>
+                                  prev
+                                    ? {
+                                        ...prev,
+                                        method: e.target.value,
+                                        ...(e.target.value ? { status: 'PAID' } : {}),
+                                      }
+                                    : prev
+                                )
+                              }
+                              className="w-full text-xs px-2 py-1.5 border border-gray-300 dark:border-gray-600 rounded-md bg-white dark:bg-gray-900 text-gray-900 dark:text-white focus:outline-none focus:ring-2 focus:ring-fourth-base"
+                            >
+                              <option value="">Sin método</option>
+                              {Object.entries(PAYMENT_METHOD_LABELS).map(([k, v]) => (
+                                <option key={k} value={k}>
+                                  {v}
+                                </option>
+                              ))}
+                            </select>
+                            <div className="flex gap-1">
+                              <button
+                                onClick={handleSavePayment}
+                                disabled={paymentSaving}
+                                className="flex-1 flex items-center justify-center gap-1 text-xs px-2 py-1.5 bg-fourth-base text-white rounded-md hover:opacity-90 disabled:opacity-50 transition-opacity"
+                              >
+                                {paymentSaving ? (
+                                  <Loader2 className="h-3 w-3 animate-spin" />
+                                ) : (
+                                  <Save className="h-3 w-3" />
+                                )}
+                                {paymentSaving ? 'Guardando' : 'Guardar'}
+                              </button>
+                              <button
+                                onClick={() => setEditingPayment(null)}
+                                className="px-2 py-1.5 text-xs bg-gray-100 dark:bg-gray-700 text-gray-700 dark:text-gray-300 rounded-md hover:bg-gray-200 dark:hover:bg-gray-600 transition-colors"
+                              >
+                                <X className="h-3 w-3" />
+                              </button>
+                            </div>
+                          </div>
+                        ) : (
+                          <button
+                            onClick={(e) => openPaymentEditor(e, apt)}
+                            className="group flex flex-col gap-0.5 text-left"
+                            title="Click para editar pago"
+                          >
+                            <span
+                              className={`inline-flex items-center gap-1 px-2.5 py-0.5 rounded-full text-xs font-medium transition-opacity group-hover:opacity-80 ${
+                                apt.paymentStatus === 'PAID'
+                                  ? 'bg-green-100 text-green-800 dark:bg-green-900 dark:text-green-300'
+                                  : apt.paymentStatus === 'PENDING'
+                                    ? 'bg-yellow-100 text-yellow-800 dark:bg-yellow-900 dark:text-yellow-300'
+                                    : apt.paymentStatus === 'PARTIAL'
+                                      ? 'bg-blue-100 text-blue-800 dark:bg-blue-900 dark:text-blue-300'
+                                      : 'bg-gray-100 text-gray-800 dark:bg-gray-700 dark:text-gray-300'
+                              }`}
+                            >
+                              {PAYMENT_LABELS[apt.paymentStatus] || apt.paymentStatus}
+                              <ChevronDownIcon className="h-3 w-3 opacity-50 group-hover:opacity-100" />
+                            </span>
+                            {apt.paymentMethod && (
+                              <span className="flex items-center gap-1 text-xs text-gray-500 dark:text-gray-400 pl-0.5">
+                                <CreditCard className="h-3 w-3" />
+                                {PAYMENT_METHOD_LABELS[apt.paymentMethod] || apt.paymentMethod}
+                              </span>
+                            )}
+                          </button>
+                        )}
                       </td>
-                      <td className="px-6 py-4">
-                        <span
-                          className={`inline-flex px-2.5 py-0.5 rounded-full text-xs font-medium ${
-                            apt.paymentStatus === 'PAID'
-                              ? 'bg-green-100 text-green-800 dark:bg-green-900 dark:text-green-300'
-                              : apt.paymentStatus === 'PENDING'
-                                ? 'bg-yellow-100 text-yellow-800 dark:bg-yellow-900 dark:text-yellow-300'
-                                : 'bg-gray-100 text-gray-800 dark:bg-gray-700 dark:text-gray-300'
-                          }`}
-                        >
-                          {PAYMENT_LABELS[apt.paymentStatus] || apt.paymentStatus}
-                        </span>
-                      </td>
-                      <td className="px-6 py-4">
+                      <td className="hidden sm:table-cell px-2 py-2 sm:px-6 sm:py-4">
                         <div className="text-sm font-semibold text-fourth-base">
                           {service ? formatCOP(service.priceAmount) : '—'}
                         </div>
@@ -958,6 +1377,283 @@ export default function ServiceCRM() {
                 })}
               </tbody>
             </table>
+          </div>
+        </div>
+      )}
+
+      {/* Edit Client Modal */}
+      {editingClient && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/50 backdrop-blur-sm">
+          <div className="bg-white dark:bg-gray-800 rounded-xl shadow-xl w-full max-w-md">
+            {/* Header */}
+            <div className="flex items-center justify-between px-6 py-4 border-b border-gray-200 dark:border-gray-700">
+              <div>
+                <h3 className="text-lg font-semibold text-gray-900 dark:text-white">
+                  Editar Cliente
+                </h3>
+                <p className="text-xs text-gray-500 dark:text-gray-400 mt-0.5">
+                  Actualiza los datos de contacto del cliente
+                </p>
+              </div>
+              <button
+                onClick={closeEdit}
+                className="p-1.5 rounded-lg text-gray-400 hover:text-gray-700 dark:hover:text-gray-200 hover:bg-gray-100 dark:hover:bg-gray-700 transition-colors"
+              >
+                <X className="h-5 w-5" />
+              </button>
+            </div>
+
+            {/* Form */}
+            <div className="px-6 py-5 space-y-4">
+              <div>
+                <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">
+                  Nombre completo
+                </label>
+                <input
+                  ref={editNameRef}
+                  type="text"
+                  value={editForm.name}
+                  onChange={(e) => setEditForm((f) => ({ ...f, name: e.target.value }))}
+                  className="w-full px-3 py-2 rounded-lg border border-gray-300 dark:border-gray-600 bg-white dark:bg-gray-700 text-gray-900 dark:text-white text-sm focus:outline-none focus:ring-2 focus:ring-fourth-base focus:border-transparent"
+                  placeholder="Nombre del cliente"
+                />
+              </div>
+
+              <div>
+                <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">
+                  Correo electrónico
+                </label>
+                <div className="relative">
+                  <Mail className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-gray-400" />
+                  <input
+                    type="email"
+                    value={editForm.email}
+                    onChange={(e) => setEditForm((f) => ({ ...f, email: e.target.value }))}
+                    className="w-full pl-9 pr-3 py-2 rounded-lg border border-gray-300 dark:border-gray-600 bg-white dark:bg-gray-700 text-gray-900 dark:text-white text-sm focus:outline-none focus:ring-2 focus:ring-fourth-base focus:border-transparent"
+                    placeholder="correo@ejemplo.com"
+                  />
+                </div>
+              </div>
+
+              <div>
+                <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">
+                  WhatsApp
+                </label>
+                <div className="relative">
+                  <MessageCircle className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-gray-400" />
+                  <input
+                    type="tel"
+                    value={editForm.whatsappNumber}
+                    onChange={(e) =>
+                      setEditForm((f) => ({
+                        ...f,
+                        whatsappNumber: e.target.value,
+                        phone: e.target.value,
+                      }))
+                    }
+                    className="w-full pl-9 pr-3 py-2 rounded-lg border border-gray-300 dark:border-gray-600 bg-white dark:bg-gray-700 text-gray-900 dark:text-white text-sm focus:outline-none focus:ring-2 focus:ring-fourth-base focus:border-transparent"
+                    placeholder="3001234567"
+                  />
+                </div>
+              </div>
+
+              <div>
+                <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">
+                  Notas
+                </label>
+                <textarea
+                  value={editForm.notes}
+                  onChange={(e) => setEditForm((f) => ({ ...f, notes: e.target.value }))}
+                  rows={2}
+                  placeholder="Observaciones..."
+                  className="w-full px-3 py-2 rounded-lg border border-gray-300 dark:border-gray-600 bg-white dark:bg-gray-700 text-gray-900 dark:text-white text-sm focus:outline-none focus:ring-2 focus:ring-fourth-base focus:border-transparent resize-none"
+                />
+              </div>
+
+              <label className="flex items-center gap-3 cursor-pointer">
+                <input
+                  type="checkbox"
+                  checked={editForm.isMarketingSubscribed}
+                  onChange={(e) =>
+                    setEditForm((f) => ({ ...f, isMarketingSubscribed: e.target.checked }))
+                  }
+                  className="w-4 h-4 rounded border-gray-300 text-fourth-base focus:ring-fourth-base"
+                />
+                <span className="text-sm text-gray-700 dark:text-gray-300">
+                  Suscrito a marketing
+                </span>
+              </label>
+
+              {saveError && (
+                <div className="flex items-center gap-2 text-sm text-red-600 dark:text-red-400 bg-red-50 dark:bg-red-900/20 rounded-lg px-3 py-2">
+                  <AlertCircle className="h-4 w-4 flex-shrink-0" />
+                  {saveError}
+                </div>
+              )}
+            </div>
+
+            {/* Footer */}
+            <div className="flex gap-3 px-6 py-4 border-t border-gray-200 dark:border-gray-700">
+              <button
+                onClick={closeEdit}
+                disabled={isSaving}
+                className="flex-1 px-4 py-2 text-sm font-medium text-gray-700 dark:text-gray-300 bg-gray-100 dark:bg-gray-700 rounded-lg hover:bg-gray-200 dark:hover:bg-gray-600 transition-colors disabled:opacity-50"
+              >
+                Cancelar
+              </button>
+              <button
+                onClick={saveEdit}
+                disabled={isSaving || !editForm.name.trim()}
+                className="flex-1 px-4 py-2 text-sm font-medium text-white bg-fourth-base rounded-lg hover:opacity-90 transition-opacity disabled:opacity-50 flex items-center justify-center gap-2"
+                data-testid="save-client-btn"
+              >
+                {isSaving ? (
+                  <div className="h-4 w-4 border-2 border-white/30 border-t-white rounded-full animate-spin" />
+                ) : (
+                  <Save className="h-4 w-4" />
+                )}
+                {isSaving ? 'Guardando...' : 'Guardar cambios'}
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* ── New Client Modal ─────────────────────────────────────────── */}
+      {isNewClientOpen && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/60 backdrop-blur-sm">
+          <div className="bg-white dark:bg-gray-800 rounded-2xl shadow-2xl w-full max-w-lg border border-gray-200 dark:border-gray-700 overflow-hidden">
+            {/* Header */}
+            <div className="flex items-center justify-between px-6 py-4 border-b border-gray-200 dark:border-gray-700">
+              <h2 className="text-lg font-bold text-gray-900 dark:text-white flex items-center gap-2">
+                <UserPlus className="h-5 w-5 text-green-500" />
+                Nuevo Cliente
+              </h2>
+              <button
+                onClick={() => {
+                  setIsNewClientOpen(false);
+                  setNewClientError(null);
+                }}
+                className="text-gray-400 hover:text-gray-600 dark:hover:text-gray-300 transition-colors"
+              >
+                <X className="h-5 w-5" />
+              </button>
+            </div>
+
+            {/* Body */}
+            <div className="px-6 py-5 space-y-4 max-h-[70vh] overflow-y-auto">
+              {/* Name */}
+              <div>
+                <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">
+                  Nombre <span className="text-red-500">*</span>
+                </label>
+                <input
+                  type="text"
+                  name="name"
+                  value={newClientForm.name}
+                  onChange={handleNewClientChange}
+                  placeholder="Nombre completo"
+                  data-testid="new-client-name"
+                  className="w-full px-3 py-2 text-sm border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-900 text-gray-900 dark:text-white placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-green-500"
+                />
+              </div>
+
+              {/* Email */}
+              <div>
+                <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">
+                  Email <span className="text-red-500">*</span>
+                </label>
+                <div className="relative">
+                  <Mail className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-gray-400" />
+                  <input
+                    type="email"
+                    name="email"
+                    value={newClientForm.email}
+                    onChange={handleNewClientChange}
+                    placeholder="cliente@email.com"
+                    data-testid="new-client-email"
+                    className="w-full pl-9 pr-3 py-2 text-sm border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-900 text-gray-900 dark:text-white placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-green-500"
+                  />
+                </div>
+              </div>
+
+              {/* WhatsApp */}
+              <div>
+                <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">
+                  WhatsApp
+                </label>
+                <div className="relative">
+                  <MessageCircle className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-gray-400" />
+                  <input
+                    type="tel"
+                    name="whatsappNumber"
+                    value={newClientForm.whatsappNumber}
+                    onChange={(e) =>
+                      setNewClientForm((prev) => ({
+                        ...prev,
+                        whatsappNumber: e.target.value,
+                        phone: e.target.value,
+                      }))
+                    }
+                    placeholder="3001234567"
+                    data-testid="new-client-whatsapp"
+                    className="w-full pl-9 pr-3 py-2 text-sm border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-900 text-gray-900 dark:text-white placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-green-500"
+                  />
+                </div>
+              </div>
+
+              {/* Marketing subscription */}
+              <label className="flex items-center gap-3 cursor-pointer">
+                <input
+                  type="checkbox"
+                  checked={newClientForm.isMarketingSubscribed}
+                  onChange={(e) =>
+                    setNewClientForm((prev) => ({
+                      ...prev,
+                      isMarketingSubscribed: e.target.checked,
+                    }))
+                  }
+                  className="w-4 h-4 rounded border-gray-300 text-green-600 focus:ring-green-500"
+                  data-testid="new-client-marketing"
+                />
+                <span className="text-sm text-gray-700 dark:text-gray-300">
+                  Suscribir a comunicaciones de marketing
+                </span>
+              </label>
+
+              {newClientError && (
+                <div className="flex items-center gap-2 text-sm text-red-600 dark:text-red-400 bg-red-50 dark:bg-red-900/20 rounded-lg px-3 py-2">
+                  <AlertCircle className="h-4 w-4 flex-shrink-0" />
+                  {newClientError}
+                </div>
+              )}
+            </div>
+
+            {/* Footer */}
+            <div className="flex gap-3 px-6 py-4 border-t border-gray-200 dark:border-gray-700">
+              <button
+                onClick={() => {
+                  setIsNewClientOpen(false);
+                  setNewClientError(null);
+                }}
+                className="flex-1 px-4 py-2 text-sm font-medium text-gray-700 dark:text-gray-300 bg-gray-100 dark:bg-gray-700 rounded-lg hover:bg-gray-200 dark:hover:bg-gray-600 transition-colors"
+              >
+                Cancelar
+              </button>
+              <button
+                onClick={handleCreateClient}
+                disabled={newClientSaving}
+                data-testid="new-client-submit"
+                className="flex-1 px-4 py-2 text-sm font-medium text-white bg-green-600 rounded-lg hover:bg-green-700 disabled:opacity-50 transition-colors flex items-center justify-center gap-2"
+              >
+                {newClientSaving ? (
+                  <Loader2 className="h-4 w-4 animate-spin" />
+                ) : (
+                  <UserPlus className="h-4 w-4" />
+                )}
+                {newClientSaving ? 'Guardando...' : 'Agregar Cliente'}
+              </button>
+            </div>
           </div>
         </div>
       )}

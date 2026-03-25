@@ -23,7 +23,7 @@ export default function Store() {
                 alt=""
               />
 
-              <h5 className="font-semibold text-xl leading-normal my-4">EmprendyUp, U.S.A.</h5>
+              <h5 className="font-semibold text-xl leading-normal my-4">Emprendy.ai, U.S.A.</h5>
 
               <p className="text-slate-400">
                 268 St, South New York/NY 98944, <br /> United States
@@ -61,7 +61,7 @@ export default function Store() {
                 alt=""
               />
 
-              <h5 className="font-semibold text-xl leading-normal my-4">EmprendyUp, U.S.A.</h5>
+              <h5 className="font-semibold text-xl leading-normal my-4">Emprendy.ai, U.S.A.</h5>
 
               <p className="text-slate-400">
                 268 St, South New York/NY 98944, <br /> United States
@@ -99,7 +99,7 @@ export default function Store() {
                 alt=""
               />
 
-              <h5 className="font-semibold text-xl leading-normal my-4">EmprendyUp, U.S.A.</h5>
+              <h5 className="font-semibold text-xl leading-normal my-4">Emprendy.ai, U.S.A.</h5>
 
               <p className="text-slate-400">
                 268 St, South New York/NY 98944, <br /> United States

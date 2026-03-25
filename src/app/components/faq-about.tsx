@@ -12,7 +12,7 @@ export default function FaqAbout() {
           </h3>
 
           <p className="text-slate-400 max-w-xl mx-auto">
-            Con EmprendyUp, tienes acceso a una amplia gama de recursos y soporte para ayudarte a
+            Con Emprendy.ai, tienes acceso a una amplia gama de recursos y soporte para ayudarte a
             resolver cualquier duda o problema que puedas tener. Desde preguntas frecuentes hasta
             asistencia personalizada, estamos aquí para asegurarnos de que tu experiencia sea lo más
             fluida posible.

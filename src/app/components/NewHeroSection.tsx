@@ -43,7 +43,7 @@ const NewHeroSection = () => {
       <section
         className="relative isolate text-white"
         style={{ minHeight: '70vh' }}
-        aria-label="Sección principal de EmprendyUp"
+        aria-label="Sección principal de Emprendy.ai"
       >
         {/* Background */}
         <div

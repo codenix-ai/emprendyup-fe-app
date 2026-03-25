@@ -1,6 +1,8 @@
-/* eslint-disable @typescript-eslint/no-unused-vars, no-console */
+/* eslint-disable @typescript-eslint/no-unused-vars, no-unused-vars, no-console */
 'use client';
 import React, { useState, useEffect, useRef } from 'react';
+import { motion, AnimatePresence } from 'framer-motion';
+import { Barlow_Condensed, Outfit } from 'next/font/google';
 import {
   Send,
   Palette,
@@ -13,9 +15,242 @@ import {
   Twitter,
   Youtube,
   MessageSquare,
-  Bot,
   User,
+  ShoppingBag,
+  UtensilsCrossed,
+  Briefcase,
+  ChevronRight,
 } from 'lucide-react';
+
+const barlowCondensed = Barlow_Condensed({
+  subsets: ['latin'],
+  weight: ['400', '600', '700', '800'],
+  variable: '--font-barlow',
+});
+const outfit = Outfit({
+  subsets: ['latin'],
+  weight: ['300', '400', '500', '600'],
+  variable: '--font-outfit',
+});
+
+type AvatarState = 'idle' | 'talking' | 'thinking' | 'happy';
+
+function AvatarLuna({ state, accent }: { state: AvatarState; accent: string }) {
+  return (
+    <div className="relative flex items-center justify-center">
+      {/* Outer ambient glow */}
+      <motion.div
+        className="absolute rounded-full"
+        style={{
+          width: 120,
+          height: 120,
+          background: `radial-gradient(circle, ${accent}22 0%, transparent 70%)`,
+        }}
+        animate={{ scale: [1, 1.15, 1], opacity: [0.6, 1, 0.6] }}
+        transition={{ duration: 3, repeat: Infinity, ease: 'easeInOut' }}
+      />
+
+      {/* Rotating ring — thinking */}
+      {state === 'thinking' && (
+        <motion.div
+          className="absolute rounded-full border-2 border-transparent"
+          style={{
+            width: 100,
+            height: 100,
+            borderTopColor: accent,
+            borderRightColor: accent + '44',
+          }}
+          animate={{ rotate: 360 }}
+          transition={{ duration: 1.2, repeat: Infinity, ease: 'linear' }}
+        />
+      )}
+
+      {/* Pulse ring — talking */}
+      {state === 'talking' && (
+        <motion.div
+          className="absolute rounded-full border"
+          style={{ width: 100, height: 100, borderColor: accent }}
+          animate={{ scale: [1, 1.25, 1], opacity: [0.8, 0, 0.8] }}
+          transition={{ duration: 1.2, repeat: Infinity, ease: 'easeOut' }}
+        />
+      )}
+
+      {/* Idle steady ring */}
+      {(state === 'idle' || state === 'happy') && (
+        <motion.div
+          className="absolute rounded-full border"
+          style={{ width: 96, height: 96, borderColor: accent + '55' }}
+          animate={state === 'happy' ? { scale: [1, 1.18, 1], opacity: [1, 0.3, 1] } : {}}
+          transition={{ duration: 0.7, repeat: state === 'happy' ? 3 : 0 }}
+        />
+      )}
+
+      {/* Face circle */}
+      <div
+        className="relative w-20 h-20 rounded-full flex items-center justify-center overflow-hidden z-10"
+        style={{
+          background: 'linear-gradient(145deg, #1a1d2e, #0d0f1a)',
+          boxShadow: `0 0 24px ${accent}33, inset 0 1px 0 ${accent}22`,
+        }}
+      >
+        <svg viewBox="0 0 60 60" className="w-14 h-14">
+          {/* Eyebrows — thinking */}
+          {state === 'thinking' && (
+            <>
+              <motion.line
+                x1="14"
+                y1="18"
+                x2="24"
+                y2="16"
+                stroke={accent}
+                strokeWidth="2"
+                strokeLinecap="round"
+                animate={{ y1: [18, 16, 18], y2: [16, 14, 16] }}
+                transition={{ duration: 1.5, repeat: Infinity }}
+              />
+              <motion.line
+                x1="36"
+                y1="16"
+                x2="46"
+                y2="18"
+                stroke={accent}
+                strokeWidth="2"
+                strokeLinecap="round"
+                animate={{ y1: [16, 14, 16], y2: [18, 16, 18] }}
+                transition={{ duration: 1.5, repeat: Infinity }}
+              />
+            </>
+          )}
+
+          {/* Left eye */}
+          <motion.ellipse
+            cx="20"
+            cy="25"
+            rx="4"
+            ry="4"
+            fill={accent}
+            animate={
+              state === 'idle' || state === 'happy'
+                ? { ry: [4, 4, 0.4, 4, 4] }
+                : state === 'thinking'
+                  ? { cx: [20, 21, 20] }
+                  : {}
+            }
+            transition={
+              state === 'idle' || state === 'happy'
+                ? { duration: 4, repeat: Infinity, delay: 1, times: [0, 0.4, 0.5, 0.6, 1] }
+                : { duration: 1.5, repeat: Infinity }
+            }
+          />
+
+          {/* Right eye */}
+          <motion.ellipse
+            cx="40"
+            cy="25"
+            rx="4"
+            ry="4"
+            fill={accent}
+            animate={
+              state === 'idle' || state === 'happy'
+                ? { ry: [4, 4, 0.4, 4, 4] }
+                : state === 'thinking'
+                  ? { cx: [40, 41, 40] }
+                  : {}
+            }
+            transition={
+              state === 'idle' || state === 'happy'
+                ? { duration: 4, repeat: Infinity, delay: 1, times: [0, 0.4, 0.5, 0.6, 1] }
+                : { duration: 1.5, repeat: Infinity }
+            }
+          />
+
+          {/* Mouth */}
+          {state === 'happy' ? (
+            <motion.path
+              d="M16 38 Q30 50 44 38"
+              stroke={accent}
+              strokeWidth="2.5"
+              fill="none"
+              strokeLinecap="round"
+              initial={{ pathLength: 0 }}
+              animate={{ pathLength: 1 }}
+              transition={{ duration: 0.5 }}
+            />
+          ) : state === 'thinking' ? (
+            <motion.line
+              x1="22"
+              y1="42"
+              x2="38"
+              y2="42"
+              stroke={accent}
+              strokeWidth="2.5"
+              strokeLinecap="round"
+              animate={{ x1: [22, 24, 22], x2: [38, 36, 38] }}
+              transition={{ duration: 2, repeat: Infinity }}
+            />
+          ) : state === 'talking' ? (
+            <motion.path
+              d="M20 40 Q30 47 40 40"
+              stroke={accent}
+              strokeWidth="2.5"
+              fill="none"
+              strokeLinecap="round"
+              animate={{ d: ['M20 40 Q30 47 40 40', 'M20 40 Q30 44 40 40', 'M20 40 Q30 47 40 40'] }}
+              transition={{ duration: 0.4, repeat: Infinity }}
+            />
+          ) : (
+            <path
+              d="M21 40 Q30 46 39 40"
+              stroke={accent}
+              strokeWidth="2.5"
+              fill="none"
+              strokeLinecap="round"
+            />
+          )}
+
+          {/* Sparkle dots for happy */}
+          {state === 'happy' && (
+            <>
+              <motion.circle
+                cx="10"
+                cy="12"
+                r="2"
+                fill="#FFD233"
+                initial={{ scale: 0, opacity: 0 }}
+                animate={{ scale: [0, 1.5, 0], opacity: [0, 1, 0] }}
+                transition={{ duration: 0.8, delay: 0.3, repeat: 3 }}
+              />
+              <motion.circle
+                cx="50"
+                cy="12"
+                r="2"
+                fill="#FFD233"
+                initial={{ scale: 0, opacity: 0 }}
+                animate={{ scale: [0, 1.5, 0], opacity: [0, 1, 0] }}
+                transition={{ duration: 0.8, delay: 0.5, repeat: 3 }}
+              />
+            </>
+          )}
+        </svg>
+
+        {/* Sound wave bars for talking */}
+        {state === 'talking' && (
+          <div className="absolute bottom-1 flex items-end gap-0.5">
+            {[0.6, 1, 0.7, 1.2, 0.8].map((h, i) => (
+              <motion.div
+                key={i}
+                className="w-1 rounded-full"
+                style={{ background: accent }}
+                animate={{ height: [3, h * 8, 3] }}
+                transition={{ duration: 0.4, repeat: Infinity, delay: i * 0.08 }}
+              />
+            ))}
+          </div>
+        )}
+      </div>
+    </div>
+  );
+}
 import FileUpload from './FileUpload';
 import { gql, useMutation } from '@apollo/client';
 import { useSessionStore } from '@/lib/store/dashboard';
@@ -581,31 +816,33 @@ const defaultStoreData: StoreData = {
   googleLocation: '',
 };
 
-// eslint-disable-next-line @typescript-eslint/no-unused-vars
+// eslint-disable-next-line @typescript-eslint/no-unused-vars, no-unused-vars
 // @ts-ignore - suppress unused parameter-name warning in the function type annotation
-function ColorPicker({ value, onChange }: { value: string; onChange: (color: string) => void }) {
+function ColorPicker({ value, onChange }: { value: string; onChange: (_color: string) => void }) {
   const presetColors = [
-    '#3B82F6',
+    '#F04E23',
     '#EF4444',
     '#10B981',
     '#F59E0B',
     '#8B5CF6',
     '#EC4899',
-    '#6B7280',
-    '#1F2937',
+    '#00B2FF',
+    '#00B077',
   ];
 
   return (
-    <div className="mt-2 space-y-3">
+    <div className="mt-3 space-y-3">
       <div className="flex gap-2 flex-wrap">
         {presetColors.map((color) => (
           <button
             key={color}
             onClick={() => onChange(color)}
-            className={`w-8 h-8 rounded-full border-2 transition-transform ${
-              value === color ? 'border-gray-800 scale-110' : 'border-gray-300'
-            }`}
-            style={{ backgroundColor: color }}
+            className="w-8 h-8 rounded-full transition-transform"
+            style={{
+              backgroundColor: color,
+              border: value === color ? `3px solid #fff` : '2px solid rgba(255,255,255,0.15)',
+              transform: value === color ? 'scale(1.18)' : 'scale(1)',
+            }}
           />
         ))}
       </div>
@@ -614,20 +851,25 @@ function ColorPicker({ value, onChange }: { value: string; onChange: (color: str
           type="color"
           value={value}
           onChange={(e) => onChange(e.target.value)}
-          className="w-8 h-8 rounded border"
+          className="w-8 h-8 rounded cursor-pointer"
+          style={{ background: 'transparent', border: '1px solid rgba(255,255,255,0.15)' }}
         />
         <input
           type="text"
           value={value}
           onChange={(e) => onChange(e.target.value)}
-          className="flex-1 px-3 py-1 border rounded text-sm font-mono"
+          className="flex-1 px-3 py-1.5 text-sm font-mono rounded-lg outline-none transition-colors"
+          style={{
+            background: 'rgba(255,255,255,0.05)',
+            border: '1px solid rgba(255,255,255,0.12)',
+            color: '#F0EEE9',
+          }}
           placeholder="#000000"
         />
       </div>
     </div>
   );
 }
-
 // GraphQL mutation to create a store
 const CREATE_STORE = gql`
   mutation CreateStore($input: CreateStoreInput!) {
@@ -723,7 +965,7 @@ function SelectInput({
   onSelect,
 }: {
   options: string[];
-  onSelect: (value: string) => void;
+  onSelect: (_value: string) => void;
 }) {
   return (
     <div className="mt-2 grid grid-cols-2 gap-2">
@@ -731,7 +973,20 @@ function SelectInput({
         <button
           key={option}
           onClick={() => onSelect(option)}
-          className="px-3 py-2 bg-blue-50 hover:bg-blue-100 text-black rounded-lg text-sm transition-colors border hover:border-blue-300"
+          className="px-3 py-2.5 text-[#F0EEE9] text-sm font-medium transition-colors text-left"
+          style={{
+            background: '#13151F',
+            border: '1px solid rgba(255,255,255,0.07)',
+            borderRadius: '8px',
+          }}
+          onMouseEnter={(e) => {
+            (e.currentTarget as HTMLButtonElement).style.background = '#1C1E2A';
+            (e.currentTarget as HTMLButtonElement).style.borderColor = 'rgba(255,255,255,0.2)';
+          }}
+          onMouseLeave={(e) => {
+            (e.currentTarget as HTMLButtonElement).style.background = '#13151F';
+            (e.currentTarget as HTMLButtonElement).style.borderColor = 'rgba(255,255,255,0.07)';
+          }}
         >
           {option}
         </button>
@@ -1584,6 +1839,7 @@ export default function InteractiveChatStore() {
     }
   };
 
+  // eslint-disable-next-line no-unused-vars
   const getMessageIcon = (field?: string) => {
     const iconMap: { [key: string]: React.ReactNode } = {
       email: <Mail className="w-4 h-4" />,
@@ -1603,805 +1859,1132 @@ export default function InteractiveChatStore() {
     };
     return iconMap[field || ''] || null;
   };
+  // Accent color per business type
+  const accent =
+    storeData.businessCategory === 'restaurant'
+      ? '#00B077'
+      : storeData.businessCategory === 'services'
+        ? '#00B2FF'
+        : '#F04E23';
+
+  const avatarState: AvatarState = createdStoreId
+    ? 'happy'
+    : isTyping
+      ? 'thinking'
+      : messages.length > 0 && messages[messages.length - 1]?.from === 'user'
+        ? 'talking'
+        : 'idle';
+
+  const accentColor =
+    storeData.businessCategory === 'restaurant'
+      ? '#00B077'
+      : storeData.businessCategory === 'services'
+        ? '#00B2FF'
+        : '#F04E23';
+
+  const stepLabels = [
+    'Tipo',
+    'Nombre',
+    'Descripción',
+    'Logo',
+    'Colores',
+    'Contacto',
+    'Redes',
+    'Listo',
+  ];
+
   return (
-    <div className="max-w-4xl mx-auto p-6 bg-slate-900 min-h-screen">
-      <div className="bg-slate-800 rounded-3xl shadow-2xl overflow-hidden">
-        {/* Header with progress */}
-        <div className="bg-gradient-to-r from-indigo-900 to-slate-800 p-6 text-white">
-          <h1 className="text-2xl font-bold mb-2 text-white">Asistente creacion emprendimiento</h1>
-          <div className="w-full bg-slate-700 rounded-full h-2 mb-2">
-            <div
-              className="bg-indigo-500 h-2 rounded-full transition-all duration-500 ease-out"
-              style={{ width: `${progress}%` }}
-            />
-          </div>
-          <p className="text-sm text-slate-300">
-            {questions.length > 0
-              ? `Paso ${currentStep + 1} de ${questions.length} • ${Math.round(progress)}% completado`
-              : 'Selecciona el tipo de emprendimiento para comenzar'}
-          </p>
-        </div>
-        {/* Chat Area */}
-        <div ref={chatRef} className="h-96 overflow-y-auto p-6 space-y-4 bg-slate-800">
-          {messages.map((msg, idx) => (
-            <div
-              key={idx}
-              className={`flex ${msg.from === 'user' ? 'justify-end items-end' : 'justify-start items-start'}`}
+    <div
+      className={`${barlowCondensed.variable} ${outfit.variable} min-h-screen bg-[#0B0C11] flex flex-col`}
+      style={{ fontFamily: 'var(--font-outfit)' }}
+    >
+      {/* Ambient radial glow */}
+      <div
+        className="fixed inset-0 pointer-events-none"
+        style={{
+          background: `radial-gradient(ellipse 80% 40% at 50% 0%, ${accentColor}12 0%, transparent 70%)`,
+        }}
+      />
+
+      {/* Top progress bar */}
+      <div className="fixed top-0 left-0 right-0 h-[2px] bg-white/[0.05] z-50">
+        <motion.div
+          className="h-full"
+          style={{ background: `linear-gradient(90deg, ${accentColor}, ${accentColor}88)` }}
+          animate={{ width: `${Math.max(progress, 2)}%` }}
+          transition={{ duration: 0.5, ease: 'easeOut' }}
+        />
+      </div>
+
+      {/* Main 2-panel layout */}
+      <div className="relative z-10 flex flex-1 h-screen overflow-hidden pt-[2px]">
+        {/* ── LEFT: Avatar sidebar ── */}
+        <div
+          className="hidden md:flex w-72 xl:w-80 flex-shrink-0 flex-col items-center py-10 px-6 gap-6 overflow-y-auto border-r"
+          style={{ background: '#0D0F18', borderColor: 'rgba(255,255,255,0.06)' }}
+        >
+          {/* Brand label */}
+          <div className="w-full">
+            <p
+              className="text-[10px] tracking-[0.3em] uppercase"
+              style={{ color: 'rgba(240,238,233,0.3)', fontFamily: 'var(--font-outfit)' }}
             >
-              {/* For bot messages: avatar on the left, then bubble. For user messages: bubble first, then avatar on the right */}
+              EmprendyUp
+            </p>
+          </div>
 
-              {msg.from === 'bot' && (
-                <div className="flex-shrink-0 mr-3">
-                  <div className="w-8 h-8 bg-gradient-to-r from-indigo-500 to-purple-500 rounded-full flex items-center justify-center">
-                    <Bot className="w-4 h-4 text-white" />
-                  </div>
-                </div>
-              )}
+          {/* Luna Avatar */}
+          <AvatarLuna state={avatarState} accent={accentColor} />
 
-              <div
-                className={`max-w-md p-4 rounded-2xl shadow-sm transform transition-all duration-300 hover:scale-[1.02] ${
-                  msg.from === 'bot'
-                    ? 'bg-slate-700 border-l-4 border-indigo-500 text-slate-200 animate-slide-in-left'
-                    : 'bg-gradient-to-r from-blue-500 to-indigo-500 text-white animate-slide-in-right'
-                }`}
+          {/* Name + status */}
+          <div className="flex flex-col items-center gap-1 -mt-2">
+            <span
+              className="text-lg font-bold tracking-wide"
+              style={{ fontFamily: 'var(--font-barlow)', color: accentColor }}
+            >
+              Luna
+            </span>
+            <span
+              className="text-[11px] tracking-widest uppercase"
+              style={{ color: 'rgba(240,238,233,0.35)', fontFamily: 'var(--font-outfit)' }}
+            >
+              {avatarState === 'talking'
+                ? 'Escribiendo...'
+                : avatarState === 'thinking'
+                  ? 'Pensando...'
+                  : avatarState === 'happy'
+                    ? '¡Listo!'
+                    : 'Tu asistente'}
+            </span>
+          </div>
+
+          {/* Divider */}
+          <div className="w-full h-px" style={{ background: 'rgba(255,255,255,0.06)' }} />
+
+          {/* Progress steps */}
+          {selectedBusinessType && questions.length > 0 && (
+            <div className="w-full space-y-2">
+              <p
+                className="text-[10px] tracking-[0.2em] uppercase mb-3"
+                style={{ color: 'rgba(240,238,233,0.28)', fontFamily: 'var(--font-outfit)' }}
               >
-                {msg.from === 'bot' && (
-                  <div className="flex items-center gap-2 mb-2">
-                    {getMessageIcon(msg.field)}
-                    <div className="w-2 h-2 bg-green-500 rounded-full animate-pulse" />
+                Progreso
+              </p>
+              {stepLabels.map((label, i) => {
+                const isDone = i < currentStep;
+                const isActive = i === currentStep && currentStep < questions.length;
+                return (
+                  <div key={i} className="flex items-center gap-3">
+                    <div
+                      className="w-5 h-5 rounded-full flex items-center justify-center flex-shrink-0 text-[10px] font-bold"
+                      style={{
+                        background: isDone
+                          ? accentColor
+                          : isActive
+                            ? `${accentColor}22`
+                            : 'rgba(255,255,255,0.05)',
+                        border: isActive
+                          ? `1px solid ${accentColor}`
+                          : '1px solid rgba(255,255,255,0.08)',
+                        color: isDone ? '#fff' : isActive ? accentColor : 'rgba(240,238,233,0.3)',
+                      }}
+                    >
+                      {isDone ? '✓' : i + 1}
+                    </div>
+                    <span
+                      className="text-xs font-medium"
+                      style={{
+                        fontFamily: 'var(--font-outfit)',
+                        color: isDone
+                          ? '#F0EEE9'
+                          : isActive
+                            ? accentColor
+                            : 'rgba(240,238,233,0.3)',
+                      }}
+                    >
+                      {label}
+                    </span>
                   </div>
-                )}
-                {renderMessageContent(msg)}
-              </div>
-
-              {msg.from === 'user' && (
-                <div className="flex-shrink-0 ml-3">
-                  <div className="w-8 h-8 bg-gradient-to-r from-blue-500 to-indigo-500 rounded-full flex items-center justify-center">
-                    <User className="w-4 h-4 text-white" />
-                  </div>
-                </div>
-              )}
-            </div>
-          ))}
-
-          {isTyping && (
-            <div className="flex justify-start">
-              {/* Bot Avatar for typing indicator */}
-              <div className="flex-shrink-0 mr-3">
-                <div className="w-8 h-8 bg-gradient-to-r from-indigo-500 to-purple-500 rounded-full flex items-center justify-center">
-                  <Bot className="w-4 h-4 text-white" />
-                </div>
-              </div>
-
-              <div className="bg-slate-700 p-4 rounded-2xl shadow-sm animate-pulse">
-                <div className="flex space-x-1">
-                  <div className="w-2 h-2 bg-indigo-500 rounded-full animate-bounce" />
-                  <div
-                    className="w-2 h-2 bg-indigo-500 rounded-full animate-bounce"
-                    style={{ animationDelay: '0.1s' }}
-                  />
-                  <div
-                    className="w-2 h-2 bg-indigo-500 rounded-full animate-bounce"
-                    style={{ animationDelay: '0.2s' }}
-                  />
-                </div>
-              </div>
+                );
+              })}
             </div>
           )}
-          <div ref={bottomRef} />
+
+          {/* Business type badge */}
+          {selectedBusinessType && (
+            <div
+              className="px-3 py-1.5 text-xs font-semibold tracking-wide mt-auto rounded"
+              style={{
+                fontFamily: 'var(--font-outfit)',
+                background: `${accentColor}15`,
+                color: accentColor,
+                border: `1px solid ${accentColor}33`,
+              }}
+            >
+              {selectedBusinessType}
+            </div>
+          )}
         </div>
 
-        {/* Campo de edición de descripción con diseño mejorado */}
-        {showDescriptionEdit && tempDescription && (
-          <div className="px-6 py-4 bg-gradient-to-br from-slate-800 to-slate-900 border-t border-slate-700 shadow-inner">
-            <div className="space-y-3">
-              <div className="flex items-center gap-2 mb-2">
-                <span className="text-lg">✨</span>
-                <label className="text-sm font-medium text-slate-300">
-                  Descripción generada por IA
-                </label>
-              </div>
-              <div className="relative">
-                <textarea
-                  value={tempDescription}
-                  onChange={(e) => setTempDescription(e.target.value)}
-                  rows={4}
-                  className="w-full px-4 py-3 bg-slate-700/50 text-white border-2 border-slate-600 rounded-xl focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500 resize-none transition-all duration-200 placeholder-slate-400 shadow-sm hover:border-slate-500"
-                  placeholder="Edita la descripción aquí..."
-                />
-                <div className="absolute bottom-2 right-2 text-xs text-slate-500">
-                  {tempDescription.length} caracteres
-                </div>
-              </div>
-              <div className="flex items-center justify-between pt-2">
-                <p className="text-xs text-slate-400 flex items-center gap-1">
-                  <span>💡</span>
-                  Puedes modificar el texto antes de continuar
-                </p>
-                <div className="flex gap-2">
-                  <button
-                    onClick={() => {
-                      setStoreData((prev) => ({
-                        ...prev,
-                        description: tempDescription,
-                      }));
-                      setShowDescriptionEdit(false);
-                      setMessages((prev) => [
-                        ...prev,
-                        {
-                          from: 'user',
-                          text: `📝 ${tempDescription}`,
-                          type: 'text',
-                        },
-                      ]);
-                      setTempDescription('');
-                      // Avanzar al siguiente paso
-                      if (currentStep + 1 < questions.length) {
-                        setCurrentStep((prev) => prev + 1);
-                        addBotMessage(currentStep + 1);
-                      } else {
-                        setCurrentStep(questions.length);
-                      }
-                    }}
-                    className="px-4 py-2 text-sm font-medium bg-gradient-to-r from-green-600 to-green-700 text-white rounded-lg hover:from-green-700 hover:to-green-800 transition-all duration-200 transform hover:scale-105 shadow-md flex items-center gap-1"
-                  >
-                    <span>✅</span>
-                    Confirmar
-                  </button>
-                </div>
-              </div>
+        {/* ── RIGHT: Chat panel ── */}
+        <div className="flex-1 flex flex-col min-w-0 overflow-hidden">
+          {/* Chat header */}
+          <div
+            className="px-6 py-4 flex items-center justify-between flex-shrink-0"
+            style={{ borderBottom: '1px solid rgba(255,255,255,0.06)' }}
+          >
+            <div>
+              <h1
+                className="font-black leading-none"
+                style={{
+                  fontFamily: 'var(--font-barlow)',
+                  fontSize: 'clamp(1.1rem, 2.5vw, 1.6rem)',
+                  letterSpacing: '-0.02em',
+                  color: '#F0EEE9',
+                }}
+              >
+                Crea tu <span style={{ color: accentColor }}>emprendimiento</span>
+              </h1>
+              <p
+                className="text-[11px] mt-0.5"
+                style={{ fontFamily: 'var(--font-outfit)', color: 'rgba(240,238,233,0.35)' }}
+              >
+                {questions.length > 0
+                  ? `Paso ${Math.min(currentStep + 1, questions.length)} de ${questions.length}`
+                  : 'Selecciona el tipo de emprendimiento'}
+              </p>
             </div>
-          </div>
-        )}
 
-        {/* Specialties Selector */}
-        {showSpecialtiesSelector && (
-          <div className="p-6 bg-gradient-to-br from-slate-800 to-slate-900 border-t border-slate-700">
-            <div className="max-w-2xl mx-auto">
-              <div className="mb-4">
-                <h3 className="text-lg font-semibold text-white flex items-center gap-2">
-                  <span>✨</span>
-                  Selecciona tus especialidades
-                </h3>
-                <p className="text-sm text-slate-400 mt-1">
-                  Elige al menos 3 especialidades para generar una mejor descripción
-                </p>
-              </div>
-
-              <div className="grid grid-cols-2 sm:grid-cols-3 gap-2 mb-4">
-                {availableSpecialties.map((specialty) => (
-                  <button
-                    key={specialty}
-                    onClick={() => {
-                      setSelectedSpecialties((prev) =>
-                        prev.includes(specialty)
-                          ? prev.filter((s) => s !== specialty)
-                          : [...prev, specialty]
-                      );
+            {/* Step pills (mobile / compact) */}
+            {questions.length > 0 && (
+              <div className="flex items-center gap-1">
+                {questions.map((_, i) => (
+                  <motion.div
+                    key={i}
+                    className="rounded-full"
+                    style={{
+                      height: 3,
+                      background:
+                        i < currentStep
+                          ? accentColor
+                          : i === currentStep
+                            ? accentColor
+                            : 'rgba(255,255,255,0.12)',
                     }}
-                    className={`px-4 py-3 rounded-lg font-medium transition-all duration-200 transform hover:scale-105 ${
-                      selectedSpecialties.includes(specialty)
-                        ? 'bg-gradient-to-r from-green-600 to-green-700 text-white shadow-lg'
-                        : 'bg-slate-700 text-slate-300 hover:bg-slate-600'
-                    }`}
-                  >
-                    {selectedSpecialties.includes(specialty) && <span className="mr-1">✓</span>}
-                    {specialty}
-                  </button>
+                    animate={{ width: i === currentStep ? 20 : 6 }}
+                    transition={{ duration: 0.3 }}
+                  />
                 ))}
               </div>
+            )}
+          </div>
 
-              <div className="flex items-center justify-between gap-3">
-                <p className="text-sm text-slate-400">
-                  {selectedSpecialties.length} seleccionada
-                  {selectedSpecialties.length !== 1 ? 's' : ''}
-                </p>
-                <div className="flex gap-2">
-                  <button
-                    onClick={() => {
-                      setShowSpecialtiesSelector(false);
-                      setSelectedSpecialties([]);
-                      // Avanzar sin especialidades
-                      if (currentStep + 1 < questions.length) {
-                        setCurrentStep((prev) => prev + 1);
-                        addBotMessage(currentStep + 1);
-                      }
+          {/* Messages area */}
+          <div ref={chatRef} className="flex-1 overflow-y-auto p-6 space-y-5">
+            <AnimatePresence initial={false}>
+              {messages.map((msg, idx) => (
+                <motion.div
+                  key={idx}
+                  initial={{ opacity: 0, y: 12 }}
+                  animate={{ opacity: 1, y: 0 }}
+                  transition={{ duration: 0.3, ease: [0.22, 1, 0.36, 1] }}
+                  className={`flex ${msg.from === 'user' ? 'justify-end' : 'justify-start'} items-end gap-3`}
+                >
+                  {/* Bot micro-avatar */}
+                  {msg.from === 'bot' && (
+                    <div
+                      className="w-8 h-8 rounded-full flex-shrink-0 flex items-center justify-center text-xs font-bold flex-none"
+                      style={{
+                        background: `${accentColor}20`,
+                        border: `1px solid ${accentColor}40`,
+                        color: accentColor,
+                        fontFamily: 'var(--font-barlow)',
+                      }}
+                    >
+                      L
+                    </div>
+                  )}
+
+                  {/* Message bubble */}
+                  <div
+                    className="max-w-[80%]"
+                    style={{
+                      background: msg.from === 'bot' ? '#13151F' : accentColor,
+                      border: msg.from === 'bot' ? '1px solid rgba(255,255,255,0.07)' : 'none',
+                      borderRadius: msg.from === 'bot' ? '0 16px 16px 16px' : '16px 0 16px 16px',
+                      padding: '12px 16px',
+                      color: msg.from === 'bot' ? '#F0EEE9' : '#fff',
+                      fontFamily: 'var(--font-outfit)',
+                      fontSize: '14px',
+                      lineHeight: '1.6',
                     }}
-                    className="px-4 py-2 text-sm font-medium bg-slate-700 text-slate-300 rounded-lg hover:bg-slate-600 transition-all"
                   >
-                    Omitir
-                  </button>
-                  <button
-                    onClick={async () => {
-                      if (selectedSpecialties.length === 0) {
-                        return;
-                      }
+                    {msg.from === 'bot' && msg.field && (
+                      <div className="flex items-center gap-1.5 mb-1.5">
+                        {getMessageIcon(msg.field)}
+                        <div
+                          className="w-1.5 h-1.5 rounded-full animate-pulse"
+                          style={{ background: accentColor }}
+                        />
+                      </div>
+                    )}
 
-                      setShowSpecialtiesSelector(false);
+                    {/* Special businessCategory card rendering */}
+                    {msg.field === 'businessCategory' && !selectedBusinessType ? (
+                      <div>
+                        <p className="mb-3 text-white/80">{msg.text}</p>
+                        <div className="space-y-2">
+                          {[
+                            {
+                              label: 'Productos',
+                              icon: ShoppingBag,
+                              color: '#F04E23',
+                              desc: 'Tienda online de productos físicos o digitales',
+                            },
+                            {
+                              label: 'Restaurante',
+                              icon: UtensilsCrossed,
+                              color: '#00B077',
+                              desc: 'Menú digital, pedidos y delivery',
+                            },
+                            {
+                              label: 'Servicios',
+                              icon: Briefcase,
+                              color: '#00B2FF',
+                              desc: 'Agenda, cotizaciones y portafolio',
+                            },
+                          ].map(({ label, icon: Icon, color, desc }) => (
+                            <motion.button
+                              key={label}
+                              whileHover={{ scale: 1.02 }}
+                              whileTap={{ scale: 0.98 }}
+                              onClick={() => handleResponse(label)}
+                              className="w-full flex items-center gap-4 p-4 cursor-pointer text-left rounded-xl"
+                              style={{
+                                background: `${color}10`,
+                                border: `1px solid ${color}30`,
+                              }}
+                            >
+                              <div
+                                className="w-10 h-10 rounded-lg flex items-center justify-center flex-shrink-0"
+                                style={{ background: `${color}20` }}
+                              >
+                                <Icon className="w-5 h-5" style={{ color }} />
+                              </div>
+                              <div className="flex-1 min-w-0">
+                                <div
+                                  className="font-bold text-white text-base"
+                                  style={{ fontFamily: 'var(--font-barlow)' }}
+                                >
+                                  {label}
+                                </div>
+                                <div className="text-xs text-white/40 truncate">{desc}</div>
+                              </div>
+                              <ChevronRight className="w-4 h-4 opacity-30" style={{ color }} />
+                            </motion.button>
+                          ))}
+                        </div>
+                      </div>
+                    ) : (
+                      renderMessageContent(msg)
+                    )}
+                  </div>
 
-                      // Generar descripción con IA
-                      const isRestaurant = storeData.businessCategory === 'restaurant';
-                      try {
-                        if (!storeData.city || String(storeData.city).trim() === '') {
-                          // Require explicit city selection before sending payload
-                          alert('Por favor selecciona la ciudad antes de continuar.');
-                          return;
-                        }
-                        setIsTyping(true);
-                        const requestBody = {
-                          name: storeData.name,
-                          type: isRestaurant ? 'restaurant' : 'service',
-                          category: isRestaurant ? storeData.cuisineType : storeData.businessType,
-                          city: String(storeData.city).trim(),
-                          specialties: selectedSpecialties,
-                          tone: isRestaurant ? 'elegant' : 'professional',
-                          language: 'es',
-                        };
+                  {/* User avatar */}
+                  {msg.from === 'user' && (
+                    <div
+                      className="w-8 h-8 rounded-full flex-shrink-0 flex items-center justify-center text-xs font-bold text-white/60 flex-none"
+                      style={{
+                        background: 'rgba(255,255,255,0.1)',
+                        border: '1px solid rgba(255,255,255,0.15)',
+                      }}
+                    >
+                      Tú
+                    </div>
+                  )}
+                </motion.div>
+              ))}
+            </AnimatePresence>
 
-                        const apiUrl = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:4000';
+            {/* Typing indicator */}
+            {isTyping && (
+              <motion.div
+                initial={{ opacity: 0, y: 8 }}
+                animate={{ opacity: 1, y: 0 }}
+                className="flex items-end gap-3"
+              >
+                <div
+                  className="w-8 h-8 rounded-full flex-shrink-0 flex items-center justify-center text-xs font-bold"
+                  style={{
+                    background: `${accentColor}20`,
+                    border: `1px solid ${accentColor}40`,
+                    color: accentColor,
+                    fontFamily: 'var(--font-barlow)',
+                  }}
+                >
+                  L
+                </div>
+                <div
+                  className="px-4 py-3"
+                  style={{
+                    background: '#13151F',
+                    border: '1px solid rgba(255,255,255,0.07)',
+                    borderRadius: '0 16px 16px 16px',
+                  }}
+                >
+                  <div className="flex items-end gap-1.5 h-5">
+                    {[0, 1, 2].map((i) => (
+                      <motion.div
+                        key={i}
+                        className="w-1.5 rounded-full"
+                        style={{ background: accentColor }}
+                        animate={{ height: [4, 10, 4], opacity: [0.4, 1, 0.4] }}
+                        transition={{ duration: 0.6, repeat: Infinity, delay: i * 0.12 }}
+                      />
+                    ))}
+                  </div>
+                </div>
+              </motion.div>
+            )}
 
-                        const response = await fetch(`${apiUrl}/ai/description/generate`, {
-                          method: 'POST',
-                          headers: {
-                            'Content-Type': 'application/json',
-                          },
-                          body: JSON.stringify(requestBody),
-                        });
-
-                        // 200 OK o 201 Created son válidos
-                        if (response.ok || response.status === 201) {
-                          const result = await response.json();
-                          if (result.data.description) {
-                            setTempDescription(result.data.description);
-                            setIsTyping(false);
-                            setShowDescriptionEdit(true);
+            {/* Description edit panel */}
+            {showDescriptionEdit && tempDescription && (
+              <div
+                className="rounded-2xl overflow-hidden"
+                style={{ background: '#13151F', border: '1px solid rgba(255,255,255,0.07)' }}
+              >
+                <div className="px-5 py-4">
+                  <div className="space-y-3">
+                    <div className="flex items-center gap-2">
+                      <span className="text-base">✨</span>
+                      <label
+                        className="text-sm font-medium"
+                        style={{ color: accentColor, fontFamily: 'var(--font-outfit)' }}
+                      >
+                        Descripción generada por IA
+                      </label>
+                    </div>
+                    <div className="relative">
+                      <textarea
+                        value={tempDescription}
+                        onChange={(e) => setTempDescription(e.target.value)}
+                        rows={4}
+                        className="w-full px-4 py-3 rounded-xl resize-none text-sm outline-none"
+                        style={{
+                          background: 'rgba(255,255,255,0.04)',
+                          border: `1px solid ${accentColor}33`,
+                          color: '#F0EEE9',
+                          fontFamily: 'var(--font-outfit)',
+                        }}
+                        placeholder="Edita la descripción aquí..."
+                      />
+                      <div
+                        className="absolute bottom-3 right-3 text-xs"
+                        style={{ color: 'rgba(240,238,233,0.3)' }}
+                      >
+                        {tempDescription.length} chars
+                      </div>
+                    </div>
+                    <div className="flex items-center justify-between pt-1">
+                      <p
+                        className="text-xs flex items-center gap-1"
+                        style={{ color: 'rgba(240,238,233,0.3)', fontFamily: 'var(--font-outfit)' }}
+                      >
+                        <span>💡</span> Puedes modificar el texto antes de continuar
+                      </p>
+                      <button
+                        onClick={() => {
+                          setStoreData((prev) => ({ ...prev, description: tempDescription }));
+                          setShowDescriptionEdit(false);
+                          setMessages((prev) => [
+                            ...prev,
+                            { from: 'user', text: `📝 ${tempDescription}`, type: 'text' },
+                          ]);
+                          setTempDescription('');
+                          if (currentStep + 1 < questions.length) {
+                            setCurrentStep((prev) => prev + 1);
+                            addBotMessage(currentStep + 1);
                           } else {
-                            console.warn('⚠️ No se encontró description en la respuesta:', result);
-                            // Intentar de todas formas mostrar el editor con mensaje de error
+                            setCurrentStep(questions.length);
+                          }
+                        }}
+                        className="px-4 py-2 text-sm font-semibold rounded-lg transition-all hover:opacity-90 flex items-center gap-1"
+                        style={{
+                          background: accentColor,
+                          color: '#fff',
+                          fontFamily: 'var(--font-outfit)',
+                        }}
+                      >
+                        ✅ Confirmar
+                      </button>
+                    </div>
+                  </div>
+                </div>
+              </div>
+            )}
+
+            {/* Specialties Selector */}
+            {showSpecialtiesSelector && (
+              <div
+                className="rounded-2xl overflow-hidden"
+                style={{ background: '#13151F', border: '1px solid rgba(255,255,255,0.07)' }}
+              >
+                <div className="px-5 py-4">
+                  <div className="mb-3">
+                    <h3
+                      className="text-base font-semibold text-white flex items-center gap-2"
+                      style={{ fontFamily: 'var(--font-outfit)' }}
+                    >
+                      <span>✨</span> Selecciona tus especialidades
+                    </h3>
+                    <p
+                      className="text-xs mt-0.5"
+                      style={{ color: 'rgba(240,238,233,0.4)', fontFamily: 'var(--font-outfit)' }}
+                    >
+                      Elige al menos 3 para generar una mejor descripción
+                    </p>
+                  </div>
+                  <div className="grid grid-cols-2 sm:grid-cols-3 gap-2 mb-4">
+                    {availableSpecialties.map((specialty) => (
+                      <button
+                        key={specialty}
+                        onClick={() => {
+                          setSelectedSpecialties((prev) =>
+                            prev.includes(specialty)
+                              ? prev.filter((s) => s !== specialty)
+                              : [...prev, specialty]
+                          );
+                        }}
+                        className="px-3 py-2 rounded-lg text-xs font-medium transition-all hover:scale-[1.03] text-left"
+                        style={
+                          selectedSpecialties.includes(specialty)
+                            ? { background: accentColor, color: '#fff' }
+                            : {
+                                background: 'rgba(255,255,255,0.05)',
+                                color: 'rgba(240,238,233,0.6)',
+                                border: '1px solid rgba(255,255,255,0.08)',
+                              }
+                        }
+                      >
+                        {selectedSpecialties.includes(specialty) && <span className="mr-1">✓</span>}
+                        {specialty}
+                      </button>
+                    ))}
+                  </div>
+                  <div className="flex items-center justify-between gap-3">
+                    <p
+                      className="text-xs"
+                      style={{ color: 'rgba(240,238,233,0.3)', fontFamily: 'var(--font-outfit)' }}
+                    >
+                      {selectedSpecialties.length} seleccionada
+                      {selectedSpecialties.length !== 1 ? 's' : ''}
+                    </p>
+                    <div className="flex gap-2">
+                      <button
+                        onClick={() => {
+                          setShowSpecialtiesSelector(false);
+                          setSelectedSpecialties([]);
+                          if (currentStep + 1 < questions.length) {
+                            setCurrentStep((prev) => prev + 1);
+                            addBotMessage(currentStep + 1);
+                          }
+                        }}
+                        className="px-3 py-2 text-xs font-medium rounded-lg transition-all"
+                        style={{
+                          background: 'rgba(255,255,255,0.06)',
+                          color: 'rgba(240,238,233,0.5)',
+                          fontFamily: 'var(--font-outfit)',
+                        }}
+                      >
+                        Omitir
+                      </button>
+                      <button
+                        onClick={async () => {
+                          if (selectedSpecialties.length === 0) return;
+                          setShowSpecialtiesSelector(false);
+                          const isRestaurant = storeData.businessCategory === 'restaurant';
+                          try {
+                            if (!storeData.city || String(storeData.city).trim() === '') {
+                              alert('Por favor selecciona la ciudad antes de continuar.');
+                              return;
+                            }
+                            setIsTyping(true);
+                            const requestBody = {
+                              name: storeData.name,
+                              type: isRestaurant ? 'restaurant' : 'service',
+                              category: isRestaurant
+                                ? storeData.cuisineType
+                                : storeData.businessType,
+                              city: String(storeData.city).trim(),
+                              specialties: selectedSpecialties,
+                              tone: isRestaurant ? 'elegant' : 'professional',
+                              language: 'es',
+                            };
+                            const apiUrl =
+                              process.env.NEXT_PUBLIC_API_URL || 'http://localhost:4000';
+                            const response = await fetch(`${apiUrl}/ai/description/generate`, {
+                              method: 'POST',
+                              headers: { 'Content-Type': 'application/json' },
+                              body: JSON.stringify(requestBody),
+                            });
+                            if (response.ok || response.status === 201) {
+                              const result = await response.json();
+                              if (result.data.description) {
+                                setTempDescription(result.data.description);
+                                setIsTyping(false);
+                                setShowDescriptionEdit(true);
+                              } else {
+                                console.warn(
+                                  '⚠️ No se encontró description en la respuesta:',
+                                  result
+                                );
+                                setTempDescription(
+                                  'No se pudo generar una descripción. Por favor, escribe una manualmente.'
+                                );
+                                setIsTyping(false);
+                                setShowDescriptionEdit(true);
+                              }
+                            } else {
+                              console.error(
+                                '❌ Error en la respuesta:',
+                                response.status,
+                                response.statusText
+                              );
+                              const errorText = await response.text();
+                              console.error('Error details:', errorText);
+                              setTempDescription(
+                                'Hubo un error al generar la descripción. Por favor, escribe una manualmente.'
+                              );
+                              setIsTyping(false);
+                              setShowDescriptionEdit(true);
+                            }
+                          } catch (error) {
+                            console.error('💥 Error generando descripción:', error);
                             setTempDescription(
-                              'No se pudo generar una descripción. Por favor, escribe una manualmente.'
+                              'Error de conexión. Por favor, escribe una descripción manualmente.'
                             );
                             setIsTyping(false);
                             setShowDescriptionEdit(true);
+                          } finally {
+                            setIsTyping(false);
                           }
-                        } else {
-                          console.error(
-                            '❌ Error en la respuesta:',
-                            response.status,
-                            response.statusText
-                          );
-                          const errorText = await response.text();
-                          console.error('Error details:', errorText);
-                          // Mostrar editor con mensaje de error
-                          setTempDescription(
-                            'Hubo un error al generar la descripción. Por favor, escribe una manualmente.'
-                          );
-                          setIsTyping(false);
-                          setShowDescriptionEdit(true);
-                        }
-                      } catch (error) {
-                        console.error('💥 Error generando descripción:', error);
-                        // Mostrar editor con mensaje de error
-                        setTempDescription(
-                          'Error de conexión. Por favor, escribe una descripción manualmente.'
-                        );
-                        setIsTyping(false);
-                        setShowDescriptionEdit(true);
-                      } finally {
-                        setIsTyping(false);
-                      }
-                    }}
-                    disabled={selectedSpecialties.length === 0}
-                    className="px-6 py-2 text-sm font-medium bg-gradient-to-r from-blue-600 to-indigo-600 text-white rounded-lg hover:from-blue-700 hover:to-indigo-700 disabled:opacity-50 disabled:cursor-not-allowed transition-all duration-200 transform hover:scale-105 shadow-md flex items-center gap-2"
-                  >
-                    <span>✨</span>
-                    Generar Descripción
-                  </button>
+                        }}
+                        disabled={selectedSpecialties.length === 0}
+                        className="px-5 py-2 text-xs font-semibold rounded-lg disabled:opacity-40 disabled:cursor-not-allowed transition-all hover:scale-105 flex items-center gap-2"
+                        style={{
+                          background: accentColor,
+                          color: '#fff',
+                          fontFamily: 'var(--font-outfit)',
+                        }}
+                      >
+                        <span>✨</span> Generar Descripción
+                      </button>
+                    </div>
+                  </div>
                 </div>
               </div>
-            </div>
-          </div>
-        )}
+            )}
 
-        {/* Input Area */}
-        {/* Mostrar input cuando estamos en preguntas normales O cuando aún no se ha seleccionado tipo de negocio */}
-        {!showDescriptionEdit &&
-          !showSpecialtiesSelector &&
-          ((questions.length > 0 && currentStep < questions.length) ||
-            (questions.length === 0 && !selectedBusinessType)) &&
-          messages.length > 0 &&
-          messages[messages.length - 1]?.from === 'bot' &&
-          // hide standard text input when address question for restaurants (we render autocomplete inline)
-          !(
-            questions.length > 0 &&
-            questions[currentStep]?.field === 'address' &&
-            storeData.businessCategory === 'restaurant'
-          ) &&
-          !['image', 'color', 'select'].includes(
-            questions.length > 0
-              ? questions[currentStep]?.type
-              : messages[messages.length - 1]?.type
-          ) && (
-            <div className="p-6 bg-slate-800 border-t border-slate-700">
-              {validationError && (
-                <div className="mb-4 p-3 bg-red-900/40 border-l-4 border-red-500 text-red-300 rounded animate-pulse">
-                  <div className="flex items-center gap-2">
-                    <span className="text-red-400">⚠️</span>
-                    {validationError}
-                  </div>
-                  {questions.length > 0 && questions[currentStep]?.validation?.message && (
-                    <p className="text-sm mt-1 text-red-300">
-                      💡 {questions[currentStep]?.validation?.message}
+            {/* Completion / Review area */}
+            {questions.length > 0 && currentStep >= questions.length && (
+              <div className="py-4">
+                {createdStoreId ? (
+                  <motion.div
+                    initial={{ opacity: 0, scale: 0.95 }}
+                    animate={{ opacity: 1, scale: 1 }}
+                    className="text-center space-y-4 py-4"
+                  >
+                    <motion.div
+                      className="w-16 h-16 rounded-full flex items-center justify-center mx-auto"
+                      style={{ background: `${accentColor}22`, border: `2px solid ${accentColor}` }}
+                      animate={{ scale: [1, 1.12, 1] }}
+                      transition={{ duration: 0.6, repeat: 3 }}
+                    >
+                      <span className="text-2xl">✓</span>
+                    </motion.div>
+                    <h2
+                      className="text-xl font-bold text-white"
+                      style={{ fontFamily: 'var(--font-barlow)' }}
+                    >
+                      {storeData.businessCategory === 'restaurant'
+                        ? '¡Tu restaurante ha sido creado!'
+                        : storeData.businessCategory === 'services'
+                          ? '¡Tu empresa de servicios ha sido creada!'
+                          : '¡Tu tienda ha sido creada!'}
+                    </h2>
+                    <p
+                      className="text-sm"
+                      style={{ color: 'rgba(240,238,233,0.4)', fontFamily: 'var(--font-outfit)' }}
+                    >
+                      Próximamente recibirás un email con los detalles de acceso.
                     </p>
-                  )}
-                </div>
-              )}
+                    <div className="flex items-center justify-center gap-3 flex-wrap">
+                      {(() => {
+                        const category =
+                          (createdStore && createdStore.businessCategory) ||
+                          storeData.businessCategory;
+                        if (category === 'restaurant' || category === 'services') {
+                          const slug = createdStore?.slug || createdStoreId;
+                          if (slug)
+                            return (
+                              <a
+                                href={`https://${slug}.emprendyup.com`}
+                                className="px-5 py-2.5 text-sm font-semibold rounded-xl transition-all hover:scale-105"
+                                style={{
+                                  background: accentColor,
+                                  color: '#fff',
+                                  fontFamily: 'var(--font-outfit)',
+                                }}
+                                target="_blank"
+                                rel="noopener noreferrer"
+                              >
+                                Ir a website
+                              </a>
+                            );
+                        }
+                        if (createdStore?.shopUrl) {
+                          return (
+                            <div className="flex items-center gap-3">
+                              <a
+                                href={createdStore.shopUrl}
+                                className="px-5 py-2.5 text-sm font-semibold rounded-xl transition-all hover:scale-105"
+                                style={{
+                                  background: accentColor,
+                                  color: '#fff',
+                                  fontFamily: 'var(--font-outfit)',
+                                }}
+                                target="_blank"
+                                rel="noopener noreferrer"
+                              >
+                                Ir a la tienda
+                              </a>
+                              <Link
+                                href="/"
+                                className="px-5 py-2.5 text-sm font-semibold rounded-xl transition-all hover:scale-105"
+                                style={{
+                                  background: 'rgba(255,255,255,0.08)',
+                                  color: 'rgba(255,255,255,0.7)',
+                                  fontFamily: 'var(--font-outfit)',
+                                }}
+                              >
+                                Ir al panel
+                              </Link>
+                            </div>
+                          );
+                        }
+                        const storeLink = createdStore?.storeId || createdStoreId;
+                        return (
+                          <div className="flex items-center gap-3">
+                            <a
+                              href={`https://${storeLink}.emprendyup.com`}
+                              className="px-5 py-2.5 text-sm font-semibold rounded-xl transition-all hover:scale-105"
+                              style={{
+                                background: accentColor,
+                                color: '#fff',
+                                fontFamily: 'var(--font-outfit)',
+                              }}
+                              target="_blank"
+                              rel="noopener noreferrer"
+                            >
+                              Ir a la tienda
+                            </a>
+                            <a
+                              href="/dashboard"
+                              className="px-5 py-2.5 text-sm font-semibold rounded-xl transition-all hover:scale-105"
+                              style={{
+                                background: 'rgba(255,255,255,0.08)',
+                                color: 'rgba(255,255,255,0.7)',
+                                fontFamily: 'var(--font-outfit)',
+                              }}
+                            >
+                              Ir al panel
+                            </a>
+                          </div>
+                        );
+                      })()}
+                    </div>
+                  </motion.div>
+                ) : (
+                  <>
+                    <div className="text-center mb-4">
+                      <motion.button
+                        whileHover={{ scale: 1.04 }}
+                        whileTap={{ scale: 0.97 }}
+                        onClick={() => openSummary()}
+                        className="px-6 py-3 text-sm font-semibold rounded-xl transition-all"
+                        style={{
+                          background: accentColor,
+                          color: '#fff',
+                          fontFamily: 'var(--font-outfit)',
+                        }}
+                        disabled={creating}
+                      >
+                        {creating
+                          ? storeData.businessCategory === 'restaurant'
+                            ? 'Creando restaurante...'
+                            : storeData.businessCategory === 'services'
+                              ? 'Creando empresa...'
+                              : 'Creando tienda...'
+                          : 'Revisar información'}
+                      </motion.button>
+                    </div>
 
-              <div className="flex gap-3">
-                <input
-                  type="text"
-                  value={input}
-                  onChange={(e) => {
-                    setInput(e.target.value);
-                    setValidationError(null);
-                  }}
-                  onKeyPress={handleKeyPress}
-                  placeholder={
-                    questions.length > 0
-                      ? `Responde: ${questions[currentStep]?.text.split('?')[0]}...`
-                      : 'Escribe tu respuesta...'
-                  }
-                  className={`flex-1 px-4 py-3 border-2 rounded-xl focus:outline-none transition-colors text-slate-200 placeholder-slate-400 ${
-                    validationError
-                      ? 'border-red-500 focus:border-red-400'
-                      : 'border-slate-700 focus:border-indigo-500'
-                  }`}
-                />
+                    {/* Summary Modals */}
+                    {storeData.businessCategory === 'restaurant' ? (
+                      <RestaurantSummary
+                        open={showSummary}
+                        onClose={() => setShowSummary(false)}
+                        data={createdStore || storeData}
+                        onConfirm={async (updatedData) => {
+                          setCreateError(null);
+                          setCreating(true);
+                          try {
+                            const input = {
+                              name: updatedData.name,
+                              description: updatedData.description || '',
+                              cuisineType: updatedData.cuisineType,
+                              city: updatedData.city,
+                              logoUrl: updatedData.logoUrl || '',
+                              primaryColor: updatedData.primaryColor || '#3B82F6',
+                              secondaryColor: updatedData.secondaryColor || '#1F2937',
+                              buttonColor:
+                                updatedData.buttonColor || updatedData.primaryColor || '#3B82F6',
+                              address: updatedData.address,
+                              lat: (updatedData.lat ?? storeData.lat) || null,
+                              lng: (updatedData.lng ?? storeData.lng) || null,
+                              phone: updatedData.phone,
+                              googleLocation: updatedData.googleLocation || '',
+                              branding: {
+                                logoUrl: updatedData.logoUrl || '',
+                                coverImageUrl: updatedData.coverImage || '',
+                                primaryColor: updatedData.primaryColor || '#3B82F6',
+                                secondaryColor: updatedData.secondaryColor || '#1F2937',
+                                buttonColor:
+                                  updatedData.buttonColor || updatedData.primaryColor || '#3B82F6',
+                                accentColor: updatedData.accentColor || '#10B981',
+                                backgroundColor: updatedData.backgroundColor || '#FFFFFF',
+                                textColor: updatedData.textColor || '#111827',
+                              },
+                              businessConfig: {
+                                email: updatedData.email,
+                                phone: updatedData.phone,
+                                whatsappNumber: updatedData.whatsappNumber || updatedData.phone,
+                                address: updatedData.address,
+                                city: updatedData.city,
+                                department: updatedData.department || '',
+                                country: updatedData.country || 'Colombia',
+                                facebookUrl: updatedData.facebookUrl || '',
+                                instagramUrl: updatedData.instagramUrl || '',
+                                twitterUrl: updatedData.twitterUrl || '',
+                                metaTitle: `${updatedData.name} - ${updatedData.cuisineType}`,
+                                metaDescription:
+                                  updatedData.description ||
+                                  `Restaurante de ${updatedData.cuisineType} en ${updatedData.city}`,
+                                metaKeywords: `restaurante, ${updatedData.cuisineType}, ${updatedData.city}`,
+                                currency: 'COP',
+                                language: 'es',
+                                timezone: 'America/Bogota',
+                                taxId: updatedData.taxId || '',
+                                businessName: updatedData.businessName || updatedData.name,
+                                businessType: updatedData.businessType || 'Restaurante',
+                              },
+                            };
+                            const { data } = await createRestaurantMutation({
+                              variables: { input },
+                            });
+                            const created = data?.createRestaurantWithBranding;
+                            if (created) {
+                              setCreatedStoreId(created.id);
+                              setCreatedStore(created);
+                            }
+                            setShowSummary(false);
+                          } catch (err: any) {
+                            setCreateError(err?.message || 'Error al crear el restaurante');
+                          } finally {
+                            setCreating(false);
+                          }
+                        }}
+                      />
+                    ) : storeData.businessCategory === 'services' ? (
+                      <ServicesSummary
+                        open={showSummary}
+                        onClose={() => setShowSummary(false)}
+                        data={createdStore || storeData}
+                        onConfirm={async (updatedData) => {
+                          setCreateError(null);
+                          setCreating(true);
+                          try {
+                            const slug = updatedData.name
+                              .toLowerCase()
+                              .replace(/[^a-z0-9]+/g, '-')
+                              .replace(/^-|-$/g, '');
+                            const input = {
+                              businessName: updatedData.name,
+                              type: updatedData.businessType || 'OTHER',
+                              description: updatedData.description || '',
+                              logoUrl: updatedData.logoUrl || '',
+                              primaryColor: updatedData.primaryColor || '#7C3AED',
+                              secondaryColor: updatedData.secondaryColor || '#1F2937',
+                              buttonColor:
+                                updatedData.buttonColor || updatedData.primaryColor || '#7C3AED',
+                              location: `${updatedData.city}, ${updatedData.department || 'Colombia'}`,
+                              address: updatedData.address,
+                              phone: updatedData.phone,
+                              whatsappNumber: updatedData.whatsappNumber || updatedData.phone,
+                              email: updatedData.email,
+                              slug,
+                              isActive: true,
+                              branding: {
+                                logoUrl: updatedData.logoUrl || '',
+                                coverImageUrl: updatedData.coverImage || '',
+                                primaryColor: updatedData.primaryColor || '#7C3AED',
+                                secondaryColor: updatedData.secondaryColor || '#1F2937',
+                                buttonColor:
+                                  updatedData.buttonColor || updatedData.primaryColor || '#7C3AED',
+                                accentColor: updatedData.accentColor || '#10B981',
+                                backgroundColor: updatedData.backgroundColor || '#F9FAFB',
+                                textColor: updatedData.textColor || '#111827',
+                              },
+                              businessConfig: {
+                                email: updatedData.email,
+                                phone: updatedData.phone,
+                                whatsappNumber: updatedData.whatsappNumber || updatedData.phone,
+                                address: updatedData.address,
+                                city: updatedData.city,
+                                department: updatedData.department || '',
+                                country: updatedData.country || 'Colombia',
+                                facebookUrl: updatedData.facebookUrl || '',
+                                instagramUrl: updatedData.instagramUrl || '',
+                                twitterUrl: updatedData.twitterUrl || '',
+                                metaTitle: `${updatedData.name} - Servicios Profesionales`,
+                                metaDescription:
+                                  updatedData.description ||
+                                  `Servicios profesionales en ${updatedData.city}`,
+                                metaKeywords: `servicios, ${updatedData.businessType}, ${updatedData.city}`,
+                                currency: 'COP',
+                                language: 'es',
+                                timezone: 'America/Bogota',
+                                taxId: updatedData.taxId || '',
+                                businessName: updatedData.businessName || updatedData.name,
+                                businessType: updatedData.businessType || 'Servicios',
+                              },
+                            };
+                            const { data } = await createServiceProviderMutation({
+                              variables: { input },
+                            });
+                            const created = data?.createServiceProviderWithBranding;
+                            if (created) {
+                              setCreatedStoreId(created.id);
+                              setCreatedStore(created);
+                            }
+                            setShowSummary(false);
+                          } catch (err: any) {
+                            setCreateError(
+                              err?.message || 'Error al crear la empresa de servicios'
+                            );
+                          } finally {
+                            setCreating(false);
+                          }
+                        }}
+                      />
+                    ) : (
+                      <StoreSummary
+                        open={showSummary}
+                        onClose={() => setShowSummary(false)}
+                        data={createdStore || storeData}
+                        onConfirm={async (updatedData) => {
+                          setCreateError(null);
+                          setCreating(true);
+                          try {
+                            const {
+                              businessCategory: _bc,
+                              coverImage: _ci,
+                              googleLocation: _gl,
+                              ...validStoreData
+                            } = updatedData;
+                            const input = {
+                              ...validStoreData,
+                              status: 'active',
+                              userId: session?.user?.id || 'anonymous',
+                            };
+                            const { data } = await createStoreMutation({ variables: { input } });
+                            const created = data?.createStore;
+                            if (created) {
+                              setCreatedStoreId(created.storeId);
+                              setCreatedStore(created);
+                              session.setCurrentStore?.(created as any);
+                              session.addStore?.(created as any);
+                            }
+                            setShowSummary(false);
+                          } catch (err: any) {
+                            setCreateError(err?.message || 'Error al crear la tienda');
+                          } finally {
+                            setCreating(false);
+                          }
+                        }}
+                      />
+                    )}
+                  </>
+                )}
+
+                {/* Error state */}
+                {createError && (
+                  <div
+                    className="mt-3 px-4 py-3 rounded-xl text-xs flex items-center gap-2"
+                    style={{
+                      background: '#ff000018',
+                      border: '1px solid #ff444433',
+                      color: '#ff9999',
+                      fontFamily: 'var(--font-outfit)',
+                    }}
+                  >
+                    ⚠️ {createError}
+                  </div>
+                )}
+
+                {/* Creating spinner */}
+                {creating && (
+                  <div
+                    className="mt-3 px-4 py-3 rounded-xl text-xs flex items-center gap-2"
+                    style={{
+                      background: `${accentColor}11`,
+                      border: `1px solid ${accentColor}33`,
+                      color: accentColor,
+                      fontFamily: 'var(--font-outfit)',
+                    }}
+                  >
+                    <div
+                      className="w-3.5 h-3.5 border-2 border-t-transparent rounded-full animate-spin flex-shrink-0"
+                      style={{ borderColor: accentColor, borderTopColor: 'transparent' }}
+                    />
+                    {storeData.businessCategory === 'restaurant'
+                      ? 'Creando restaurante...'
+                      : storeData.businessCategory === 'services'
+                        ? 'Creando empresa de servicios...'
+                        : 'Creando tienda...'}
+                  </div>
+                )}
+              </div>
+            )}
+
+            <div ref={bottomRef} />
+          </div>
+
+          {/* ── Input area ── */}
+          {!showDescriptionEdit &&
+            !showSpecialtiesSelector &&
+            ((questions.length > 0 && currentStep < questions.length) ||
+              (questions.length === 0 && !selectedBusinessType)) &&
+            messages.length > 0 &&
+            messages[messages.length - 1]?.from === 'bot' &&
+            !(
+              questions.length > 0 &&
+              questions[currentStep]?.field === 'address' &&
+              storeData.businessCategory === 'restaurant'
+            ) &&
+            !['image', 'color', 'select'].includes(
+              questions.length > 0
+                ? questions[currentStep]?.type
+                : messages[messages.length - 1]?.type
+            ) &&
+            !(
+              messages[messages.length - 1]?.field === 'businessCategory' && !selectedBusinessType
+            ) && (
+              <div
+                className="px-6 py-4 flex-shrink-0"
+                style={{ borderTop: '1px solid rgba(255,255,255,0.06)' }}
+              >
+                {validationError && (
+                  <motion.div
+                    initial={{ opacity: 0, y: -4 }}
+                    animate={{ opacity: 1, y: 0 }}
+                    className="mb-3 px-3 py-2 rounded-lg text-xs flex items-center gap-2"
+                    style={{
+                      background: '#ff000018',
+                      border: '1px solid #ff444433',
+                      color: '#ff9999',
+                      fontFamily: 'var(--font-outfit)',
+                    }}
+                  >
+                    <span>⚠️</span>
+                    {validationError}
+                    {questions.length > 0 && questions[currentStep]?.validation?.message && (
+                      <span className="opacity-70">
+                        {' '}
+                        — {questions[currentStep]?.validation?.message}
+                      </span>
+                    )}
+                  </motion.div>
+                )}
 
                 <div className="flex gap-2">
-                  {questions.length > 0 && questions[currentStep]?.optional && (
+                  <input
+                    type="text"
+                    value={input}
+                    onChange={(e) => {
+                      setInput(e.target.value);
+                      setValidationError(null);
+                    }}
+                    onKeyPress={handleKeyPress}
+                    placeholder={
+                      questions.length > 0
+                        ? `${questions[currentStep]?.text.split('?')[0]}...`
+                        : 'Escribe tu respuesta...'
+                    }
+                    className="flex-1 px-4 py-2.5 rounded-xl text-sm outline-none transition-all"
+                    style={{
+                      background: 'rgba(255,255,255,0.05)',
+                      border: `1px solid ${validationError ? '#ff4444' : 'rgba(255,255,255,0.12)'}`,
+                      color: '#F0EEE9',
+                      fontFamily: 'var(--font-outfit)',
+                    }}
+                  />
+                  <div className="flex gap-1.5">
+                    {questions.length > 0 && questions[currentStep]?.optional && (
+                      <button
+                        onClick={handleSkip}
+                        className="px-3 py-2.5 rounded-xl text-xs transition-all hover:scale-105"
+                        style={{
+                          background: 'rgba(255,255,255,0.06)',
+                          color: 'rgba(240,238,233,0.5)',
+                          fontFamily: 'var(--font-outfit)',
+                        }}
+                        title="Saltar pregunta opcional"
+                      >
+                        Saltar
+                      </button>
+                    )}
                     <button
-                      onClick={handleSkip}
-                      className="px-4 py-3 bg-slate-700 text-slate-200 rounded-xl hover:bg-slate-600 transition-all duration-200 transform hover:scale-105 flex items-center gap-2"
-                      title="Saltar pregunta opcional"
+                      onClick={handleSend}
+                      disabled={
+                        !input.trim() && questions.length > 0 && !questions[currentStep]?.optional
+                      }
+                      className="px-4 py-2.5 rounded-xl text-sm font-semibold transition-all hover:scale-105 disabled:opacity-40 flex items-center gap-1.5"
+                      style={{
+                        background: accentColor,
+                        color: '#fff',
+                        fontFamily: 'var(--font-outfit)',
+                      }}
                     >
-                      <span>⏭️</span>
-                      Saltar
+                      <Send className="w-3.5 h-3.5" />
+                      Enviar
                     </button>
-                  )}
-
-                  <button
-                    onClick={handleSend}
-                    disabled={
-                      !input.trim() && questions.length > 0 && !questions[currentStep]?.optional
-                    }
-                    className="px-6 py-3 bg-gradient-to-r from-blue-600 to-indigo-600 text-white rounded-xl hover:from-blue-700 hover:to-indigo-700 disabled:opacity-50 disabled:cursor-not-allowed transition-all duration-200 transform hover:scale-105 flex items-center gap-2"
+                  </div>
+                </div>
+                {questions.length > 0 && questions[currentStep]?.optional && (
+                  <p
+                    className="text-[10px] mt-2"
+                    style={{ color: 'rgba(240,238,233,0.25)', fontFamily: 'var(--font-outfit)' }}
                   >
-                    <Send className="w-4 h-4" />
-                    Enviar
-                  </button>
-                </div>
-              </div>
-
-              {questions.length > 0 && questions[currentStep]?.optional && (
-                <p className="text-xs text-slate-400 mt-2 flex items-center gap-1">
-                  <span>💡</span>
-                  Esta pregunta es opcional - puedes saltarla si no aplica
-                </p>
-              )}
-            </div>
-          )}
-
-        {questions.length > 0 && currentStep >= questions.length && (
-          <div className="mt-6">
-            {createdStoreId ? (
-              // Mensaje de éxito cuando el negocio ya fue creado
-              <div className="text-center space-y-4 py-6">
-                <div className="w-16 h-16 bg-green-500 rounded-full flex items-center justify-center mx-auto">
-                  <span className="text-white text-2xl">✓</span>
-                </div>
-                <h2 className="text-xl font-bold text-white">
-                  {storeData.businessCategory === 'restaurant'
-                    ? '¡Tu restaurante ha sido creado!'
-                    : storeData.businessCategory === 'services'
-                      ? '¡Tu empresa de servicios ha sido creada!'
-                      : '¡Tu tienda ha sido creada!'}
-                </h2>
-                <p className="text-slate-300">
-                  Proximamente recibirás un email con los detalles de acceso.
-                </p>
-                <div className="flex items-center justify-center gap-4">
-                  {(() => {
-                    // Build a friendly URL depending on the created resource type.
-                    // - For stores (products), prefer `shopUrl` or subdomain: `https://{storeId}.emprendyup.com`.
-                    // - For restaurants/services, prefer a path using `slug`: `https://emprendyup.com/{slug}`.
-                    const category =
-                      (createdStore && createdStore.businessCategory) || storeData.businessCategory;
-
-                    // If the created resource is a restaurant or service, prefer slug paths
-                    if (category === 'restaurant' || category === 'services') {
-                      const slug = createdStore?.slug || createdStoreId;
-                      if (slug)
-                        return (
-                          <a
-                            href={`https://${slug}.emprendyup.com`}
-                            className="px-6 py-3 bg-green-500 text-white rounded-lg font-semibold hover:bg-green-600 transition-colors"
-                            target="_blank"
-                            rel="noopener noreferrer"
-                          >
-                            Ir a website
-                          </a>
-                        );
-                    }
-
-                    // Default/store behavior: prefer explicit shopUrl, then storeId subdomain, then createdStoreId as subdomain
-                    if (createdStore?.shopUrl) {
-                      return (
-                        <div className="flex items-center gap-3">
-                          <a
-                            href={createdStore.shopUrl}
-                            className="px-6 py-3 bg-green-500 text-white rounded-lg font-semibold hover:bg-green-600 transition-colors"
-                            target="_blank"
-                            rel="noopener noreferrer"
-                          >
-                            Ir a la tienda
-                          </a>
-                          <Link
-                            href="/"
-                            className="px-6 py-3 bg-gray-700 text-white rounded-lg font-semibold hover:bg-gray-600 transition-colors"
-                          >
-                            Ir al panel
-                          </Link>
-                        </div>
-                      );
-                    }
-
-                    if (createdStore?.storeId) {
-                      return (
-                        <div className="flex items-center gap-3">
-                          <a
-                            href={`https://${createdStore.storeId}.emprendyup.com`}
-                            className="px-6 py-3 bg-green-500 text-white rounded-lg font-semibold hover:bg-green-600 transition-colors"
-                            target="_blank"
-                            rel="noopener noreferrer"
-                          >
-                            Ir a la tienda
-                          </a>
-                          <a
-                            href="/dashboard"
-                            className="px-6 py-3 bg-gray-700 text-white rounded-lg font-semibold hover:bg-gray-600 transition-colors"
-                          >
-                            Ir al panel
-                          </a>
-                        </div>
-                      );
-                    }
-
-                    if (createdStoreId) {
-                      return (
-                        <div className="flex items-center gap-3">
-                          <a
-                            href={`https://${createdStoreId}.emprendyup.com`}
-                            className="px-6 py-3 bg-green-500 text-white rounded-lg font-semibold hover:bg-green-600 transition-colors"
-                            target="_blank"
-                            rel="noopener noreferrer"
-                          >
-                            Ir a la tienda
-                          </a>
-                          <a
-                            href="/dashboard"
-                            className="px-6 py-3 bg-gray-700 text-white rounded-lg font-semibold hover:bg-gray-600 transition-colors"
-                          >
-                            Ir al panel
-                          </a>
-                        </div>
-                      );
-                    }
-
-                    // Fallback
-                    return (
-                      <div className="flex items-center gap-3">
-                        <a
-                          href="https://emprendyup.com"
-                          className="px-6 py-3 bg-green-500 text-white rounded-lg font-semibold hover:bg-green-600 transition-colors"
-                          target="_blank"
-                          rel="noopener noreferrer"
-                        >
-                          Ir a la tienda
-                        </a>
-                        <a
-                          href="/dashboard"
-                          className="px-6 py-3 bg-gray-700 text-white rounded-lg font-semibold hover:bg-gray-600 transition-colors"
-                        >
-                          Ir al panel
-                        </a>
-                      </div>
-                    );
-                  })()}
-                </div>
-              </div>
-            ) : (
-              // Botón para revisar datos antes de crear (cuando aún no se ha creado)
-              <>
-                <div className="text-center mb-4 text-slate-300">
-                  <button
-                    onClick={() => openSummary()}
-                    className="px-6 pl-6 py-3 bg-blue-500 text-white rounded-lg font-semibold hover:bg-blue-600 transition-colors"
-                    disabled={creating}
-                  >
-                    {creating
-                      ? storeData.businessCategory === 'restaurant'
-                        ? 'Creando restaurante...'
-                        : storeData.businessCategory === 'services'
-                          ? 'Creando empresa...'
-                          : 'Creando tienda...'
-                      : 'Revisar información'}
-                  </button>
-                </div>
-
-                {/* Modal - Usar el componente correcto según el tipo de negocio */}
-                {storeData.businessCategory === 'restaurant' ? (
-                  <RestaurantSummary
-                    open={showSummary}
-                    onClose={() => setShowSummary(false)}
-                    data={createdStore || storeData}
-                    onConfirm={async (updatedData) => {
-                      setCreateError(null);
-                      setCreating(true);
-                      try {
-                        let created: any = null;
-
-                        // Crear restaurante con branding
-                        const input = {
-                          name: updatedData.name,
-                          description: updatedData.description || '',
-                          cuisineType: updatedData.cuisineType,
-                          city: updatedData.city,
-                          logoUrl: updatedData.logoUrl || '',
-                          primaryColor: updatedData.primaryColor || '#3B82F6',
-                          secondaryColor: updatedData.secondaryColor || '#1F2937',
-                          buttonColor:
-                            updatedData.buttonColor || updatedData.primaryColor || '#3B82F6',
-                          address: updatedData.address,
-                          lat: (updatedData.lat ?? storeData.lat) || null,
-                          lng: (updatedData.lng ?? storeData.lng) || null,
-                          phone: updatedData.phone,
-                          googleLocation: updatedData.googleLocation || '',
-                          branding: {
-                            logoUrl: updatedData.logoUrl || '',
-                            // faviconUrl: updatedData.faviconUrl || '',
-                            // bannerUrl: updatedData.bannerUrl || '',
-                            coverImageUrl: updatedData.coverImage || '',
-                            primaryColor: updatedData.primaryColor || '#3B82F6',
-                            secondaryColor: updatedData.secondaryColor || '#1F2937',
-                            buttonColor:
-                              updatedData.buttonColor || updatedData.primaryColor || '#3B82F6',
-                            accentColor: updatedData.accentColor || '#10B981',
-                            backgroundColor: updatedData.backgroundColor || '#FFFFFF',
-                            textColor: updatedData.textColor || '#111827',
-                          },
-                          businessConfig: {
-                            email: updatedData.email,
-                            phone: updatedData.phone,
-                            whatsappNumber: updatedData.whatsappNumber || updatedData.phone,
-                            address: updatedData.address,
-                            city: updatedData.city,
-                            department: updatedData.department || '',
-                            country: updatedData.country || 'Colombia',
-                            facebookUrl: updatedData.facebookUrl || '',
-                            instagramUrl: updatedData.instagramUrl || '',
-                            twitterUrl: updatedData.twitterUrl || '',
-                            metaTitle: `${updatedData.name} - ${updatedData.cuisineType}`,
-                            metaDescription:
-                              updatedData.description ||
-                              `Restaurante de ${updatedData.cuisineType} en ${updatedData.city}`,
-                            metaKeywords: `restaurante, ${updatedData.cuisineType}, ${updatedData.city}`,
-                            currency: 'COP',
-                            language: 'es',
-                            timezone: 'America/Bogota',
-                            taxId: updatedData.taxId || '',
-                            businessName: updatedData.businessName || updatedData.name,
-                            businessType: updatedData.businessType || 'Restaurante',
-                          },
-                        };
-                        const { data } = await createRestaurantMutation({ variables: { input } });
-                        created = data?.createRestaurantWithBranding;
-                        if (created) {
-                          setCreatedStoreId(created.id);
-                          setCreatedStore(created);
-                        }
-
-                        setShowSummary(false);
-                      } catch (err: any) {
-                        setCreateError(err?.message || 'Error al crear el restaurante');
-                      } finally {
-                        setCreating(false);
-                      }
-                    }}
-                  />
-                ) : storeData.businessCategory === 'services' ? (
-                  <ServicesSummary
-                    open={showSummary}
-                    onClose={() => setShowSummary(false)}
-                    data={createdStore || storeData}
-                    onConfirm={async (updatedData) => {
-                      setCreateError(null);
-                      setCreating(true);
-                      try {
-                        let created: any = null;
-
-                        // Crear proveedor de servicios con branding
-                        const slug = updatedData.name
-                          .toLowerCase()
-                          .replace(/[^a-z0-9]+/g, '-')
-                          .replace(/^-|-$/g, '');
-
-                        const input = {
-                          businessName: updatedData.name,
-                          type: updatedData.businessType || 'OTHER',
-                          description: updatedData.description || '',
-                          logoUrl: updatedData.logoUrl || '',
-                          primaryColor: updatedData.primaryColor || '#7C3AED',
-                          secondaryColor: updatedData.secondaryColor || '#1F2937',
-                          buttonColor:
-                            updatedData.buttonColor || updatedData.primaryColor || '#7C3AED',
-                          location: `${updatedData.city}, ${updatedData.department || 'Colombia'}`,
-
-                          address: updatedData.address,
-                          phone: updatedData.phone,
-                          whatsappNumber: updatedData.whatsappNumber || updatedData.phone,
-                          email: updatedData.email,
-                          slug,
-                          isActive: true,
-                          branding: {
-                            logoUrl: updatedData.logoUrl || '',
-                            // faviconUrl: updatedData.faviconUrl || '',
-                            // bannerUrl: updatedData.bannerUrl || '',
-                            coverImageUrl: updatedData.coverImage || '',
-                            primaryColor: updatedData.primaryColor || '#7C3AED',
-                            secondaryColor: updatedData.secondaryColor || '#1F2937',
-                            buttonColor:
-                              updatedData.buttonColor || updatedData.primaryColor || '#7C3AED',
-                            accentColor: updatedData.accentColor || '#10B981',
-                            backgroundColor: updatedData.backgroundColor || '#F9FAFB',
-                            textColor: updatedData.textColor || '#111827',
-                          },
-                          businessConfig: {
-                            email: updatedData.email,
-                            phone: updatedData.phone,
-                            whatsappNumber: updatedData.whatsappNumber || updatedData.phone,
-                            address: updatedData.address,
-                            city: updatedData.city,
-                            department: updatedData.department || '',
-                            country: updatedData.country || 'Colombia',
-                            facebookUrl: updatedData.facebookUrl || '',
-                            instagramUrl: updatedData.instagramUrl || '',
-                            twitterUrl: updatedData.twitterUrl || '',
-                            metaTitle: `${updatedData.name} - Servicios Profesionales`,
-                            metaDescription:
-                              updatedData.description ||
-                              `Servicios profesionales en ${updatedData.city}`,
-                            metaKeywords: `servicios, ${updatedData.businessType}, ${updatedData.city}`,
-                            currency: 'COP',
-                            language: 'es',
-                            timezone: 'America/Bogota',
-                            taxId: updatedData.taxId || '',
-                            businessName: updatedData.businessName || updatedData.name,
-                            businessType: updatedData.businessType || 'Servicios',
-                          },
-                        };
-                        const { data } = await createServiceProviderMutation({
-                          variables: { input },
-                        });
-                        created = data?.createServiceProviderWithBranding;
-                        if (created) {
-                          setCreatedStoreId(created.id);
-                          setCreatedStore(created);
-                        }
-
-                        setShowSummary(false);
-                      } catch (err: any) {
-                        setCreateError(err?.message || 'Error al crear la empresa de servicios');
-                      } finally {
-                        setCreating(false);
-                      }
-                    }}
-                  />
-                ) : (
-                  <StoreSummary
-                    open={showSummary}
-                    onClose={() => setShowSummary(false)}
-                    data={createdStore || storeData}
-                    onConfirm={async (updatedData) => {
-                      setCreateError(null);
-                      setCreating(true);
-                      try {
-                        let created: any = null;
-
-                        // Crear tienda de productos (flujo original)
-                        // Filtrar solo los campos válidos para CreateStoreInput
-                        const { businessCategory, coverImage, googleLocation, ...validStoreData } =
-                          updatedData;
-
-                        const input = {
-                          ...validStoreData,
-                          status: 'active',
-                          userId: session?.user?.id || 'anonymous',
-                        };
-                        const { data } = await createStoreMutation({ variables: { input } });
-                        created = data?.createStore;
-                        if (created) {
-                          setCreatedStoreId(created.storeId);
-                          setCreatedStore(created);
-                          session.setCurrentStore?.(created as any);
-                          session.addStore?.(created as any);
-                        }
-
-                        setShowSummary(false);
-                      } catch (err: any) {
-                        setCreateError(err?.message || 'Error al crear la tienda');
-                      } finally {
-                        setCreating(false);
-                      }
-                    }}
-                  />
+                    💡 Pregunta opcional — puedes saltarla
+                  </p>
                 )}
-              </>
-            )}
-
-            {/* Mostrar error si existe */}
-            {createError && (
-              <div className="mt-4 p-3 bg-red-900 border border-red-700 text-red-300 rounded">
-                {createError}
               </div>
             )}
-
-            {/* Mostrar estado de creación */}
-            {creating && (
-              <div className="mt-4 p-3 bg-blue-900 border border-blue-700 text-blue-300 rounded flex items-center gap-2">
-                <div className="w-4 h-4 border-2 border-blue-300 border-t-transparent rounded-full animate-spin"></div>
-                {storeData.businessCategory === 'restaurant'
-                  ? 'Creando restaurante...'
-                  : storeData.businessCategory === 'services'
-                    ? 'Creando empresa de servicios...'
-                    : 'Creando tienda...'}
-              </div>
-            )}
-          </div>
-        )}
+        </div>
+        {/* end chat panel */}
       </div>
-
-      <style jsx>{`
-        @keyframes slide-in-left {
-          from {
-            opacity: 0;
-            transform: translateX(-20px);
-          }
-          to {
-            opacity: 1;
-            transform: translateX(0);
-          }
-        }
-
-        @keyframes slide-in-right {
-          from {
-            opacity: 0;
-            transform: translateX(20px);
-          }
-          to {
-            opacity: 1;
-            transform: translateX(0);
-          }
-        }
-
-        .animate-slide-in-left {
-          animation: slide-in-left 0.5s ease-out;
-        }
-
-        .animate-slide-in-right {
-          animation: slide-in-right 0.5s ease-out;
-        }
-      `}</style>
+      {/* end main 2-panel layout */}
     </div>
   );
 }

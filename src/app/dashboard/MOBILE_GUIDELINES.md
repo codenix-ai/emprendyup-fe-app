@@ -1,4 +1,4 @@
-# EmprendyUp Dashboard – Mobile Friendly Guidelines
+# Emprendy.ai Dashboard – Mobile Friendly Guidelines
 
 This document outlines the requirements for **mobile and responsive design** of the Dashboard module.
 

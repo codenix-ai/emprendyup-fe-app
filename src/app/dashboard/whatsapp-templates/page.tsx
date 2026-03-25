@@ -4,6 +4,7 @@ import React, { useState, useMemo } from 'react';
 import { Search, Plus, ArrowUpDown, MessageSquare, Edit2, Trash2, X } from 'lucide-react';
 import { useQuery, useMutation, gql } from '@apollo/client';
 import toast from 'react-hot-toast';
+import { InlineLoader } from '@/app/components/Loader';
 
 const GET_TEMPLATES = gql`
   query {
@@ -160,12 +161,14 @@ const WhatsAppTemplatesPage = () => {
   };
 
   return (
-    <div className="min-h-screen bg-gradient-to-br from-slate-900 via-slate-800 to-slate-900 p-6">
+    <div className="min-h-screen bg-gray-50 dark:bg-gradient-to-br dark:from-slate-900 dark:via-slate-800 dark:to-slate-900 p-6">
       <div className="max-w-7xl mx-auto space-y-6">
         <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4">
           <div>
-            <h1 className="text-3xl font-bold text-white mb-1">Plantillas de WhatsApp</h1>
-            <p className="text-slate-400">
+            <h1 className="text-3xl font-bold text-gray-900 dark:text-white mb-1">
+              Plantillas de WhatsApp
+            </h1>
+            <p className="text-gray-500 dark:text-slate-400">
               {loading ? 'Cargando...' : `${templates.length} plantillas disponibles`}
             </p>
           </div>
@@ -184,54 +187,57 @@ const WhatsAppTemplatesPage = () => {
           </div>
         )}
 
-        <div className="bg-slate-800/50 backdrop-blur-sm p-4 rounded-xl border border-slate-700/50">
+        <div className="bg-white/80 dark:bg-slate-800/50 backdrop-blur-sm p-4 rounded-xl border border-gray-200/70 dark:border-slate-700/50">
           <div className="relative">
-            <Search className="absolute left-4 top-1/2 -translate-y-1/2 text-slate-400 h-5 w-5" />
+            <Search className="absolute left-4 top-1/2 -translate-y-1/2 text-gray-500 dark:text-slate-400 h-5 w-5" />
             <input
               type="text"
               placeholder="Buscar por nombre o contenido..."
               value={searchTerm}
               onChange={(e) => setSearchTerm(e.target.value)}
-              className="w-full pl-12 pr-4 py-3 rounded-lg border border-slate-600/50 focus:ring-2 focus:ring-emerald-500 focus:border-transparent bg-slate-700/50 text-white placeholder-slate-400 transition-all"
+              className="w-full pl-12 pr-4 py-3 rounded-lg border border-gray-300/70 dark:border-slate-600/50 focus:ring-2 focus:ring-emerald-500 focus:border-transparent bg-gray-100 dark:bg-slate-700/50 text-gray-900 dark:text-white placeholder-slate-400 transition-all"
             />
           </div>
         </div>
 
-        <div className="hidden md:block bg-slate-800/50 backdrop-blur-sm rounded-xl border border-slate-700/50 overflow-hidden">
+        <div className="hidden md:block bg-white/80 dark:bg-slate-800/50 backdrop-blur-sm rounded-xl border border-gray-200/70 dark:border-slate-700/50 overflow-hidden">
           {loading ? (
-            <div className="p-12 text-center text-slate-400">
-              <div className="animate-pulse">Cargando plantillas...</div>
+            <div className="p-12 text-center text-gray-500 dark:text-slate-400">
+              <InlineLoader text="Cargando plantillas..." />
             </div>
           ) : (
             <table className="w-full">
-              <thead className="bg-slate-800/80 border-b border-slate-700/50">
+              <thead className="bg-white dark:bg-slate-800/80 border-b border-gray-200/70 dark:border-slate-700/50">
                 <tr>
-                  <th className="px-6 py-4 text-left text-xs font-semibold text-slate-300 uppercase tracking-wider">
+                  <th className="px-6 py-4 text-left text-xs font-semibold text-gray-700 dark:text-slate-300 uppercase tracking-wider">
                     <div className="flex items-center gap-2">
                       Plantilla
                       <ArrowUpDown className="w-3 h-3" />
                     </div>
                   </th>
-                  <th className="px-6 py-4 text-left text-xs font-semibold text-slate-300 uppercase tracking-wider">
+                  <th className="px-6 py-4 text-left text-xs font-semibold text-gray-700 dark:text-slate-300 uppercase tracking-wider">
                     Preview
                   </th>
-                  <th className="px-6 py-4 text-left text-xs font-semibold text-slate-300 uppercase tracking-wider">
+                  <th className="px-6 py-4 text-left text-xs font-semibold text-gray-700 dark:text-slate-300 uppercase tracking-wider">
                     Categoría
                   </th>
-                  <th className="px-6 py-4 text-left text-xs font-semibold text-slate-300 uppercase tracking-wider">
+                  <th className="px-6 py-4 text-left text-xs font-semibold text-gray-700 dark:text-slate-300 uppercase tracking-wider">
                     Estado
                   </th>
-                  <th className="px-6 py-4 text-left text-xs font-semibold text-slate-300 uppercase tracking-wider">
+                  <th className="px-6 py-4 text-left text-xs font-semibold text-gray-700 dark:text-slate-300 uppercase tracking-wider">
                     Acciones
                   </th>
                 </tr>
               </thead>
-              <tbody className="divide-y divide-slate-700/50">
+              <tbody className="divide-y divide-gray-200 dark:divide-slate-700/50">
                 {filteredTemplates.map((template: any) => (
-                  <tr key={template.id} className="hover:bg-slate-700/30 transition-colors">
+                  <tr
+                    key={template.id}
+                    className="hover:bg-gray-100 dark:bg-slate-700/30 transition-colors"
+                  >
                     <td className="px-6 py-4">
                       <div>
-                        <div className="text-sm font-medium text-white mb-1">
+                        <div className="text-sm font-medium text-gray-900 dark:text-white mb-1">
                           {template.templateName}
                         </div>
                         <div className="text-xs text-blue-400 flex items-center gap-1">
@@ -242,13 +248,15 @@ const WhatsAppTemplatesPage = () => {
                     </td>
                     <td className="px-6 py-4">
                       <div>
-                        <div className="text-xs text-slate-400 italic mb-1">
+                        <div className="text-xs text-gray-500 dark:text-slate-400 italic mb-1">
                           {getPreview(template.message)}
                         </div>
                         <div className="text-xs text-slate-500">{template.language}</div>
                       </div>
                     </td>
-                    <td className="px-6 py-4 text-sm text-slate-300">{template.category}</td>
+                    <td className="px-6 py-4 text-sm text-gray-700 dark:text-slate-300">
+                      {template.category}
+                    </td>
                     <td className="px-6 py-4">
                       <span className="inline-flex px-3 py-1 text-xs font-medium rounded-full bg-emerald-500/20 text-emerald-400 border border-emerald-500/30">
                         {template.status}
@@ -277,25 +285,29 @@ const WhatsAppTemplatesPage = () => {
           )}
 
           {!loading && filteredTemplates.length === 0 && (
-            <div className="p-12 text-center text-slate-400">No se encontraron plantillas</div>
+            <div className="p-12 text-center text-gray-500 dark:text-slate-400">
+              No se encontraron plantillas
+            </div>
           )}
         </div>
 
         <div className="md:hidden space-y-4">
           {loading ? (
-            <div className="p-12 text-center text-slate-400">
-              <div className="animate-pulse">Cargando plantillas...</div>
+            <div className="p-12 text-center text-gray-500 dark:text-slate-400">
+              <InlineLoader text="Cargando plantillas..." />
             </div>
           ) : (
             <>
               {filteredTemplates.map((template: any) => (
                 <div
                   key={template.id}
-                  className="bg-slate-800/50 backdrop-blur-sm rounded-xl border border-slate-700/50 p-5"
+                  className="bg-white/80 dark:bg-slate-800/50 backdrop-blur-sm rounded-xl border border-gray-200/70 dark:border-slate-700/50 p-5"
                 >
                   <div className="flex items-start justify-between mb-3">
                     <div className="flex-1">
-                      <h3 className="font-semibold text-white mb-1">{template.templateName}</h3>
+                      <h3 className="font-semibold text-gray-900 dark:text-white mb-1">
+                        {template.templateName}
+                      </h3>
                       <div className="text-xs text-blue-400 flex items-center gap-1 mb-2">
                         <MessageSquare className="w-3 h-3" />
                         Ver detalles
@@ -308,17 +320,19 @@ const WhatsAppTemplatesPage = () => {
 
                   <div className="space-y-2 text-sm mb-4">
                     <div className="flex justify-between">
-                      <span className="text-slate-400">Categoría:</span>
-                      <span className="text-white">{template.category}</span>
+                      <span className="text-gray-500 dark:text-slate-400">Categoría:</span>
+                      <span className="text-gray-900 dark:text-white">{template.category}</span>
                     </div>
                     <div className="flex justify-between">
-                      <span className="text-slate-400">Idioma:</span>
-                      <span className="text-white">{template.language}</span>
+                      <span className="text-gray-500 dark:text-slate-400">Idioma:</span>
+                      <span className="text-gray-900 dark:text-white">{template.language}</span>
                     </div>
                   </div>
 
-                  <div className="mb-4 pt-3 border-t border-slate-700/50">
-                    <p className="text-xs text-slate-400 italic">{template.message}</p>
+                  <div className="mb-4 pt-3 border-t border-gray-200/70 dark:border-slate-700/50">
+                    <p className="text-xs text-gray-500 dark:text-slate-400 italic">
+                      {template.message}
+                    </p>
                   </div>
 
                   <div className="flex gap-2">
@@ -341,7 +355,9 @@ const WhatsAppTemplatesPage = () => {
               ))}
 
               {!loading && filteredTemplates.length === 0 && (
-                <div className="p-12 text-center text-slate-400">No se encontraron plantillas</div>
+                <div className="p-12 text-center text-gray-500 dark:text-slate-400">
+                  No se encontraron plantillas
+                </div>
               )}
             </>
           )}
@@ -350,21 +366,21 @@ const WhatsAppTemplatesPage = () => {
 
       {showModal && (
         <div className="fixed inset-0 bg-black/70 backdrop-blur-sm flex items-center justify-center z-50 p-4">
-          <div className="bg-slate-800 border border-slate-700 p-6 rounded-xl w-full max-w-2xl shadow-2xl relative max-h-[90vh] overflow-y-auto">
+          <div className="bg-white dark:bg-slate-800 border border-gray-200 dark:border-slate-700 p-6 rounded-xl w-full max-w-2xl shadow-2xl relative max-h-[90vh] overflow-y-auto">
             <button
               onClick={() => setShowModal(false)}
-              className="absolute top-4 right-4 text-slate-400 hover:text-white transition-colors"
+              className="absolute top-4 right-4 text-gray-500 dark:text-slate-400 hover:text-gray-900 dark:text-white transition-colors"
             >
               <X className="w-5 h-5" />
             </button>
 
-            <h3 className="text-2xl font-bold text-white mb-6">
+            <h3 className="text-2xl font-bold text-gray-900 dark:text-white mb-6">
               {editingTemplate ? 'Editar plantilla' : 'Nueva plantilla'}
             </h3>
 
             <div className="space-y-5">
               <div>
-                <label className="block text-sm font-medium text-slate-300 mb-2">
+                <label className="block text-sm font-medium text-gray-700 dark:text-slate-300 mb-2">
                   Nombre de la plantilla
                 </label>
                 <input
@@ -372,17 +388,19 @@ const WhatsAppTemplatesPage = () => {
                   placeholder="Ej: bienvenida_cliente"
                   value={formData.templateName}
                   onChange={(e) => setFormData({ ...formData, templateName: e.target.value })}
-                  className="w-full border border-slate-600 bg-slate-700/50 text-white px-4 py-3 rounded-lg focus:ring-2 focus:ring-emerald-500 focus:border-transparent transition-all"
+                  className="w-full border border-gray-300 dark:border-slate-600 bg-gray-100 dark:bg-slate-700/50 text-gray-900 dark:text-white px-4 py-3 rounded-lg focus:ring-2 focus:ring-emerald-500 focus:border-transparent transition-all"
                 />
               </div>
 
               <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
                 <div>
-                  <label className="block text-sm font-medium text-slate-300 mb-2">Categoría</label>
+                  <label className="block text-sm font-medium text-gray-700 dark:text-slate-300 mb-2">
+                    Categoría
+                  </label>
                   <select
                     value={formData.category}
                     onChange={(e) => setFormData({ ...formData, category: e.target.value })}
-                    className="w-full border border-slate-600 bg-slate-700/50 text-white px-4 py-3 rounded-lg focus:ring-2 focus:ring-emerald-500 transition-all"
+                    className="w-full border border-gray-300 dark:border-slate-600 bg-gray-100 dark:bg-slate-700/50 text-gray-900 dark:text-white px-4 py-3 rounded-lg focus:ring-2 focus:ring-emerald-500 transition-all"
                   >
                     <option value="Marketing">Marketing</option>
                     <option value="Utility">Utilidad</option>
@@ -391,11 +409,13 @@ const WhatsAppTemplatesPage = () => {
                 </div>
 
                 <div>
-                  <label className="block text-sm font-medium text-slate-300 mb-2">Idioma</label>
+                  <label className="block text-sm font-medium text-gray-700 dark:text-slate-300 mb-2">
+                    Idioma
+                  </label>
                   <select
                     value={formData.language}
                     onChange={(e) => setFormData({ ...formData, language: e.target.value })}
-                    className="w-full border border-slate-600 bg-slate-700/50 text-white px-4 py-3 rounded-lg focus:ring-2 focus:ring-emerald-500 transition-all"
+                    className="w-full border border-gray-300 dark:border-slate-600 bg-gray-100 dark:bg-slate-700/50 text-gray-900 dark:text-white px-4 py-3 rounded-lg focus:ring-2 focus:ring-emerald-500 transition-all"
                   >
                     <option value="Spanish">Español</option>
                     <option value="Spanish (COL)">Español (COL)</option>
@@ -404,11 +424,13 @@ const WhatsAppTemplatesPage = () => {
                 </div>
 
                 <div>
-                  <label className="block text-sm font-medium text-slate-300 mb-2">Estado</label>
+                  <label className="block text-sm font-medium text-gray-700 dark:text-slate-300 mb-2">
+                    Estado
+                  </label>
                   <select
                     value={formData.status}
                     onChange={(e) => setFormData({ ...formData, status: e.target.value })}
-                    className="w-full border border-slate-600 bg-slate-700/50 text-white px-4 py-3 rounded-lg focus:ring-2 focus:ring-emerald-500 transition-all"
+                    className="w-full border border-gray-300 dark:border-slate-600 bg-gray-100 dark:bg-slate-700/50 text-gray-900 dark:text-white px-4 py-3 rounded-lg focus:ring-2 focus:ring-emerald-500 transition-all"
                   >
                     <option value="Active">Activo</option>
                     <option value="Pending">Pendiente</option>
@@ -418,14 +440,16 @@ const WhatsAppTemplatesPage = () => {
               </div>
 
               <div>
-                <label className="block text-sm font-medium text-slate-300 mb-2">Mensaje</label>
+                <label className="block text-sm font-medium text-gray-700 dark:text-slate-300 mb-2">
+                  Mensaje
+                </label>
                 <textarea
                   placeholder="Escribe tu mensaje aquí. Usa {{variable}} para variables dinámicas."
                   value={formData.message}
                   onChange={(e) => setFormData({ ...formData, message: e.target.value })}
-                  className="w-full border border-slate-600 bg-slate-700/50 text-white px-4 py-3 rounded-lg h-32 focus:ring-2 focus:ring-emerald-500 transition-all resize-none"
+                  className="w-full border border-gray-300 dark:border-slate-600 bg-gray-100 dark:bg-slate-700/50 text-gray-900 dark:text-white px-4 py-3 rounded-lg h-32 focus:ring-2 focus:ring-emerald-500 transition-all resize-none"
                 />
-                <p className="text-xs text-slate-400 mt-2">
+                <p className="text-xs text-gray-500 dark:text-slate-400 mt-2">
                   Tip: Usa variables como {`{{name}}`}, {`{{1}}`}, {`{{2}}`} para personalizar
                   mensajes
                 </p>
@@ -434,7 +458,7 @@ const WhatsAppTemplatesPage = () => {
               <div className="flex gap-3 pt-4">
                 <button
                   onClick={() => setShowModal(false)}
-                  className="flex-1 bg-slate-700 hover:bg-slate-600 text-white py-3 rounded-lg font-medium transition-all"
+                  className="flex-1 bg-gray-100 dark:bg-slate-700 hover:bg-gray-200 dark:hover:bg-slate-600 text-gray-900 dark:text-white py-3 rounded-lg font-medium transition-all"
                 >
                   Cancelar
                 </button>

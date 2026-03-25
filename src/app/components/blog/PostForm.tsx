@@ -14,9 +14,17 @@ import FileUpload from '../FileUpload';
 
 interface PostFormProps {
   initialData?: Partial<BlogPost>;
+  storeId?: string;
+  restaurantId?: string;
+  serviceProviderId?: string;
 }
 
-export default function PostForm({ initialData }: PostFormProps) {
+export default function PostForm({
+  initialData,
+  storeId,
+  restaurantId,
+  serviceProviderId,
+}: PostFormProps) {
   const [formData, setFormData] = useState({
     title: '',
     excerpt: '',
@@ -245,16 +253,41 @@ export default function PostForm({ initialData }: PostFormProps) {
         status,
       });
 
-      let saved: BlogPost;
       if (isEdit && initialData?.id) {
-        const res = await updatePostMutation({
+        // ── UPDATE (always via GQL) ──────────────────────────────────────────
+        await updatePostMutation({
           variables: { input: { id: initialData.id, ...parsed } },
         });
-        saved = res?.data?.updatePost;
         setMessage('Artículo actualizado correctamente');
+      } else if (restaurantId || serviceProviderId) {
+        // ── CREATE for restaurant / service provider via REST ────────────────
+        const { getAuthToken } = await import('@/lib/utils/authToken');
+        const token = getAuthToken();
+        const apiUrl = process.env.NEXT_PUBLIC_API_URL || 'https://api.emprendy.ai';
+        const body: Record<string, unknown> = { ...parsed };
+        if (restaurantId) body.restaurantId = restaurantId;
+        if (serviceProviderId) body.serviceProviderId = serviceProviderId;
+
+        const res = await fetch(`${apiUrl}/blog`, {
+          method: 'POST',
+          headers: {
+            'Content-Type': 'application/json',
+            ...(token ? { Authorization: `Bearer ${token}` } : {}),
+          },
+          body: JSON.stringify(body),
+        });
+        if (!res.ok) {
+          const errText = await res.text();
+          throw new Error(errText || 'Error al crear el artículo');
+        }
+        setMessage(
+          status === 'DRAFT' ? 'Borrador guardado correctamente' : 'Artículo publicado exitosamente'
+        );
       } else {
-        const res = await createPostMutation({ variables: { input: parsed } });
-        saved = res?.data?.createPost;
+        // ── CREATE for store / admin via GQL ─────────────────────────────────
+        const input: Record<string, unknown> = { ...parsed };
+        if (storeId) input.storeId = storeId;
+        await createPostMutation({ variables: { input } });
         setMessage(
           status === 'DRAFT' ? 'Borrador guardado correctamente' : 'Artículo publicado exitosamente'
         );
@@ -262,9 +295,10 @@ export default function PostForm({ initialData }: PostFormProps) {
 
       setMessageType('success');
       router.push(`/dashboard/blog`);
-    } catch (err: any) {
-      console.error(err);
-      setMessage(err.message || 'Error al guardar. Intenta nuevamente.');
+    } catch (err: unknown) {
+      const errorMessage =
+        err instanceof Error ? err.message : 'Error al guardar. Intenta nuevamente.';
+      setMessage(errorMessage);
       setMessageType('error');
     } finally {
       setIsSaving(false);

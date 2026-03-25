@@ -7,7 +7,12 @@ export default function DashboardPage() {
   const router = useRouter();
 
   useEffect(() => {
-    router.replace('/dashboard/insights');
+    const user = JSON.parse(localStorage.getItem('user') || '{}');
+    if (user?.serviceProviderId) {
+      router.replace('/dashboard/service-dashboard');
+    } else {
+      router.replace('/dashboard/insights');
+    }
   }, [router]);
 
   return (

@@ -10,6 +10,7 @@ interface BarChartProps {
   title?: string;
   color?: string;
   height?: number;
+  containerClassName?: string;
 }
 
 // Dynamically import recharts to avoid SSR issues

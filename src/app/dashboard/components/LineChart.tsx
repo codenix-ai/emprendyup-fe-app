@@ -9,6 +9,8 @@ interface LineChartProps {
   title?: string;
   color?: string;
   height?: number;
+  theme?: 'light' | 'dark';
+  containerClassName?: string;
 }
 
 export default function LineChart({
@@ -18,7 +20,12 @@ export default function LineChart({
   title,
   color = '#22c55e',
   height = 300,
+  theme = 'light',
+  containerClassName,
 }: LineChartProps) {
+  const defaultContainerClass =
+    'bg-white dark:bg-gray-800 rounded-lg shadow-sm border border-gray-200 dark:border-gray-700 p-6';
+  const wrapClass = containerClassName ?? defaultContainerClass;
   const canvasRef = useRef<HTMLCanvasElement>(null);
   const [tooltipData, setTooltipData] = useState<{
     x: number;
@@ -68,8 +75,14 @@ export default function LineChart({
     const getY = (value: number) =>
       margin.top + chartHeight - ((value - minValue) / valueRange) * chartHeight;
 
+    // Theme-based colors
+    const gridColor = theme === 'dark' ? 'rgba(255,255,255,0.07)' : '#e5e7eb';
+    const axisColor = theme === 'dark' ? 'rgba(240,238,233,0.3)' : '#6b7280';
+    const labelColor = theme === 'dark' ? 'rgba(240,238,233,0.4)' : '#6b7280';
+    const pointBorder = theme === 'dark' ? '#13151F' : '#ffffff';
+
     // Draw grid lines
-    ctx.strokeStyle = '#e5e7eb';
+    ctx.strokeStyle = gridColor;
     ctx.lineWidth = 1;
     ctx.setLineDash([3, 3]);
 
@@ -121,7 +134,7 @@ export default function LineChart({
       ctx.fill();
 
       // White border around points
-      ctx.strokeStyle = '#ffffff';
+      ctx.strokeStyle = pointBorder;
       ctx.lineWidth = 2;
       ctx.stroke();
       ctx.strokeStyle = color;
@@ -129,7 +142,7 @@ export default function LineChart({
     }
 
     // Draw axes
-    ctx.strokeStyle = '#6b7280';
+    ctx.strokeStyle = axisColor;
     ctx.lineWidth = 1;
 
     // Y-axis
@@ -145,7 +158,7 @@ export default function LineChart({
     ctx.stroke();
 
     // Draw labels
-    ctx.fillStyle = '#6b7280';
+    ctx.fillStyle = labelColor;
     ctx.font = '12px system-ui, -apple-system, sans-serif';
     ctx.textAlign = 'center';
 
@@ -167,7 +180,7 @@ export default function LineChart({
       const y = margin.top + chartHeight - (i / 5) * chartHeight;
       ctx.fillText(value.toFixed(0), margin.left - 10, y + 4);
     }
-  }, [mounted, data, xKey, yKey, color, height]);
+  }, [mounted, data, xKey, yKey, color, height, theme]);
 
   const handleMouseMove = (event: React.MouseEvent<HTMLCanvasElement>) => {
     if (!canvasRef.current || !data || data.length === 0) return;
@@ -175,7 +188,6 @@ export default function LineChart({
     const canvas = canvasRef.current;
     const rect = canvas.getBoundingClientRect();
     const x = event.clientX - rect.left;
-    const y = event.clientY - rect.top;
 
     const margin = { top: 20, right: 30, bottom: 40, left: 50 };
     const chartWidth = rect.width - margin.left - margin.right;
@@ -204,7 +216,7 @@ export default function LineChart({
 
   if (!mounted) {
     return (
-      <div className="bg-white dark:bg-gray-800 rounded-lg shadow-sm border border-gray-200 dark:border-gray-700 p-6">
+      <div className={wrapClass}>
         <div className="animate-pulse h-64 bg-gray-300 dark:bg-gray-600 rounded"></div>
       </div>
     );
@@ -212,7 +224,7 @@ export default function LineChart({
 
   if (!data || data.length === 0) {
     return (
-      <div className="bg-white dark:bg-gray-800 rounded-lg shadow-sm border border-gray-200 dark:border-gray-700 p-6">
+      <div className={wrapClass}>
         {title && (
           <h3 className="text-lg font-semibold text-gray-900 dark:text-white mb-4">{title}</h3>
         )}
@@ -224,7 +236,7 @@ export default function LineChart({
   }
 
   return (
-    <div className="bg-white dark:bg-gray-800 rounded-lg shadow-sm border border-gray-200 dark:border-gray-700 p-6 relative">
+    <div className={`${wrapClass} relative`}>
       {title && (
         <h3 className="text-lg font-semibold text-gray-900 dark:text-white mb-4">{title}</h3>
       )}

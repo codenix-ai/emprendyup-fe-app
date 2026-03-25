@@ -4,6 +4,7 @@ import { gql, useQuery } from '@apollo/client';
 import { useParams } from 'next/navigation';
 import React, { useState } from 'react';
 import { FiMail, FiMessageCircle, FiUser } from 'react-icons/fi';
+import { SectionLoader } from '@/app/components/Loader';
 const GET_PRODUCT_QUERY = gql`
   query GetProduct($id: String!) {
     product(id: $id) {
@@ -39,7 +40,7 @@ export default function ProductInformation() {
   const params = useParams();
   const id = params?.slug;
   const { data, loading, error } = useQuery(GET_PRODUCT_QUERY, { variables: { id } });
-  if (loading) return <div>Cargando...</div>;
+  if (loading) return <SectionLoader text="Cargando..." />;
   if (error) return <div>Error: {error.message}</div>;
   const product = data?.product;
   return (

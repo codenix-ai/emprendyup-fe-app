@@ -74,7 +74,11 @@ function LoginForm() {
   }) => {
     const hasBusiness = user.storeId || user.restaurantId || user.serviceProviderId;
     if (user.role === 'ADMIN' || hasBusiness) {
-      router.push('/dashboard/insights');
+      if (user.serviceProviderId) {
+        router.push('/dashboard/service-dashboard');
+      } else {
+        router.push('/dashboard/insights');
+      }
     } else {
       router.push('/dashboard/store/new');
     }
@@ -157,8 +161,8 @@ function LoginForm() {
           {/* Brand tagline on image */}
           <div className="relative z-10 p-10 pb-14">
             <div className="inline-flex items-center gap-2 mb-8">
-              <Image src="/images/logo.svg" width={40} height={40} alt="EmprendyUp" />
-              <span className="text-white font-bold text-xl">EmprendyUp</span>
+              <Image src="/images/logo.svg" width={40} height={40} alt="Emprendy.ai" />
+              <span className="text-white font-bold text-xl">Emprendy.ai</span>
             </div>
             <blockquote className="text-white">
               <p className="text-2xl font-semibold leading-snug max-w-sm">
@@ -181,7 +185,7 @@ function LoginForm() {
           >
             {/* Mobile logo */}
             <div className="md:hidden flex justify-center mb-6">
-              <Image src="/images/logo.svg" width={44} height={44} alt="EmprendyUp" />
+              <Image src="/images/logo.svg" width={44} height={44} alt="Emprendy.ai" />
             </div>
 
             <h1 className="text-2xl font-bold text-white mb-1">Bienvenido de nuevo</h1>

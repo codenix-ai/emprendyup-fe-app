@@ -9,9 +9,9 @@ const dm_sans = DM_Sans({
 
 export const metadata = {
   title:
-    'Herramientas digitales para emprendedores que quieren escalar su negocio con IA, tecnología y una comunidad que impulsa su crecimiento - EmprendyUp',
+    'Herramientas digitales para emprendedores que quieren escalar su negocio con IA, tecnología y una comunidad que impulsa su crecimiento - Emprendy.ai',
   description:
-    'Crea tu tienda online profesional con EmprendyUp. Marketplace colaborativo, CRM integrado, IA para contenido, chatbot WhatsApp, métricas de ventas y comunidad de emprendedores. ¡Haz crecer tu negocio hoy!',
+    'Crea tu tienda online profesional con Emprendy.ai. Marketplace colaborativo, CRM integrado, IA para contenido, chatbot WhatsApp, métricas de ventas y comunidad de emprendedores. ¡Haz crecer tu negocio hoy!',
   keywords: [
     'emprendyup',
     'herramientas emprendimiento',
@@ -28,9 +28,9 @@ export const metadata = {
     'capacitaciones empresariales',
     'eventos emprendedores',
   ].join(', '),
-  authors: [{ name: 'EmprendyUp Team' }],
-  creator: 'EmprendyUp',
-  publisher: 'EmprendyUp',
+  authors: [{ name: 'Emprendy.ai Team' }],
+  creator: 'Emprendy.ai',
+  publisher: 'Emprendy.ai',
   robots: {
     index: true,
     follow: true,
@@ -46,9 +46,9 @@ export const metadata = {
     type: 'website',
     locale: 'es_ES',
     url: 'https://www.emprendy.ai/',
-    siteName: 'EmprendyUp',
+    siteName: 'Emprendy.ai',
     title:
-      'Herramientas digitales para emprendedores que quieren escalar su negocio con IA, tecnología y una comunidad que impulsa su crecimiento - EmprendyUp',
+      'Herramientas digitales para emprendedores que quieren escalar su negocio con IA, tecnología y una comunidad que impulsa su crecimiento - Emprendy.ai',
     description:
       'Plataforma todo-en-uno para emprendedores: tienda online, marketplace colaborativo, CRM, IA para contenido, chatbot WhatsApp y comunidad con capacitaciones.',
     images: [
@@ -56,7 +56,7 @@ export const metadata = {
         url: '/images/emprendyup-og-image.jpg',
         width: 1200,
         height: 630,
-        alt: 'Herramientas digitales para emprendedores que quieren escalar su negocio con IA, tecnología y una comunidad que impulsa su crecimiento - EmprendyUp',
+        alt: 'Herramientas digitales para emprendedores que quieren escalar su negocio con IA, tecnología y una comunidad que impulsa su crecimiento - Emprendy.ai',
       },
     ],
   },
@@ -65,7 +65,7 @@ export const metadata = {
     site: '@emprendyup',
     creator: '@emprendyup',
     title:
-      'Herramientas digitales para emprendedores que quieren escalar su negocio con IA, tecnología y una comunidad que impulsa su crecimiento - EmprendyUp',
+      'Herramientas digitales para emprendedores que quieren escalar su negocio con IA, tecnología y una comunidad que impulsa su crecimiento - Emprendy.ai',
     description:
       'Tienda online + Marketplace + IA + CRM + Comunidad de emprendedores. Todo lo que necesitas para hacer crecer tu negocio.',
     images: ['/images/emprendyup-twitter-card.jpg'],
@@ -84,8 +84,8 @@ export const metadata = {
     },
   },
   other: {
-    'application-name': 'EmprendyUp',
-    'apple-mobile-web-app-title': 'EmprendyUp',
+    'application-name': 'Emprendy.ai',
+    'apple-mobile-web-app-title': 'Emprendy.ai',
     'theme-color': '#10B981',
     'msapplication-TileColor': '#10B981',
   },
@@ -98,12 +98,20 @@ import CookieWrapper from './components/CookieWrapper';
 import { ThemeProvider } from 'next-themes';
 import GoogleOAuthProvider from './components/GoogleOAuthProvider';
 import { Toaster } from 'react-hot-toast';
+import { ThemeToggle } from './components/ThemeToggle';
 export default function RootLayout({ children }: { children: ReactNode }) {
   return (
     <html lang="es" suppressHydrationWarning>
       <head>
-        <link rel="icon" href="/favicon.ico" />
+        <link rel="icon" href="/images/logo.svg" type="image/svg+xml" />
+        <link rel="shortcut icon" href="/images/logo.svg" type="image/svg+xml" />
+        <link rel="icon" href="/emprendy.png" type="image/png" />
         <link rel="apple-touch-icon" sizes="180x180" href="/apple-touch-icon.png" />
+        <link rel="apple-touch-icon" sizes="256x256" href="/emprendy.png" />
+        <meta name="apple-mobile-web-app-capable" content="yes" />
+        <meta name="apple-mobile-web-app-status-bar-style" content="default" />
+        <meta name="apple-mobile-web-app-title" content="Emprendy.ai" />
+        <link rel="mask-icon" href="/images/logo.svg" color="#10B981" />
         <link rel="icon" type="image/png" sizes="32x32" href="/favicon-32x32.png" />
         <link rel="icon" type="image/png" sizes="16x16" href="/favicon-16x16.png" />
         <link rel="manifest" href="/site.webmanifest" />
@@ -122,7 +130,7 @@ export default function RootLayout({ children }: { children: ReactNode }) {
         {/* Open Graph / Twitter */}
         <meta property="og:type" content={metadata.openGraph?.type || 'website'} />
         <meta property="og:locale" content={metadata.openGraph?.locale || 'es_ES'} />
-        <meta property="og:site_name" content={metadata.openGraph?.siteName || 'EmprendyUp'} />
+        <meta property="og:site_name" content={metadata.openGraph?.siteName || 'Emprendy.ai'} />
         <meta property="og:title" content={metadata.openGraph?.title || metadata.title} />
         <meta
           property="og:description"
@@ -171,7 +179,7 @@ export default function RootLayout({ children }: { children: ReactNode }) {
             __html: JSON.stringify({
               '@context': 'https://schema.org',
               '@type': 'WebSite',
-              name: 'EmprendyUp',
+              name: 'Emprendy.ai',
               url: metadata.openGraph?.url || 'https://www.emprendyup.com/',
               potentialAction: {
                 '@type': 'SearchAction',
@@ -206,7 +214,7 @@ export default function RootLayout({ children }: { children: ReactNode }) {
             __html: JSON.stringify({
               '@context': 'https://schema.org',
               '@type': 'Organization',
-              name: 'EmprendyUp',
+              name: 'Emprendy.ai',
               description:
                 'Herramientas digitales para emprendedores que quieren escalar su negocio con IA, tecnología y una comunidad que impulsa su crecimiento',
               url: 'https://www.emprendyup.com',
@@ -227,14 +235,14 @@ export default function RootLayout({ children }: { children: ReactNode }) {
                 '@type': 'Offer',
                 itemOffered: {
                   '@type': 'Service',
-                  name: 'Plataforma EmprendyUp',
+                  name: 'Plataforma Emprendy.ai',
                   description:
                     'Herramientas integrales para emprendedores: tienda online, marketplace, CRM, IA, chatbot WhatsApp y comunidad',
                 },
               },
               hasOfferCatalog: {
                 '@type': 'OfferCatalog',
-                name: 'Servicios EmprendyUp',
+                name: 'Servicios Emprendy.ai',
                 itemListElement: [
                   {
                     '@type': 'Offer',
@@ -301,10 +309,10 @@ export default function RootLayout({ children }: { children: ReactNode }) {
               mainEntity: [
                 {
                   '@type': 'Question',
-                  name: '¿Qué incluye la plataforma EmprendyUp?',
+                  name: '¿Qué incluye la plataforma Emprendy.ai?',
                   acceptedAnswer: {
                     '@type': 'Answer',
-                    text: 'EmprendyUp incluye tienda online personalizada, marketplace colaborativo, CRM integrado, herramientas de IA para contenido, chatbot WhatsApp, métricas avanzadas y acceso a una comunidad con capacitaciones y eventos.',
+                    text: 'Emprendy.ai incluye tienda online personalizada, marketplace colaborativo, CRM integrado, herramientas de IA para contenido, chatbot WhatsApp, métricas avanzadas y acceso a una comunidad con capacitaciones y eventos.',
                   },
                 },
                 {
@@ -344,11 +352,12 @@ export default function RootLayout({ children }: { children: ReactNode }) {
         </Script>
       </head>
       <body className={`${dm_sans.variable} dark:bg-slate-900`}>
-        <ThemeProvider attribute="class" defaultTheme="dark" enableSystem>
+        <ThemeProvider attribute="class" defaultTheme="dark" enableSystem disableTransitionOnChange>
           <GoogleOAuthProvider>
             <ApolloWrapper>
               {/* <ConditionalLayout> */}
               {children}
+              <ThemeToggle compact className="fixed bottom-5 end-5 z-40" />
               <Toaster position="top-right" />
               {/* </ConditionalLayout> */}
             </ApolloWrapper>

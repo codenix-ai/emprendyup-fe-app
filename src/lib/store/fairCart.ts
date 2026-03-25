@@ -1,8 +1,16 @@
 import { create } from 'zustand';
 import { devtools, persist } from 'zustand/middleware';
 
+export interface CustomCartItem {
+  id: string; // client-generated uuid for list key
+  name: string;
+  unitPrice: number;
+  quantity: number;
+}
+
 export interface FairCartStatePerFair {
   quantities: Record<string, number>; // productId -> qty
+  customItems: CustomCartItem[];
   paymentMethod: string;
   customerName: string;
   customerContact: string;
@@ -21,10 +29,15 @@ interface FairCartState {
   setPaymentMethod: (fairId: string, method: string) => void;
   setCustomerName: (fairId: string, name: string) => void;
   setCustomerContact: (fairId: string, contact: string) => void;
+
+  addCustomItem: (fairId: string, item: Omit<CustomCartItem, 'id'>) => void;
+  removeCustomItem: (fairId: string, itemId: string) => void;
+  updateCustomItemQty: (fairId: string, itemId: string, quantity: number) => void;
 }
 
 const defaultPerFair: FairCartStatePerFair = {
   quantities: {},
+  customItems: [],
   paymentMethod: 'CASH',
   customerName: '',
   customerContact: '',
@@ -33,6 +46,10 @@ const defaultPerFair: FairCartStatePerFair = {
 function clampQty(value: number): number {
   if (!Number.isFinite(value)) return 0;
   return Math.max(0, Math.floor(value));
+}
+
+function nanoid(): string {
+  return Math.random().toString(36).slice(2, 10) + Date.now().toString(36);
 }
 
 export const useFairCartStore = create<FairCartState>()(
@@ -104,6 +121,52 @@ export const useFairCartStore = create<FairCartState>()(
             const per = state.byFairId[fairId] || { ...defaultPerFair };
             return {
               byFairId: { ...state.byFairId, [fairId]: { ...per, customerContact: contact } },
+            };
+          });
+        },
+
+        addCustomItem: (fairId, item) => {
+          set((state) => {
+            const per = state.byFairId[fairId] || { ...defaultPerFair };
+            const newItem: CustomCartItem = { id: nanoid(), ...item };
+            return {
+              byFairId: {
+                ...state.byFairId,
+                [fairId]: { ...per, customItems: [...(per.customItems ?? []), newItem] },
+              },
+            };
+          });
+        },
+
+        removeCustomItem: (fairId, itemId) => {
+          set((state) => {
+            const per = state.byFairId[fairId] || { ...defaultPerFair };
+            return {
+              byFairId: {
+                ...state.byFairId,
+                [fairId]: {
+                  ...per,
+                  customItems: (per.customItems ?? []).filter((i) => i.id !== itemId),
+                },
+              },
+            };
+          });
+        },
+
+        updateCustomItemQty: (fairId, itemId, quantity) => {
+          const q = clampQty(quantity);
+          set((state) => {
+            const per = state.byFairId[fairId] || { ...defaultPerFair };
+            return {
+              byFairId: {
+                ...state.byFairId,
+                [fairId]: {
+                  ...per,
+                  customItems: (per.customItems ?? []).map((i) =>
+                    i.id === itemId ? { ...i, quantity: q } : i
+                  ),
+                },
+              },
             };
           });
         },

@@ -30,7 +30,9 @@ export interface CreateFairInput {
 }
 
 export interface FairSaleItemInput {
-  productId: string;
+  productId?: string; // omit for custom (non-catalog) items
+  productName?: string; // required when productId is absent
+  unitPrice?: number; // required when productId is absent
   quantity: number;
 }
 
@@ -39,6 +41,13 @@ export interface CreateFairSaleInput {
   items: FairSaleItemInput[];
   customerName?: string;
   customerContact?: string;
+}
+
+export interface UpdateFairSaleInput {
+  paymentMethod?: string;
+  customerName?: string;
+  customerContact?: string;
+  total?: number;
 }
 
 export interface FairSale {
@@ -137,4 +146,13 @@ export const fairsApi = {
 
   getSummary: (fairId: string) =>
     fairsFetch<FairSummary>(`/fairs/${fairId}/summary`, { method: 'GET' }),
+
+  updateSale: (fairId: string, saleId: string, input: UpdateFairSaleInput) =>
+    fairsFetch<FairSale>(`/fairs/${fairId}/sales/${saleId}`, {
+      method: 'PATCH',
+      body: JSON.stringify(input),
+    }),
+
+  deleteSale: (fairId: string, saleId: string) =>
+    fairsFetch<void>(`/fairs/${fairId}/sales/${saleId}`, { method: 'DELETE' }),
 };

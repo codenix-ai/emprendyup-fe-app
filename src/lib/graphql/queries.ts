@@ -452,6 +452,7 @@ export const GET_SUBSCRIPTION_PRODUCTS = gql`
         price
         currency
         available
+        metadata
         images {
           id
           url

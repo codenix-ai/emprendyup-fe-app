@@ -1,6 +1,6 @@
 'use client';
 
-import { useState, useRef, useEffect } from 'react';
+import { useState, useRef, useEffect, useMemo } from 'react';
 import FullCalendar from '@fullcalendar/react';
 import dayGridPlugin from '@fullcalendar/daygrid';
 import timeGridPlugin from '@fullcalendar/timegrid';
@@ -11,7 +11,6 @@ import { useSessionStore } from '@/lib/store/dashboard';
 import {
   X,
   Clock,
-  DollarSign,
   Calendar as CalendarIcon,
   User,
   Phone,
@@ -19,8 +18,9 @@ import {
   Trash2,
   Check,
   MapPin,
-  Bell,
-  CreditCard,
+  Mail,
+  Search,
+  ChevronDown as ChevronDownIcon,
 } from 'lucide-react';
 import esLocale from '@fullcalendar/core/locales/es';
 
@@ -44,6 +44,16 @@ interface CalendarEvent extends EventInput {
     serviceReference?: string;
     notes?: string;
   };
+}
+
+interface KnownClient {
+  name: string;
+  email: string;
+  phone: string;
+  appointmentCount: number;
+  serviceAddress: string;
+  serviceCity: string;
+  serviceReference: string;
 }
 
 const STATUS_LABELS: Record<string, string> = {
@@ -98,40 +108,6 @@ const GET_APPOINTMENTS = gql`
       serviceReference
       reminderSent
       createdAt
-    }
-  }
-`;
-
-const CREATE_SERVICE = gql`
-  mutation CreateService($data: CreateServiceInput!) {
-    createService(data: $data) {
-      id
-      serviceProviderId
-      name
-      description
-      durationMinutes
-      priceAmount
-      currency
-      allowsOnlinePayment
-      isActive
-      createdAt
-      updatedAt
-    }
-  }
-`;
-
-const UPDATE_SERVICE = gql`
-  mutation UpdateService($id: String!, $data: UpdateServiceInput!) {
-    updateService(id: $id, data: $data) {
-      id
-      name
-      description
-      durationMinutes
-      priceAmount
-      currency
-      allowsOnlinePayment
-      isActive
-      updatedAt
     }
   }
 `;
@@ -198,9 +174,7 @@ export default function ServiceCalendar() {
 
   // State
   const [isModalOpen, setIsModalOpen] = useState(false);
-  const [isServiceModalOpen, setIsServiceModalOpen] = useState(false);
   const [selectedEvent, setSelectedEvent] = useState<CalendarEvent | null>(null);
-  const [selectedService, setSelectedService] = useState<any | null>(null);
   const [events, setEvents] = useState<CalendarEvent[]>([]);
 
   // Appointment Form
@@ -220,18 +194,17 @@ export default function ServiceCalendar() {
   });
 
   // Service Form
-  const [serviceForm, setServiceForm] = useState({
-    name: '',
-    description: '',
-    durationMinutes: 60,
-    priceAmount: 0,
-    currency: 'COP',
-    allowsOnlinePayment: false,
-    isActive: true,
-  });
+
+  // Client autocomplete
+  const [clientQuery, setClientQuery] = useState('');
+  const [showClientSuggestions, setShowClientSuggestions] = useState(false);
+  const clientComboRef = useRef<HTMLDivElement>(null);
+  const clientInputRef = useRef<HTMLInputElement>(null);
+  const [activeClientIndex, setActiveClientIndex] = useState(-1);
+  const [isSubmitting, setIsSubmitting] = useState(false);
 
   // GraphQL
-  const { data: servicesData, refetch: refetchServices } = useQuery(GET_SERVICES, {
+  const { data: servicesData } = useQuery(GET_SERVICES, {
     variables: { serviceProviderId: serviceProviderId || '' },
     skip: !serviceProviderId,
   });
@@ -241,11 +214,97 @@ export default function ServiceCalendar() {
     skip: !serviceProviderId,
   });
 
-  const [createService] = useMutation(CREATE_SERVICE);
-  const [updateService] = useMutation(UPDATE_SERVICE);
+  // Build deduplicated client list from past appointments
+  const knownClients = useMemo((): KnownClient[] => {
+    const raw = appointmentsData?.appointmentsByProvider ?? [];
+    const map = new Map<string, KnownClient>();
+    for (const apt of raw) {
+      const key = apt.customerEmail?.toLowerCase() || apt.customerName?.toLowerCase() || '';
+      if (!key) continue;
+      if (map.has(key)) {
+        const existing = map.get(key)!;
+        existing.appointmentCount++;
+        // Populate address from the first appointment that has one
+        if (!existing.serviceAddress && apt.serviceAddress) {
+          existing.serviceAddress = apt.serviceAddress;
+          existing.serviceCity = apt.serviceCity || '';
+          existing.serviceReference = apt.serviceReference || '';
+        }
+      } else {
+        map.set(key, {
+          name: apt.customerName || '',
+          email: apt.customerEmail || '',
+          phone: apt.customerPhone || '',
+          appointmentCount: 1,
+          serviceAddress: apt.serviceAddress || '',
+          serviceCity: apt.serviceCity || '',
+          serviceReference: apt.serviceReference || '',
+        });
+      }
+    }
+    return Array.from(map.values()).sort((a, b) => b.appointmentCount - a.appointmentCount);
+  }, [appointmentsData]);
+
+  const clientSuggestions = useMemo(() => {
+    if (!clientQuery.trim()) return knownClients.slice(0, 8);
+    const q = clientQuery.toLowerCase();
+    return knownClients
+      .filter(
+        (c) =>
+          c.name.toLowerCase().includes(q) ||
+          c.email.toLowerCase().includes(q) ||
+          c.phone.includes(q)
+      )
+      .slice(0, 8);
+  }, [knownClients, clientQuery]);
+
   const [createAppointment] = useMutation(CREATE_APPOINTMENT);
   const [updateAppointment] = useMutation(UPDATE_APPOINTMENT);
   const [deleteAppointment] = useMutation(DELETE_APPOINTMENT);
+
+  // Close client suggestions on outside click
+  useEffect(() => {
+    const handler = (e: MouseEvent) => {
+      if (clientComboRef.current && !clientComboRef.current.contains(e.target as Node)) {
+        setShowClientSuggestions(false);
+        setActiveClientIndex(-1);
+      }
+    };
+    document.addEventListener('mousedown', handler);
+    return () => document.removeEventListener('mousedown', handler);
+  }, []);
+
+  const selectClient = (client: KnownClient) => {
+    setAppointmentForm((f) => ({
+      ...f,
+      customerName: client.name,
+      customerEmail: client.email,
+      customerPhone: client.phone,
+      serviceAddress: client.serviceAddress || f.serviceAddress,
+      serviceCity: client.serviceCity || f.serviceCity,
+      serviceReference: client.serviceReference || f.serviceReference,
+    }));
+    setClientQuery(client.name);
+    setShowClientSuggestions(false);
+    setActiveClientIndex(-1);
+  };
+
+  const handleClientKeyDown = (e: React.KeyboardEvent<HTMLInputElement>) => {
+    if (!showClientSuggestions || clientSuggestions.length === 0) return;
+    if (e.key === 'ArrowDown') {
+      e.preventDefault();
+      setActiveClientIndex((i) => Math.min(i + 1, clientSuggestions.length - 1));
+    } else if (e.key === 'ArrowUp') {
+      e.preventDefault();
+      setActiveClientIndex((i) => Math.max(i - 1, -1));
+    } else if (e.key === 'Enter' && activeClientIndex >= 0) {
+      e.preventDefault();
+      selectClient(clientSuggestions[activeClientIndex]);
+    } else if (e.key === 'Escape') {
+      setShowClientSuggestions(false);
+      setActiveClientIndex(-1);
+    }
+  };
 
   // Load appointments into calendar events
   useEffect(() => {
@@ -336,6 +395,7 @@ export default function ServiceCalendar() {
     setAppointmentForm({
       serviceId: event.extendedProps.serviceId || '',
       customerName: event.extendedProps.customerName || '',
+      // autocomplete sync
       customerPhone: event.extendedProps.customerPhone || '',
       customerEmail: event.extendedProps.customerEmail || '',
       startDatetime: event.start?.toISOString() || '',
@@ -350,50 +410,17 @@ export default function ServiceCalendar() {
     setIsModalOpen(true);
   };
 
-  const handleCreateService = async () => {
-    try {
-      if (selectedService) {
-        // Update existing service
-        await updateService({
-          variables: {
-            id: selectedService.id,
-            data: {
-              name: serviceForm.name,
-              description: serviceForm.description,
-              durationMinutes: serviceForm.durationMinutes,
-              priceAmount: serviceForm.priceAmount,
-              currency: serviceForm.currency,
-              allowsOnlinePayment: serviceForm.allowsOnlinePayment,
-              isActive: serviceForm.isActive,
-            },
-          },
-        });
-      } else {
-        // Create new service
-        await createService({
-          variables: {
-            data: {
-              ...serviceForm,
-              serviceProviderId,
-            },
-          },
-        });
-      }
-      await refetchServices();
-      setIsServiceModalOpen(false);
-      resetServiceForm();
-      setSelectedService(null);
-    } catch (error) {
-      console.error('Error saving service:', error);
-    }
-  };
-
   const handleCreateAppointment = async () => {
+    if (isSubmitting) return;
+    setIsSubmitting(true);
     try {
       const service = servicesData?.servicesByProvider?.find(
         (s: any) => s.id === appointmentForm.serviceId
       );
-      if (!service) return;
+      if (!service) {
+        setIsSubmitting(false);
+        return;
+      }
 
       const startDate = new Date(appointmentForm.startDatetime);
       const endDate = new Date(startDate.getTime() + service.durationMinutes * 60000);
@@ -431,11 +458,14 @@ export default function ServiceCalendar() {
       resetAppointmentForm();
     } catch (error) {
       console.error('Error creating appointment:', error);
+    } finally {
+      setIsSubmitting(false);
     }
   };
 
   const handleUpdateAppointment = async () => {
-    if (!selectedEvent?.extendedProps.appointmentId) return;
+    if (!selectedEvent?.extendedProps.appointmentId || isSubmitting) return;
+    setIsSubmitting(true);
     try {
       // Convert datetime-local to ISO-8601 format
       const startDate = new Date(appointmentForm.startDatetime);
@@ -478,6 +508,8 @@ export default function ServiceCalendar() {
       resetAppointmentForm();
     } catch (error) {
       console.error('Error updating appointment:', error);
+    } finally {
+      setIsSubmitting(false);
     }
   };
 
@@ -496,6 +528,9 @@ export default function ServiceCalendar() {
   };
 
   const resetAppointmentForm = () => {
+    setIsSubmitting(false);
+    setClientQuery('');
+    setShowClientSuggestions(false);
     setAppointmentForm({
       serviceId: '',
       customerName: '',
@@ -511,32 +546,6 @@ export default function ServiceCalendar() {
       paymentStatus: 'PENDING',
     });
     setSelectedEvent(null);
-  };
-
-  const resetServiceForm = () => {
-    setServiceForm({
-      name: '',
-      description: '',
-      durationMinutes: 60,
-      priceAmount: 0,
-      currency: 'COP',
-      allowsOnlinePayment: false,
-      isActive: true,
-    });
-  };
-
-  const handleEditService = (service: any) => {
-    setSelectedService(service);
-    setServiceForm({
-      name: service.name,
-      description: service.description || '',
-      durationMinutes: service.durationMinutes,
-      priceAmount: service.priceAmount,
-      currency: service.currency,
-      allowsOnlinePayment: service.allowsOnlinePayment,
-      isActive: service.isActive,
-    });
-    setIsServiceModalOpen(true);
   };
 
   if (!serviceProviderId) {
@@ -558,21 +567,10 @@ export default function ServiceCalendar() {
             Calendario de Servicios
           </h1>
           <p className="text-sm sm:text-base text-gray-600 dark:text-gray-400 mt-1">
-            Gestiona tus citas y servicios disponibles
+            Gestiona tus citas y disponibilidad
           </p>
         </div>
         <div className="flex flex-col sm:flex-row gap-2 sm:gap-3">
-          <button
-            onClick={() => {
-              setSelectedService(null);
-              resetServiceForm();
-              setIsServiceModalOpen(true);
-            }}
-            className="inline-flex items-center justify-center px-4 py-2.5 bg-gray-600 text-white rounded-lg hover:bg-gray-700 transition-colors text-sm sm:text-base w-full sm:w-auto"
-          >
-            <Plus className="h-4 w-4 mr-2" />
-            Nuevo Servicio
-          </button>
           <button
             onClick={() => {
               setSelectedEvent(null);
@@ -588,62 +586,8 @@ export default function ServiceCalendar() {
 
       {/* Main Grid Layout */}
       <div className="grid grid-cols-1 lg:grid-cols-4 gap-6">
-        {/* Services Panel */}
-        <div className="lg:col-span-1 space-y-4">
-          <div className="bg-white dark:bg-gray-800 rounded-lg border border-gray-200 dark:border-gray-700 p-4">
-            <h3 className="text-lg font-semibold text-gray-900 dark:text-white mb-4">
-              Mis Servicios
-            </h3>
-            <div className="space-y-3">
-              {servicesData?.servicesByProvider && servicesData.servicesByProvider.length > 0 ? (
-                servicesData.servicesByProvider.map((service: any) => (
-                  <div
-                    key={service.id}
-                    className={`p-3 rounded-lg border ${
-                      service.isActive
-                        ? 'border-green-200 bg-green-50 dark:bg-green-900/20 dark:border-green-800'
-                        : 'border-gray-200 bg-gray-50 dark:bg-gray-700/50 dark:border-gray-600'
-                    }`}
-                  >
-                    <div className="flex items-start justify-between mb-2">
-                      <div className="flex-1">
-                        <h4 className="font-medium text-gray-900 dark:text-white text-sm">
-                          {service.name}
-                        </h4>
-                        <p className="text-xs text-gray-600 dark:text-gray-400 mt-1">
-                          {service.durationMinutes} min
-                        </p>
-                        <p className="text-sm font-semibold text-[var(--fourth-base)] mt-1">
-                          ${service.priceAmount.toLocaleString()} {service.currency}
-                        </p>
-                      </div>
-                      <span
-                        className={`text-xs px-2 py-1 rounded ${
-                          service.isActive
-                            ? 'bg-green-100 text-green-800 dark:bg-green-800 dark:text-green-100'
-                            : 'bg-gray-200 text-gray-600 dark:bg-gray-600 dark:text-gray-200'
-                        }`}
-                      >
-                        {service.isActive ? 'Activo' : 'Inactivo'}
-                      </span>
-                    </div>
-                    <button
-                      onClick={() => handleEditService(service)}
-                      className="w-full px-2 py-1.5 text-xs bg-gray-400/80 text-white rounded-lg hover:opacity-90 transition-colors"
-                    >
-                      Editar Servicio
-                    </button>
-                  </div>
-                ))
-              ) : (
-                <p className="text-sm text-gray-500 dark:text-gray-400 text-center py-4">
-                  No hay servicios creados
-                </p>
-              )}
-            </div>
-          </div>
-
-          {/* Upcoming Appointments */}
+        {/* Upcoming Appointments */}
+        <div className="lg:col-span-1">
           <div className="bg-white dark:bg-gray-800 rounded-lg border border-gray-200 dark:border-gray-700 p-4">
             <h3 className="text-lg font-semibold text-gray-900 dark:text-white mb-4">
               Próximas Citas
@@ -795,55 +739,218 @@ export default function ServiceCalendar() {
                 </select>
               </div>
 
-              {/* Customer Name */}
-              <div>
-                <label className="block text-xs sm:text-sm font-medium text-gray-700 dark:text-gray-300 mb-1.5 sm:mb-2">
-                  <User className="h-3.5 w-3.5 sm:h-4 sm:w-4 inline mr-1.5 sm:mr-2" />
-                  Nombre del Cliente
-                </label>
-                <input
-                  type="text"
-                  value={appointmentForm.customerName}
-                  onChange={(e) =>
-                    setAppointmentForm({ ...appointmentForm, customerName: e.target.value })
-                  }
-                  className="w-full px-3 sm:px-4 py-2.5 sm:py-3 text-sm sm:text-base border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-700 text-gray-900 dark:text-white focus:ring-2 focus:ring-[var(--fourth-base)] focus:border-transparent"
-                  placeholder="Juan Pérez"
-                />
-              </div>
-              {/* Customer email */}
-              <div>
-                <label className="block text-xs sm:text-sm font-medium text-gray-700 dark:text-gray-300 mb-1.5 sm:mb-2">
-                  <User className="h-3.5 w-3.5 sm:h-4 sm:w-4 inline mr-1.5 sm:mr-2" />
-                  Correo Electrónico del Cliente
-                </label>
-                <input
-                  type="email"
-                  value={appointmentForm.customerEmail}
-                  onChange={(e) =>
-                    setAppointmentForm({ ...appointmentForm, customerEmail: e.target.value })
-                  }
-                  className="w-full px-3 sm:px-4 py-2.5 sm:py-3 text-sm sm:text-base border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-700 text-gray-900 dark:text-white focus:ring-2 focus:ring-[var(--fourth-base)] focus:border-transparent"
-                  placeholder="juan.perez@example.com"
-                />
-              </div>
+              {/* ── Client Autocomplete ── */}
+              {!selectedEvent ? (
+                /* NEW APPOINTMENT — searchable client picker */
+                <div>
+                  <label className="block text-xs sm:text-sm font-medium text-gray-700 dark:text-gray-300 mb-1.5 sm:mb-2">
+                    <User className="h-3.5 w-3.5 sm:h-4 sm:w-4 inline mr-1.5 sm:mr-2" />
+                    Cliente
+                    {knownClients.length > 0 && (
+                      <span className="ml-2 text-[10px] font-normal text-fourth-base bg-fourth-base/10 px-1.5 py-0.5 rounded-full">
+                        {knownClients.length} registrados
+                      </span>
+                    )}
+                  </label>
 
-              {/* Customer Phone */}
-              <div>
-                <label className="block text-xs sm:text-sm font-medium text-gray-700 dark:text-gray-300 mb-1.5 sm:mb-2">
-                  <Phone className="h-3.5 w-3.5 sm:h-4 sm:w-4 inline mr-1.5 sm:mr-2" />
-                  Teléfono
-                </label>
-                <input
-                  type="tel"
-                  value={appointmentForm.customerPhone}
-                  onChange={(e) =>
-                    setAppointmentForm({ ...appointmentForm, customerPhone: e.target.value })
-                  }
-                  className="w-full px-3 sm:px-4 py-2.5 sm:py-3 text-sm sm:text-base border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-700 text-gray-900 dark:text-white focus:ring-2 focus:ring-[var(--fourth-base)] focus:border-transparent"
-                  placeholder="+57 300 123 4567"
-                />
-              </div>
+                  {/* Combobox wrapper */}
+                  <div ref={clientComboRef} className="relative">
+                    <div className="relative">
+                      <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-gray-400 pointer-events-none" />
+                      <input
+                        ref={clientInputRef}
+                        type="text"
+                        value={clientQuery}
+                        onChange={(e) => {
+                          const val = e.target.value;
+                          setClientQuery(val);
+                          setAppointmentForm({ ...appointmentForm, customerName: val });
+                          setShowClientSuggestions(true);
+                          setActiveClientIndex(-1);
+                        }}
+                        onFocus={() => setShowClientSuggestions(true)}
+                        onKeyDown={handleClientKeyDown}
+                        className="w-full pl-9 pr-9 py-2.5 sm:py-3 text-sm sm:text-base border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-700 text-gray-900 dark:text-white focus:ring-2 focus:ring-[var(--fourth-base)] focus:border-transparent"
+                        placeholder={
+                          knownClients.length > 0
+                            ? 'Buscar o escribir nombre…'
+                            : 'Nombre del cliente'
+                        }
+                        autoComplete="off"
+                        data-testid="client-search-input"
+                      />
+                      {clientQuery && (
+                        <button
+                          type="button"
+                          onClick={() => {
+                            setClientQuery('');
+                            setAppointmentForm({
+                              ...appointmentForm,
+                              customerName: '',
+                              customerEmail: '',
+                              customerPhone: '',
+                            });
+                            setShowClientSuggestions(false);
+                            clientInputRef.current?.focus();
+                          }}
+                          className="absolute right-3 top-1/2 -translate-y-1/2 text-gray-400 hover:text-gray-600 dark:hover:text-gray-200"
+                        >
+                          <ChevronDownIcon className="h-4 w-4" />
+                        </button>
+                      )}
+                    </div>
+
+                    {/* Dropdown */}
+                    {showClientSuggestions && (
+                      <div className="absolute z-50 mt-1 w-full bg-white dark:bg-gray-800 border border-gray-200 dark:border-gray-600 rounded-xl shadow-lg overflow-hidden">
+                        {clientSuggestions.length > 0 ? (
+                          <ul className="max-h-56 overflow-y-auto divide-y divide-gray-100 dark:divide-gray-700">
+                            {clientSuggestions.map((client, idx) => {
+                              const initials = client.name
+                                .split(' ')
+                                .map((w) => w[0])
+                                .slice(0, 2)
+                                .join('')
+                                .toUpperCase();
+                              const isActive = idx === activeClientIndex;
+                              return (
+                                <li
+                                  key={client.email || client.name}
+                                  onMouseDown={() => selectClient(client)}
+                                  onMouseEnter={() => setActiveClientIndex(idx)}
+                                  className={`flex items-center gap-3 px-3 py-2.5 cursor-pointer transition-colors ${
+                                    isActive
+                                      ? 'bg-fourth-base/10 dark:bg-fourth-base/20'
+                                      : 'hover:bg-gray-50 dark:hover:bg-gray-700'
+                                  }`}
+                                >
+                                  {/* Avatar */}
+                                  <div className="flex-shrink-0 h-8 w-8 rounded-full bg-fourth-base/15 flex items-center justify-center text-fourth-base font-semibold text-xs">
+                                    {initials || '?'}
+                                  </div>
+                                  {/* Info */}
+                                  <div className="flex-1 min-w-0">
+                                    <p className="text-sm font-medium text-gray-900 dark:text-white truncate">
+                                      {client.name}
+                                    </p>
+                                    <div className="flex items-center gap-2 mt-0.5">
+                                      {client.email && (
+                                        <span className="text-xs text-gray-500 dark:text-gray-400 truncate flex items-center gap-0.5">
+                                          <Mail className="h-3 w-3 flex-shrink-0" />
+                                          {client.email}
+                                        </span>
+                                      )}
+                                      {client.phone && (
+                                        <span className="text-xs text-gray-400 dark:text-gray-500 flex-shrink-0 flex items-center gap-0.5">
+                                          <Phone className="h-3 w-3" />
+                                          {client.phone}
+                                        </span>
+                                      )}
+                                    </div>
+                                  </div>
+                                  {/* Appointment count badge */}
+                                  <span className="flex-shrink-0 text-[10px] font-medium text-gray-400 dark:text-gray-500 bg-gray-100 dark:bg-gray-700 px-1.5 py-0.5 rounded-full whitespace-nowrap">
+                                    {client.appointmentCount} cita
+                                    {client.appointmentCount !== 1 ? 's' : ''}
+                                  </span>
+                                </li>
+                              );
+                            })}
+                          </ul>
+                        ) : (
+                          <div className="px-4 py-3 text-sm text-gray-500 dark:text-gray-400 flex items-center gap-2">
+                            <User className="h-4 w-4" />
+                            Nuevo cliente — completa los datos abajo
+                          </div>
+                        )}
+                      </div>
+                    )}
+                  </div>
+
+                  {/* Auto-filled email & phone — shown after client selected or typed */}
+                  <div className="mt-3 grid grid-cols-1 sm:grid-cols-2 gap-3">
+                    <div>
+                      <label className="block text-xs font-medium text-gray-500 dark:text-gray-400 mb-1">
+                        <Mail className="h-3 w-3 inline mr-1" />
+                        Correo
+                      </label>
+                      <input
+                        type="email"
+                        value={appointmentForm.customerEmail}
+                        onChange={(e) =>
+                          setAppointmentForm({ ...appointmentForm, customerEmail: e.target.value })
+                        }
+                        className="w-full px-3 py-2 text-sm border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-700 text-gray-900 dark:text-white focus:ring-2 focus:ring-[var(--fourth-base)] focus:border-transparent"
+                        placeholder="correo@ejemplo.com"
+                      />
+                    </div>
+                    <div>
+                      <label className="block text-xs font-medium text-gray-500 dark:text-gray-400 mb-1">
+                        <Phone className="h-3 w-3 inline mr-1" />
+                        Teléfono
+                      </label>
+                      <input
+                        type="tel"
+                        value={appointmentForm.customerPhone}
+                        onChange={(e) =>
+                          setAppointmentForm({ ...appointmentForm, customerPhone: e.target.value })
+                        }
+                        className="w-full px-3 py-2 text-sm border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-700 text-gray-900 dark:text-white focus:ring-2 focus:ring-[var(--fourth-base)] focus:border-transparent"
+                        placeholder="+57 300 123 4567"
+                      />
+                    </div>
+                  </div>
+                </div>
+              ) : (
+                /* EDIT APPOINTMENT — plain fields */
+                <>
+                  <div>
+                    <label className="block text-xs sm:text-sm font-medium text-gray-700 dark:text-gray-300 mb-1.5 sm:mb-2">
+                      <User className="h-3.5 w-3.5 sm:h-4 sm:w-4 inline mr-1.5 sm:mr-2" />
+                      Nombre del Cliente
+                    </label>
+                    <input
+                      type="text"
+                      value={appointmentForm.customerName}
+                      onChange={(e) =>
+                        setAppointmentForm({ ...appointmentForm, customerName: e.target.value })
+                      }
+                      className="w-full px-3 sm:px-4 py-2.5 sm:py-3 text-sm sm:text-base border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-700 text-gray-900 dark:text-white focus:ring-2 focus:ring-[var(--fourth-base)] focus:border-transparent"
+                      placeholder="Juan Pérez"
+                    />
+                  </div>
+                  <div>
+                    <label className="block text-xs sm:text-sm font-medium text-gray-700 dark:text-gray-300 mb-1.5 sm:mb-2">
+                      <Mail className="h-3.5 w-3.5 sm:h-4 sm:w-4 inline mr-1.5 sm:mr-2" />
+                      Correo Electrónico
+                    </label>
+                    <input
+                      type="email"
+                      value={appointmentForm.customerEmail}
+                      onChange={(e) =>
+                        setAppointmentForm({ ...appointmentForm, customerEmail: e.target.value })
+                      }
+                      className="w-full px-3 sm:px-4 py-2.5 sm:py-3 text-sm sm:text-base border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-700 text-gray-900 dark:text-white focus:ring-2 focus:ring-[var(--fourth-base)] focus:border-transparent"
+                      placeholder="juan.perez@example.com"
+                    />
+                  </div>
+                  <div>
+                    <label className="block text-xs sm:text-sm font-medium text-gray-700 dark:text-gray-300 mb-1.5 sm:mb-2">
+                      <Phone className="h-3.5 w-3.5 sm:h-4 sm:w-4 inline mr-1.5 sm:mr-2" />
+                      Teléfono
+                    </label>
+                    <input
+                      type="tel"
+                      value={appointmentForm.customerPhone}
+                      onChange={(e) =>
+                        setAppointmentForm({ ...appointmentForm, customerPhone: e.target.value })
+                      }
+                      className="w-full px-3 sm:px-4 py-2.5 sm:py-3 text-sm sm:text-base border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-700 text-gray-900 dark:text-white focus:ring-2 focus:ring-[var(--fourth-base)] focus:border-transparent"
+                      placeholder="+57 300 123 4567"
+                    />
+                  </div>
+                </>
+              )}
 
               {/* Start Date/Time */}
               <div>
@@ -861,21 +968,23 @@ export default function ServiceCalendar() {
                 />
               </div>
 
-              {/* End Date/Time */}
-              <div>
-                <label className="block text-xs sm:text-sm font-medium text-gray-700 dark:text-gray-300 mb-1.5 sm:mb-2">
-                  <Clock className="h-3.5 w-3.5 sm:h-4 sm:w-4 inline mr-1.5 sm:mr-2" />
-                  Fecha y Hora de Fin
-                </label>
-                <input
-                  type="datetime-local"
-                  value={appointmentForm.endDatetime.slice(0, 16)}
-                  onChange={(e) =>
-                    setAppointmentForm({ ...appointmentForm, endDatetime: e.target.value })
-                  }
-                  className="w-full px-3 sm:px-4 py-2.5 sm:py-3 text-sm sm:text-base border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-700 text-gray-900 dark:text-white focus:ring-2 focus:ring-[var(--fourth-base)] focus:border-transparent"
-                />
-              </div>
+              {/* End Date/Time — only shown when editing; new appointments auto-compute from service duration */}
+              {selectedEvent && (
+                <div>
+                  <label className="block text-xs sm:text-sm font-medium text-gray-700 dark:text-gray-300 mb-1.5 sm:mb-2">
+                    <Clock className="h-3.5 w-3.5 sm:h-4 sm:w-4 inline mr-1.5 sm:mr-2" />
+                    Fecha y Hora de Fin
+                  </label>
+                  <input
+                    type="datetime-local"
+                    value={appointmentForm.endDatetime.slice(0, 16)}
+                    onChange={(e) =>
+                      setAppointmentForm({ ...appointmentForm, endDatetime: e.target.value })
+                    }
+                    className="w-full px-3 sm:px-4 py-2.5 sm:py-3 text-sm sm:text-base border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-700 text-gray-900 dark:text-white focus:ring-2 focus:ring-[var(--fourth-base)] focus:border-transparent"
+                  />
+                </div>
+              )}
 
               {/* Address */}
               <div className="border-t border-gray-100 dark:border-gray-700 pt-3 mt-1">
@@ -1020,9 +1129,33 @@ export default function ServiceCalendar() {
                 </button>
                 <button
                   onClick={selectedEvent ? handleUpdateAppointment : handleCreateAppointment}
-                  className="inline-flex items-center justify-center px-4 py-2.5 bg-fourth-base text-white rounded-lg hover:opacity-90 transition-colors text-sm sm:text-base w-full sm:w-auto"
+                  disabled={isSubmitting}
+                  className="inline-flex items-center justify-center px-4 py-2.5 bg-fourth-base text-white rounded-lg hover:opacity-90 transition-colors text-sm sm:text-base w-full sm:w-auto disabled:opacity-60 disabled:cursor-not-allowed"
                 >
-                  <Check className="h-4 w-4 mr-2" />
+                  {isSubmitting ? (
+                    <svg
+                      className="animate-spin h-4 w-4 mr-2 text-white"
+                      xmlns="http://www.w3.org/2000/svg"
+                      fill="none"
+                      viewBox="0 0 24 24"
+                    >
+                      <circle
+                        className="opacity-25"
+                        cx="12"
+                        cy="12"
+                        r="10"
+                        stroke="currentColor"
+                        strokeWidth="4"
+                      />
+                      <path
+                        className="opacity-75"
+                        fill="currentColor"
+                        d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4z"
+                      />
+                    </svg>
+                  ) : (
+                    <Check className="h-4 w-4 mr-2" />
+                  )}
                   {selectedEvent ? 'Actualizar' : 'Crear Cita'}
                 </button>
               </div>
@@ -1032,145 +1165,6 @@ export default function ServiceCalendar() {
       )}
 
       {/* Service Modal */}
-      {isServiceModalOpen && (
-        <div className="fixed inset-0 bg-black/50 backdrop-blur-sm z-50 flex items-center justify-center p-2 sm:p-4">
-          <div className="bg-white dark:bg-gray-800 rounded-lg shadow-xl max-w-2xl w-full max-h-[95vh] sm:max-h-[90vh] overflow-y-auto">
-            <div className="p-4 sm:p-6 border-b border-gray-200 dark:border-gray-700 flex justify-between items-center sticky top-0 bg-white dark:bg-gray-800 z-10">
-              <h2 className="text-lg sm:text-xl font-semibold text-gray-900 dark:text-white">
-                {selectedService ? 'Editar Servicio' : 'Crear Nuevo Servicio'}
-              </h2>
-              <button
-                onClick={() => {
-                  setIsServiceModalOpen(false);
-                  setSelectedService(null);
-                  resetServiceForm();
-                }}
-                className="text-gray-400 hover:text-gray-600 dark:hover:text-gray-300 p-1"
-              >
-                <X className="h-5 w-5" />
-              </button>
-            </div>
-
-            <div className="p-4 sm:p-6 space-y-3 sm:space-y-4">
-              <div>
-                <label className="block text-xs sm:text-sm font-medium text-gray-700 dark:text-gray-300 mb-1.5 sm:mb-2">
-                  Nombre del Servicio
-                </label>
-                <input
-                  type="text"
-                  value={serviceForm.name}
-                  onChange={(e) => setServiceForm({ ...serviceForm, name: e.target.value })}
-                  className="w-full px-3 sm:px-4 py-2.5 sm:py-3 text-sm sm:text-base border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-700 text-gray-900 dark:text-white focus:ring-2 focus:ring-[var(--fourth-base)] focus:border-transparent"
-                  placeholder="Masaje Relajante"
-                />
-              </div>
-
-              <div>
-                <label className="block text-xs sm:text-sm font-medium text-gray-700 dark:text-gray-300 mb-1.5 sm:mb-2">
-                  Descripción
-                </label>
-                <textarea
-                  value={serviceForm.description}
-                  onChange={(e) => setServiceForm({ ...serviceForm, description: e.target.value })}
-                  rows={3}
-                  className="w-full px-3 sm:px-4 py-2.5 sm:py-3 text-sm sm:text-base border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-700 text-gray-900 dark:text-white focus:ring-2 focus:ring-[var(--fourth-base)] focus:border-transparent"
-                  placeholder="Descripción del servicio..."
-                />
-              </div>
-
-              <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 sm:gap-4">
-                <div>
-                  <label className="block text-xs sm:text-sm font-medium text-gray-700 dark:text-gray-300 mb-1.5 sm:mb-2">
-                    <Clock className="h-3.5 w-3.5 sm:h-4 sm:w-4 inline mr-1.5 sm:mr-2" />
-                    Duración (minutos)
-                  </label>
-                  <input
-                    type="number"
-                    value={serviceForm.durationMinutes}
-                    onChange={(e) =>
-                      setServiceForm({ ...serviceForm, durationMinutes: parseInt(e.target.value) })
-                    }
-                    className="w-full px-3 sm:px-4 py-2.5 sm:py-3 text-sm sm:text-base border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-700 text-gray-900 dark:text-white focus:ring-2 focus:ring-[var(--fourth-base)] focus:border-transparent"
-                    min="15"
-                    step="15"
-                  />
-                </div>
-
-                <div>
-                  <label className="block text-xs sm:text-sm font-medium text-gray-700 dark:text-gray-300 mb-1.5 sm:mb-2">
-                    <DollarSign className="h-3.5 w-3.5 sm:h-4 sm:w-4 inline mr-1.5 sm:mr-2" />
-                    Precio
-                  </label>
-                  <input
-                    type="number"
-                    value={serviceForm.priceAmount}
-                    onChange={(e) =>
-                      setServiceForm({ ...serviceForm, priceAmount: parseFloat(e.target.value) })
-                    }
-                    className="w-full px-3 sm:px-4 py-2.5 sm:py-3 text-sm sm:text-base border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-700 text-gray-900 dark:text-white focus:ring-2 focus:ring-[var(--fourth-base)] focus:border-transparent"
-                    min="0"
-                  />
-                </div>
-              </div>
-
-              <div className="flex items-center gap-2">
-                <input
-                  type="checkbox"
-                  id="allowsOnlinePayment"
-                  checked={serviceForm.allowsOnlinePayment}
-                  onChange={(e) =>
-                    setServiceForm({ ...serviceForm, allowsOnlinePayment: e.target.checked })
-                  }
-                  className="w-4 h-4 text-[var(--fourth-base)] border-gray-300 rounded focus:ring-[var(--fourth-base)]"
-                />
-                <label
-                  htmlFor="allowsOnlinePayment"
-                  className="text-xs sm:text-sm text-gray-700 dark:text-gray-300"
-                >
-                  Permitir pago en línea
-                </label>
-              </div>
-
-              <div className="flex items-center gap-2">
-                <input
-                  type="checkbox"
-                  id="isActive"
-                  checked={serviceForm.isActive}
-                  onChange={(e) => setServiceForm({ ...serviceForm, isActive: e.target.checked })}
-                  className="w-4 h-4 text-[var(--fourth-base)] border-gray-300 rounded focus:ring-[var(--fourth-base)]"
-                />
-                <label
-                  htmlFor="isActive"
-                  className="text-xs sm:text-sm text-gray-700 dark:text-gray-300"
-                >
-                  Servicio activo
-                </label>
-              </div>
-            </div>
-
-            <div className="p-4 sm:p-6 border-t border-gray-200 dark:border-gray-700 flex flex-col sm:flex-row justify-end gap-2 sm:gap-3 sticky bottom-0 bg-white dark:bg-gray-800">
-              <button
-                onClick={() => {
-                  setIsServiceModalOpen(false);
-                  setSelectedService(null);
-                  resetServiceForm();
-                }}
-                className="px-4 py-2.5 border border-gray-300 dark:border-gray-600 text-gray-700 dark:text-gray-300 rounded-lg hover:bg-gray-50 dark:hover:bg-gray-700 transition-colors text-sm sm:text-base w-full sm:w-auto"
-              >
-                Cancelar
-              </button>
-              <button
-                onClick={handleCreateService}
-                className="inline-flex items-center justify-center px-4 py-2.5 bg-fourth-base text-white rounded-lg hover:opacity-90 transition-colors text-sm sm:text-base w-full sm:w-auto"
-              >
-                <Check className="h-4 w-4 mr-2" />
-                {selectedService ? 'Actualizar Servicio' : 'Crear Servicio'}
-              </button>
-            </div>
-          </div>
-        </div>
-      )}
-
       {/* CSS for FullCalendar customization */}
       <style jsx global>{`
         .fc {

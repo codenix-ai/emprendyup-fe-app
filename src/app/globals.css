@@ -48,3 +48,15 @@
     opacity: 1;
   }
 }
+
+@keyframes emprendy-bar {
+  0%,
+  100% {
+    transform: scaleY(0.4);
+    opacity: 0.5;
+  }
+  50% {
+    transform: scaleY(1);
+    opacity: 1;
+  }
+}

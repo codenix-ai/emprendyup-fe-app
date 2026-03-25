@@ -13,7 +13,6 @@ import {
   X,
   ChevronLeft,
   ChevronRight,
-  ChevronDown,
   LogOut,
   FileText,
   Loader,
@@ -27,126 +26,105 @@ import {
   BookUser,
   UtensilsCrossed,
   Briefcase,
-  Building2,
-  ShoppingBag,
   Calendar,
   Receipt,
   UserCheck,
   ClipboardList,
+  Mail,
+  ExternalLink,
+  LayoutList,
+  Globe,
 } from 'lucide-react';
 import Image from 'next/image';
+import { useQuery, gql } from '@apollo/client';
 import { useSessionStore } from '@/lib/store/dashboard';
 import { getCurrentUser } from '@/lib/utils/rbac';
 import { useAuth } from '../hooks/useAuth';
 import { toast } from 'sonner';
+import { PageLoader } from '@/app/components/Loader';
+
+const GET_STORE_DOMAIN = gql`
+  query GetStoreDomain($storeId: String!) {
+    store(storeId: $storeId) {
+      storeId
+      customDomain
+    }
+  }
+`;
+
+const GET_RESTAURANT_DOMAIN = gql`
+  query GetRestaurantDomain($id: ID!) {
+    restaurant(id: $id) {
+      id
+      customDomain
+      slug
+    }
+  }
+`;
+
+const GET_SERVICE_DOMAIN = gql`
+  query GetServiceDomain($id: String!) {
+    serviceProvider(id: $id) {
+      id
+      customDomain
+      slug
+    }
+  }
+`;
 
 // Estructura de navegación agrupada para ADMIN
 const adminNavigationGroups = [
+  { name: 'Negocios', icon: Briefcase, href: '/dashboard/business', isSingle: true },
+  { name: 'Tiendas', icon: Store, href: '/dashboard/business/stores', isSingle: true },
   {
-    name: 'Emprendimientos',
-    icon: Building2,
-    items: [
-      { name: 'Negocios', href: '/dashboard/business', icon: Briefcase },
-      { name: 'Tiendas', href: '/dashboard/business/stores', icon: Store },
-      { name: 'Restaurantes', href: '/dashboard/business/restaurants', icon: UtensilsCrossed },
-      { name: 'Servicios', href: '/dashboard/business/services', icon: Briefcase },
-    ],
-  },
-  {
-    name: 'Marketplace',
-    icon: ShoppingBag,
-    items: [
-      { name: 'Pedidos', href: '/dashboard/orders', icon: ShoppingCart },
-      { name: 'Productos', href: '/dashboard/products', icon: Package },
-      { name: 'Categorias por tienda', href: '/dashboard/categoriesAdmin', icon: List },
-    ],
-  },
-  {
-    name: 'Usuarios',
-    icon: Users,
-    items: [
-      { name: 'Usuarios', href: '/dashboard/users', icon: Users },
-      { name: 'Emprendedores', href: '/dashboard/entrepeneurs', icon: Star },
-      { name: 'Asistentes', href: '/dashboard/events', icon: BookUser },
-    ],
-  },
-  {
-    name: 'WhatsApp',
-    icon: MessageCircle,
-    items: [
-      { name: 'Mensajes', href: '/dashboard/whatsapp-messages', icon: MessageCircle },
-      { name: 'Templates', href: '/dashboard/whatsapp-templates', icon: BookOpen },
-    ],
-  },
-  {
-    name: 'Otros',
-    icon: Gift,
-    items: [
-      { name: 'Bonos', href: '/dashboard/bonuses', icon: Gift },
-      { name: 'Blog', href: '/dashboard/blog', icon: FileText },
-
-      { name: 'Estadísticas', href: '/dashboard/insights', icon: BarChart3 },
-    ],
-  },
-  {
-    name: 'Ferias',
-    icon: Calendar,
-    href: '/dashboard/fairs',
+    name: 'Restaurantes',
+    icon: UtensilsCrossed,
+    href: '/dashboard/business/restaurants',
     isSingle: true,
   },
-  {
-    name: 'Pagos',
-    icon: CreditCard,
-    href: '/dashboard/payments',
-    isSingle: true,
-  },
-  {
-    name: 'Mi suscripción',
-    icon: Layers,
-    href: '/dashboard/plans',
-    isSingle: true,
-  },
+  { name: 'Servicios', icon: Briefcase, href: '/dashboard/business/services', isSingle: true },
+  { name: 'Pedidos', icon: ShoppingCart, href: '/dashboard/orders', isSingle: true },
+  { name: 'Productos', icon: Package, href: '/dashboard/products', isSingle: true },
+  { name: 'Categorías', icon: List, href: '/dashboard/categoriesAdmin', isSingle: true },
+  { name: 'Usuarios', icon: Users, href: '/dashboard/users', isSingle: true },
+  { name: 'Emprendedores', icon: Star, href: '/dashboard/entrepeneurs', isSingle: true },
+  { name: 'Asistentes', icon: BookUser, href: '/dashboard/events', isSingle: true },
+  { name: 'Mensajes', icon: MessageCircle, href: '/dashboard/whatsapp-messages', isSingle: true },
+  { name: 'Templates', icon: BookOpen, href: '/dashboard/whatsapp-templates', isSingle: true },
+  { name: 'Email Marketing', icon: Mail, href: '/dashboard/email-marketing', isSingle: true },
+  { name: 'Bonos', icon: Gift, href: '/dashboard/bonuses', isSingle: true },
+  { name: 'Blog', icon: FileText, href: '/dashboard/blog', isSingle: true },
+  { name: 'Estadísticas', icon: BarChart3, href: '/dashboard/insights', isSingle: true },
+  { name: 'Ferias', icon: Calendar, href: '/dashboard/fairs', isSingle: true },
+  { name: 'Pagos', icon: CreditCard, href: '/dashboard/payments', isSingle: true },
+  { name: 'Mi suscripción', icon: Layers, href: '/dashboard/plans', isSingle: true },
 ];
 
 // Navegación para Tiendas
-const getStoreNavigationGroups = () => {
+const getStoreNavigationGroups = (storeId?: string) => {
   return [
-    {
-      name: 'Tienda',
-      icon: Store,
-      items: [
-        { name: 'Mi Tienda', href: '/dashboard/store', icon: Store },
-        { name: 'Pedidos', href: '/dashboard/orders', icon: ShoppingCart },
-        { name: 'Cotizaciones', href: '/dashboard/quotes', icon: ClipboardList },
-        { name: 'Productos', href: '/dashboard/products', icon: Package },
-        { name: 'Categorias', href: '/dashboard/categories', icon: List },
-      ],
-    },
-    {
-      name: 'Usuarios',
-      icon: Users,
-      items: [{ name: 'Usuarios por tienda', href: '/dashboard/user-by-store', icon: Users }],
-    },
-    {
-      name: 'Otros',
-      icon: Gift,
-      items: [
-        { name: 'Bonos', href: '/dashboard/bonuses', icon: Gift },
-        { name: 'Mi suscripción', href: '/dashboard/plans', icon: Layers },
-      ],
-    },
-    {
-      name: 'Ferias',
-      icon: Calendar,
-      href: '/dashboard/fairs',
-      isSingle: true,
-    },
-    {
-      name: 'Pagos',
-      icon: CreditCard,
-      href: '/dashboard/payments',
-      isSingle: true,
-    },
+    { name: 'Dashboard', icon: BarChart3, href: '/dashboard', isSingle: true },
+    { name: 'Mi Tienda', icon: Store, href: '/dashboard/store', isSingle: true },
+    { name: 'Pedidos', icon: ShoppingCart, href: '/dashboard/orders', isSingle: true },
+    { name: 'Productos', icon: Package, href: '/dashboard/products', isSingle: true },
+    { name: 'Categorías', icon: List, href: '/dashboard/categories', isSingle: true },
+    { name: 'Cotizaciones', icon: ClipboardList, href: '/dashboard/quotes', isSingle: true },
+    { name: 'Blog', icon: FileText, href: '/dashboard/blog', isSingle: true },
+    ...(storeId
+      ? [
+          {
+            name: 'Editar página web',
+            icon: Globe,
+            href: `/dashboard/stores/${storeId}/pages/home/editor`,
+            isSingle: true,
+          },
+        ]
+      : []),
+    { name: 'Usuarios', icon: Users, href: '/dashboard/user-by-store', isSingle: true },
+    { name: 'Bonos', icon: Gift, href: '/dashboard/bonuses', isSingle: true },
+    { name: 'Ferias', icon: Calendar, href: '/dashboard/fairs', isSingle: true },
+    { name: 'Pagos', icon: CreditCard, href: '/dashboard/payments', isSingle: true },
+    { name: 'Mi suscripción', icon: Layers, href: '/dashboard/plans', isSingle: true },
   ];
 };
 
@@ -154,36 +132,20 @@ const getStoreNavigationGroups = () => {
 const getServiceNavigationGroups = () => {
   return [
     {
-      name: 'Servicio',
-      icon: Briefcase,
-      items: [
-        { name: 'Panel de Control', href: '/dashboard/service-dashboard', icon: BarChart3 },
-        { name: 'Mi Servicio', href: '/dashboard/service', icon: Briefcase },
-        { name: 'Calendario', href: '/dashboard/service-calendar', icon: Calendar },
-        { name: 'Gastos', href: '/dashboard/service-expenses', icon: Receipt },
-        { name: 'Clientes CRM', href: '/dashboard/service-crm', icon: UserCheck },
-        { name: 'Imágenes', href: '/dashboard/service-images', icon: Package },
-      ],
-    },
-    {
-      name: 'Usuarios',
-      icon: Users,
-      items: [{ name: 'Usuarios', href: '/dashboard/user-by-service', icon: Users }],
-    },
-    {
-      name: 'Otros',
-      icon: Gift,
-      items: [
-        { name: 'Bonos', href: '/dashboard/bonuses', icon: Gift },
-        { name: 'Mi suscripción', href: '/dashboard/plans', icon: Layers },
-      ],
-    },
-    {
-      name: 'Ferias',
-      icon: Calendar,
-      href: '/dashboard/fairs',
+      name: 'Panel de Control',
+      icon: BarChart3,
+      href: '/dashboard/service-dashboard',
       isSingle: true,
     },
+    { name: 'Mi Servicio', icon: Briefcase, href: '/dashboard/service', isSingle: true },
+    { name: 'Servicios', icon: LayoutList, href: '/dashboard/service-catalog', isSingle: true },
+    { name: 'Calendario', icon: Calendar, href: '/dashboard/service-calendar', isSingle: true },
+    { name: 'Gastos', icon: Receipt, href: '/dashboard/service-expenses', isSingle: true },
+    { name: 'Clientes', icon: UserCheck, href: '/dashboard/service-crm', isSingle: true },
+    { name: 'Usuarios', icon: Users, href: '/dashboard/user-by-service', isSingle: true },
+    { name: 'Bonos', icon: Gift, href: '/dashboard/bonuses', isSingle: true },
+    { name: 'Ferias', icon: Calendar, href: '/dashboard/fairs', isSingle: true },
+    { name: 'Mi suscripción', icon: Layers, href: '/dashboard/plans', isSingle: true },
   ];
 };
 
@@ -191,47 +153,40 @@ const getServiceNavigationGroups = () => {
 const getRestaurantNavigationGroups = () => {
   return [
     {
-      name: 'Restaurante',
+      name: 'Mi Restaurante',
       icon: UtensilsCrossed,
-      items: [
-        { name: 'Mi Restaurante', href: '/dashboard/restaurant', icon: UtensilsCrossed },
-        { name: 'Reservaciones', href: '/dashboard/reservaciones', icon: Calendar },
-        { name: 'Gastos y Ganancias', href: '/dashboard/restaurant-expenses', icon: Receipt },
-        { name: 'Nómina', href: '/dashboard/restaurant-payroll', icon: Users },
-        { name: 'Imágenes del Menú', href: '/dashboard/menu-images', icon: Package },
-      ],
-    },
-    {
-      name: 'Usuarios',
-      icon: Users,
-      items: [{ name: 'Usuarios', href: '/dashboard/user-by-restaurant', icon: Users }],
-    },
-    {
-      name: 'Otros',
-      icon: Gift,
-      items: [
-        { name: 'Bonos', href: '/dashboard/bonuses', icon: Gift },
-        { name: 'Mi suscripción', href: '/dashboard/plans', icon: Layers },
-      ],
-    },
-    {
-      name: 'Ferias',
-      icon: Calendar,
-      href: '/dashboard/fairs',
+      href: '/dashboard/restaurant',
       isSingle: true,
     },
+    { name: 'Reservaciones', icon: Calendar, href: '/dashboard/reservaciones', isSingle: true },
+    {
+      name: 'Gastos y Ganancias',
+      icon: Receipt,
+      href: '/dashboard/restaurant-expenses',
+      isSingle: true,
+    },
+    { name: 'Nómina', icon: Users, href: '/dashboard/restaurant-payroll', isSingle: true },
+    { name: 'Imágenes del Menú', icon: Package, href: '/dashboard/menu-images', isSingle: true },
+    { name: 'Blog', icon: FileText, href: '/dashboard/blog', isSingle: true },
+    { name: 'Usuarios', icon: Users, href: '/dashboard/user-by-restaurant', isSingle: true },
+    { name: 'Bonos', icon: Gift, href: '/dashboard/bonuses', isSingle: true },
+    { name: 'Ferias', icon: Calendar, href: '/dashboard/fairs', isSingle: true },
+    { name: 'Mi suscripción', icon: Layers, href: '/dashboard/plans', isSingle: true },
   ];
 };
 
 // Función para obtener la navegación según el tipo de negocio del usuario
 const getStoreAdminNavigationGroups = (user: any) => {
+  let items;
   if (user?.serviceProviderId) {
-    return getServiceNavigationGroups();
+    items = getServiceNavigationGroups();
   } else if (user?.restaurantId) {
-    return getRestaurantNavigationGroups();
+    items = getRestaurantNavigationGroups();
+  } else {
+    items = getStoreNavigationGroups(user?.storeId);
   }
-  // Default: tienda
-  return getStoreNavigationGroups();
+  // Usuarios is only visible to admins
+  return items.filter((item) => item.name !== 'Usuarios');
 };
 
 export default function DashboardLayout({ children }: { children: React.ReactNode }) {
@@ -241,7 +196,46 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
   const [mounted, setMounted] = useState(false);
   const [collapsed, setCollapsed] = useState(false);
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
-  const [expandedGroups, setExpandedGroups] = useState<Record<string, boolean>>({});
+
+  const isAdmin = user?.role === 'ADMIN';
+  const isRestaurantType = !isAdmin && !!user?.restaurantId;
+  const isServiceType = !isAdmin && !!user?.serviceProviderId;
+  const isStoreType = !isAdmin && !isRestaurantType && !isServiceType;
+
+  const { data: storeData } = useQuery(GET_STORE_DOMAIN, {
+    variables: { storeId: user?.storeId || '' },
+    skip: !isStoreType || !user?.storeId,
+  });
+
+  const { data: restaurantData } = useQuery(GET_RESTAURANT_DOMAIN, {
+    variables: { id: user?.restaurantId || '' },
+    skip: !isRestaurantType,
+  });
+
+  const { data: serviceData } = useQuery(GET_SERVICE_DOMAIN, {
+    variables: { id: user?.serviceProviderId || '' },
+    skip: !isServiceType,
+  });
+
+  let storeUrl: string | null = null;
+  if (isStoreType && storeData?.store) {
+    const s = storeData.store;
+    storeUrl = s.customDomain ? `https://${s.customDomain}` : `https://${s.storeId}.emprendyup.com`;
+  } else if (isRestaurantType && restaurantData?.restaurant) {
+    const r = restaurantData.restaurant;
+    storeUrl = r.customDomain
+      ? `https://${r.customDomain}`
+      : r.slug
+        ? `https://${r.slug}.emprendyup.com`
+        : null;
+  } else if (isServiceType && serviceData?.serviceProvider) {
+    const sp = serviceData.serviceProvider;
+    storeUrl = sp.customDomain
+      ? `https://${sp.customDomain}`
+      : sp.slug
+        ? `https://${sp.slug}.emprendyup.com`
+        : null;
+  }
 
   const hideDashboardChrome = Boolean(pathname && pathname.includes('/dashboard/store/new'));
 
@@ -267,29 +261,8 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
     }, 1500);
   };
 
-  const toggleGroup = (groupName: string) => {
-    // Si el sidebar está colapsado, primero lo expandimos
-    if (collapsed) {
-      setCollapsed(false);
-    }
-
-    // Cerramos todos los grupos excepto el que se está abriendo
-    setExpandedGroups((prev) => {
-      const isCurrentlyExpanded = prev[groupName];
-      const newState: Record<string, boolean> = {};
-
-      // Si el grupo actual está expandido, lo cerramos
-      // Si está cerrado, cerramos todos los demás y abrimos este
-      if (!isCurrentlyExpanded) {
-        newState[groupName] = true;
-      }
-
-      return newState;
-    });
-  };
-
   if (!user) {
-    return <div>Cargando...</div>;
+    return <PageLoader />;
   }
 
   if (isLoading) {
@@ -317,6 +290,39 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
   const navigationGroups =
     user.role === 'ADMIN' ? adminNavigationGroups : getStoreAdminNavigationGroups(user);
 
+  // Build external edit URL for store owners from the fetched domain data
+  const editWebUrl =
+    isStoreType && storeData?.store
+      ? (() => {
+          const s = storeData.store;
+          const base = s.customDomain
+            ? `https://${s.customDomain}`
+            : `https://${s.storeId}.emprendyup.com`;
+          return `${base}/dashboard/store/${s.storeId}/edit`;
+        })()
+      : null;
+
+  // Patch the href of "Editar página web" with the computed external URL
+  const patchedNavigationGroups = navigationGroups.map((g) =>
+    g.name === 'Editar página web' && editWebUrl ? { ...g, href: editWebUrl, external: true } : g
+  );
+  const displayName = user.name || user.email || 'Usuario';
+  const initialsSource = displayName.trim();
+  const initialsWords = initialsSource.split(' ').filter(Boolean);
+  const userInitials =
+    initialsWords.length >= 2
+      ? `${initialsWords[0][0]}${initialsWords[1][0]}`.toUpperCase()
+      : initialsSource.substring(0, 2).toUpperCase();
+  const membershipPlan = (user.plan || user.membershipLevel) as string | undefined;
+  const membershipPlanBadgeClass =
+    membershipPlan === 'PRO'
+      ? 'bg-blue-500'
+      : membershipPlan === 'PARTNER'
+        ? 'bg-purple-600'
+        : membershipPlan === 'BASIC'
+          ? 'bg-green-600'
+          : 'bg-gray-600';
+
   return (
     <div
       className={`h-screen bg-slate-900 dark:bg-gray-900 grid grid-rows-[auto_1fr] transition-all duration-300 
@@ -337,12 +343,12 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
                 width={48}
                 height={48}
                 className="h-12 w-12 min-w-[48px] min-h-[48px] object-contain"
-                alt="Logo de EmprendyUp"
+                alt="Logo de Emprendy.ai"
                 priority
               />
               {!collapsed && (
                 <span className="text-lg font-semibold text-gray-900 dark:text-white">
-                  EmprendyUp
+                  Emprendy.ai
                 </span>
               )}
             </Link>
@@ -358,107 +364,67 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
             </button>
           </div>
 
-          {/* Navegación agrupada */}
+          {/* Navegación */}
           <div className="flex-1 px-4 py-4 space-y-1 overflow-y-auto">
-            {navigationGroups.map((group) => {
-              const isGroupExpanded = expandedGroups[group.name];
-              const hasActiveItem = group.items
-                ? group.items
-                    .filter(Boolean)
-                    .some((item) => pathname === item.href || pathname.startsWith(item.href + '/'))
-                : (group as any).href &&
-                  (pathname === (group as any).href ||
-                    pathname.startsWith((group as any).href + '/'));
-
-              // Si es un item único (single), renderizar como enlace directo
-              if ((group as any).isSingle && (group as any).href) {
-                const isActive =
-                  pathname === (group as any).href ||
-                  pathname.startsWith((group as any).href + '/');
+            {patchedNavigationGroups.map((group) => {
+              const g = group as {
+                name: string;
+                icon: React.ElementType;
+                href: string;
+                isSingle: boolean;
+                external?: boolean;
+              };
+              const isActive =
+                !g.external && (pathname === g.href || pathname.startsWith(g.href + '/'));
+              const linkClass = `group flex items-center w-full px-2 py-2 text-sm font-medium rounded-md transition-colors ${
+                isActive
+                  ? 'bg-fourth-base/10 text-black dark:text-white'
+                  : 'text-gray-700 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-gray-700'
+              }`;
+              const iconClass = `mr-0 pl-3 md:mr-3 h-8 w-8 flex-shrink-0 ${
+                isActive ? 'text-black dark:text-white' : 'text-gray-400 group-hover:text-gray-500'
+              }`;
+              if (g.external) {
                 return (
-                  <Link
-                    key={group.name}
-                    href={(group as any).href}
-                    className={`group flex items-center w-full px-2 py-2 text-sm font-medium rounded-md transition-colors ${
-                      isActive
-                        ? 'bg-fourth-base/10 text-white'
-                        : 'text-gray-700 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-gray-700'
-                    }`}
+                  <a
+                    key={g.name}
+                    href={g.href}
+                    target="_blank"
+                    rel="noopener noreferrer"
+                    className={linkClass}
                   >
-                    <group.icon
-                      className={`mr-0 pl-3 md:mr-3 h-8 w-8 flex-shrink-0 ${
-                        isActive
-                          ? 'text-black dark:text-white'
-                          : 'text-gray-400 group-hover:text-gray-500'
-                      }`}
-                    />
-                    {!collapsed && <span className="truncate flex-1 text-left">{group.name}</span>}
-                  </Link>
+                    <g.icon className={iconClass} />
+                    {!collapsed && <span className="truncate flex-1 text-left">{g.name}</span>}
+                  </a>
                 );
               }
-
               return (
-                <div key={group.name}>
-                  {/* Encabezado del grupo */}
-                  <button
-                    onClick={() => toggleGroup(group.name)}
-                    className={`group flex items-center w-full px-2 py-2 text-sm font-medium rounded-md transition-colors ${
-                      hasActiveItem
-                        ? 'bg-fourth-base/10 text-black dark:text-white'
-                        : 'text-gray-700 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-gray-700'
-                    }`}
-                  >
-                    <group.icon
-                      className={`mr-0 pl-3 md:mr-3 h-8 w-8 flex-shrink-0 ${
-                        hasActiveItem
-                          ? 'text-black dark:text-white'
-                          : 'text-gray-400 group-hover:text-gray-500'
-                      }`}
-                    />
-                    {!collapsed && (
-                      <>
-                        <span className="truncate flex-1 text-left">{group.name}</span>
-                        {isGroupExpanded ? (
-                          <ChevronDown className="h-4 w-4 ml-auto" />
-                        ) : (
-                          <ChevronRight className="h-4 w-4 ml-auto" />
-                        )}
-                      </>
-                    )}
-                  </button>
-
-                  {/* Items del grupo (solo si no está colapsado y el grupo está expandido) */}
-                  {!collapsed && isGroupExpanded && group.items && (
-                    <div className="ml-6 mt-1 space-y-1">
-                      {group.items.filter(Boolean).map((item) => {
-                        const isActive =
-                          pathname === item.href || pathname.startsWith(item.href + '/');
-                        return (
-                          <Link
-                            key={item.name}
-                            href={item.href}
-                            onClick={() => setCollapsed(true)}
-                            className={`group flex items-center px-2 py-2 text-sm font-medium rounded-md transition-colors ${
-                              isActive
-                                ? 'bg-fourth-base text-black'
-                                : 'text-gray-600 dark:text-gray-400 hover:bg-gray-100 dark:hover:bg-gray-700'
-                            }`}
-                          >
-                            <item.icon
-                              className={`mr-3 h-5 w-5 ${
-                                isActive ? 'text-black' : 'text-gray-400 group-hover:text-gray-500'
-                              }`}
-                            />
-                            <span className="truncate">{item.name}</span>
-                          </Link>
-                        );
-                      })}
-                    </div>
-                  )}
-                </div>
+                <Link key={g.name} href={g.href} className={linkClass}>
+                  <g.icon className={iconClass} />
+                  {!collapsed && <span className="truncate flex-1 text-left">{g.name}</span>}
+                </Link>
               );
             })}
           </div>
+
+          {/* Ver mi sitio button */}
+          {storeUrl && (
+            <div className="px-4 pb-2">
+              <a
+                href={storeUrl}
+                target="_blank"
+                rel="noopener noreferrer"
+                data-testid="view-store-button"
+                title="Ver mi sitio"
+                className={`group flex items-center w-full px-2 py-2 text-sm font-medium rounded-md transition-colors bg-fourth-base/10 text-black dark:text-white hover:bg-fourth-base/20 ${collapsed ? 'justify-center' : ''}`}
+              >
+                <ExternalLink
+                  className={`h-5 w-5 flex-shrink-0 text-fourth-base ${collapsed ? '' : 'mr-3'}`}
+                />
+                {!collapsed && <span className="truncate flex-1 text-left">Ver mi sitio</span>}
+              </a>
+            </div>
+          )}
           {/* Pie de barra lateral: usuario y acciones */}
           <div className="px-4 py-4 border-t border-gray-200 dark:border-gray-700">
             {!collapsed ? (
@@ -467,50 +433,32 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
                   {/* Avatar con iniciales y badge centrada debajo (vista expandida) */}
                   <div className="relative flex-shrink-2">
                     <div className="w-10 h-10 rounded-full bg-blue-600 dark:bg-blue-500 flex items-center justify-center text-white font-semibold text-sm">
-                      {(() => {
-                        const name = user?.name || user?.email || 'U';
-                        const words = name.trim().split(' ');
-                        if (words.length >= 2) {
-                          return (words[0][0] + words[1][0]).toUpperCase();
-                        }
-                        return name.substring(0, 2).toUpperCase();
-                      })()}
+                      {userInitials}
                     </div>
 
-                    {(() => {
-                      const plan = (user?.plan || user?.membershipLevel) as string | undefined;
-                      if (!plan) return null;
-                      const label = plan;
-                      const bgClass =
-                        plan === 'PRO'
-                          ? 'bg-blue-500'
-                          : plan === 'PARTNER'
-                            ? 'bg-purple-600'
-                            : plan === 'BASIC'
-                              ? 'bg-green-600'
-                              : 'bg-gray-600';
-                      return (
-                        <span
-                          className={`absolute left-1/2 -bottom-1 -translate-x-1/2 px-2 py-[1px] text-[10px] font-medium tracking-widetext-white rounded-full ${bgClass}`}
-                        >
-                          {label}
-                        </span>
-                      );
-                    })()}
+                    {membershipPlan ? (
+                      <span
+                        className={`absolute left-1/2 -bottom-1 -translate-x-1/2 px-2 py-[1px] text-[10px] font-medium tracking-wide text-white rounded-full ${membershipPlanBadgeClass}`}
+                      >
+                        {membershipPlan}
+                      </span>
+                    ) : null}
                   </div>
 
                   {/* badge rendered inside avatar - inline badges removed */}
 
                   <div className="min-w-0">
                     <div className="text-sm font-medium text-gray-800 dark:text-gray-200 truncate">
-                      {user?.name || user?.email || 'Usuario'}
+                      {displayName}
                     </div>
                     <div className="text-xs text-gray-500 dark:text-gray-400">Mi cuenta</div>
                   </div>
                 </div>
 
                 <button
+                  type="button"
                   onClick={handleLogout}
+                  data-testid="logout-button"
                   className="p-2 rounded-md text-red-600 hover:bg-red-50 dark:hover:bg-red-900/20 transition-colors"
                   title="Cerrar Sesión"
                 >
@@ -522,39 +470,22 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
                 {/* Avatar colapsado con badge superpuesto */}
                 <div className="relative">
                   <div className="w-9 h-9 rounded-full bg-blue-600 dark:bg-blue-500 flex items-center justify-center text-white font-semibold text-xs">
-                    {(() => {
-                      const name = user?.name || user?.email || 'U';
-                      const words = name.trim().split(' ');
-                      if (words.length >= 2) {
-                        return (words[0][0] + words[1][0]).toUpperCase();
-                      }
-                      return name.substring(0, 2).toUpperCase();
-                    })()}
+                    {userInitials}
                   </div>
 
-                  {(() => {
-                    const plan = (user?.plan || user?.membershipLevel) as string | undefined;
-                    if (!plan) return null;
-                    const bgClass =
-                      plan === 'PRO'
-                        ? 'bg-blue-500'
-                        : plan === 'PARTNER'
-                          ? 'bg-purple-600'
-                          : plan === 'BASIC'
-                            ? 'bg-green-600'
-                            : 'bg-gray-600';
-                    return (
-                      <span
-                        className={`absolute -bottom-1 left-1/2 -translate-x-1/2 inline-flex items-center px-1.5 py-0.5 text-[9px] font-bold text-white rounded-full shadow-lg ${bgClass} whitespace-nowrap`}
-                      >
-                        {plan}
-                      </span>
-                    );
-                  })()}
+                  {membershipPlan ? (
+                    <span
+                      className={`absolute -bottom-1 left-1/2 -translate-x-1/2 inline-flex items-center px-1.5 py-0.5 text-[9px] font-bold text-white rounded-full shadow-lg ${membershipPlanBadgeClass} whitespace-nowrap`}
+                    >
+                      {membershipPlan}
+                    </span>
+                  ) : null}
                 </div>
 
                 <button
+                  type="button"
                   onClick={handleLogout}
+                  data-testid="logout-button-collapsed"
                   className="p-1 rounded-md text-red-600 hover:bg-red-50 dark:hover:bg-red-900/20 transition-colors"
                   title="Cerrar Sesión"
                 >
@@ -577,11 +508,11 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
                   width={48}
                   height={48}
                   className="h-12 w-12 min-w-[48px] min-h-[48px] object-contain"
-                  alt="Logo de EmprendyUp"
+                  alt="Logo de Emprendy.ai"
                   priority
                 />
                 <span className="text-lg font-semibold text-gray-900 dark:text-white">
-                  EmprendyUp
+                  Emprendy.ai
                 </span>
               </Link>
               <button
@@ -593,110 +524,73 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
             </div>
 
             <div className="flex-1 px-4 py-4 space-y-1 overflow-y-auto max-h-[calc(100vh-8rem)]">
-              {navigationGroups.map((group) => {
-                const isGroupExpanded = expandedGroups[group.name];
-                const hasActiveItem = group.items
-                  ? group.items
-                      .filter(Boolean)
-                      .some(
-                        (item) => pathname === item.href || pathname.startsWith(item.href + '/')
-                      )
-                  : (group as any).href &&
-                    (pathname === (group as any).href ||
-                      pathname.startsWith((group as any).href + '/'));
-
-                // Si es un item único (single), renderizar como enlace directo
-                if ((group as any).isSingle && (group as any).href) {
-                  const isActive =
-                    pathname === (group as any).href ||
-                    pathname.startsWith((group as any).href + '/');
+              {patchedNavigationGroups.map((group) => {
+                const g = group as {
+                  name: string;
+                  icon: React.ElementType;
+                  href: string;
+                  external?: boolean;
+                };
+                const isActive =
+                  !g.external && (pathname === g.href || pathname.startsWith(g.href + '/'));
+                const linkClass = `group flex items-center w-full px-2 py-2 text-sm font-medium rounded-md transition-colors ${
+                  isActive
+                    ? 'bg-fourth-base text-black'
+                    : 'text-gray-700 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-gray-700'
+                }`;
+                const iconClass = `mr-3 h-5 w-5 flex-shrink-0 ${
+                  isActive
+                    ? 'text-black dark:text-white'
+                    : 'text-gray-400 group-hover:text-gray-500'
+                }`;
+                if (g.external) {
                   return (
-                    <Link
-                      key={group.name}
-                      href={(group as any).href}
+                    <a
+                      key={g.name}
+                      href={g.href}
+                      target="_blank"
+                      rel="noopener noreferrer"
                       onClick={() => setMobileMenuOpen(false)}
-                      className={`group flex items-center w-full px-2 py-2 text-sm font-medium rounded-md transition-colors ${
-                        isActive
-                          ? 'bg-fourth-base text-black'
-                          : 'text-gray-700 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-gray-700'
-                      }`}
+                      className={linkClass}
                     >
-                      <group.icon
-                        className={`mr-3 h-5 w-5 flex-shrink-0 ${
-                          isActive
-                            ? 'text-black dark:text-white'
-                            : 'text-gray-400 group-hover:text-gray-500'
-                        }`}
-                      />
-                      <span className="truncate flex-1 text-left">{group.name}</span>
-                    </Link>
+                      <g.icon className={iconClass} />
+                      <span className="truncate flex-1 text-left">{g.name}</span>
+                    </a>
                   );
                 }
-
                 return (
-                  <div key={group.name}>
-                    <button
-                      onClick={() => toggleGroup(group.name)}
-                      className={`group flex items-center w-full px-2 py-2 text-sm font-medium rounded-md transition-colors ${
-                        hasActiveItem
-                          ? 'bg-fourth-base/10 text-black dark:text-white'
-                          : 'text-gray-700 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-gray-700'
-                      }`}
-                    >
-                      <group.icon
-                        className={`mr-3 h-5 w-5 ${
-                          hasActiveItem
-                            ? 'text-black dark:text-white'
-                            : 'text-gray-400 group-hover:text-gray-500'
-                        }`}
-                      />
-                      <span className="truncate flex-1 text-left">{group.name}</span>
-                      {isGroupExpanded ? (
-                        <ChevronDown className="h-4 w-4 ml-auto" />
-                      ) : (
-                        <ChevronRight className="h-4 w-4 ml-auto" />
-                      )}
-                    </button>
-
-                    {isGroupExpanded && (
-                      <div className="ml-6 mt-1 space-y-1">
-                        {group.items &&
-                          group.items.filter(Boolean).map((item) => {
-                            const isActive =
-                              pathname === item.href || pathname.startsWith(item.href + '/');
-                            return (
-                              <Link
-                                key={item.name}
-                                href={item.href}
-                                onClick={() => setMobileMenuOpen(false)}
-                                className={`group flex items-center px-2 py-2 text-sm font-medium rounded-md transition-colors ${
-                                  isActive
-                                    ? 'bg-fourth-base text-black'
-                                    : 'text-gray-600 dark:text-gray-400 hover:bg-gray-100 dark:hover:bg-gray-700'
-                                }`}
-                              >
-                                <item.icon
-                                  className={`mr-3 h-5 w-5 ${
-                                    isActive
-                                      ? 'text-black'
-                                      : 'text-gray-400 group-hover:text-gray-500'
-                                  }`}
-                                />
-                                <span className="truncate">{item.name}</span>
-                              </Link>
-                            );
-                          })}
-                      </div>
-                    )}
-                  </div>
+                  <Link
+                    key={g.name}
+                    href={g.href}
+                    onClick={() => setMobileMenuOpen(false)}
+                    className={linkClass}
+                  >
+                    <g.icon className={iconClass} />
+                    <span className="truncate flex-1 text-left">{g.name}</span>
+                  </Link>
                 );
               })}
 
+              {storeUrl && (
+                <a
+                  href={storeUrl}
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  data-testid="view-store-button-mobile"
+                  className="group flex items-center w-full px-2 py-2 text-sm font-medium rounded-md transition-colors bg-fourth-base/10 text-black dark:text-white hover:bg-fourth-base/20"
+                >
+                  <ExternalLink className="mr-3 h-5 w-5 text-fourth-base" />
+                  <span className="truncate">Ver mi sitio</span>
+                </a>
+              )}
+
               <button
+                type="button"
                 onClick={() => {
                   setMobileMenuOpen(false);
                   handleLogout();
                 }}
+                data-testid="logout-button-mobile"
                 className="group flex items-center w-full px-2 py-2 text-sm font-medium rounded-md transition-colors text-red-600 hover:bg-red-50 dark:hover:bg-red-900/20 mt-4"
               >
                 <LogOut className="mr-3 h-5 w-5 text-red-500 group-hover:text-red-600" />

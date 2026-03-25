@@ -14,7 +14,6 @@ import {
   Copy,
   Upload,
   Layout,
-  EyeOff,
   Loader,
 } from 'lucide-react';
 import { gql, useMutation, useQuery, useApolloClient } from '@apollo/client';
@@ -23,6 +22,7 @@ import { useSearchProducts } from '@/lib/hooks/useSearchProducts';
 import toast from 'react-hot-toast';
 import { ProductFormWizard } from '@/app/components/Product/ProductFromWizard';
 import Image from 'next/image';
+import { SectionLoader } from '@/app/components/Loader';
 
 // GraphQL Queries and Mutations
 const GET_PRODUCTS_BY_STORE = gql`
@@ -355,8 +355,6 @@ export default function ProductsPage() {
   // Use server-side search hook when the search term has 2+ characters
   const {
     products: searchedProducts,
-    page: searchPage,
-    pageSize: searchPageSize,
     total: searchTotal,
     totalPages: searchTotalPages,
     loading: searchLoading,
@@ -665,7 +663,7 @@ export default function ProductsPage() {
         throw new Error(errorData.message || 'Error al generar la landing page');
       }
 
-      const data = await response.json();
+      await response.json();
 
       // Update the Apollo cache to reflect the change
       apolloClient.cache.modify({
@@ -731,7 +729,9 @@ export default function ProductsPage() {
       {/* Header */}
       <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
         <div>
-          <h3 className="text-lg font-semibold text-white">Gestión de Productos</h3>
+          <h3 className="text-lg font-semibold text-gray-900 dark:text-white">
+            Gestión de Productos
+          </h3>
           <p className="text-sm text-gray-400">Administra el catálogo de productos de tu tienda</p>
         </div>
         <div className="flex gap-3">
@@ -744,7 +744,7 @@ export default function ProductsPage() {
           </button>
           <button
             onClick={handleCreateProduct}
-            className="text-white px-4 py-2 rounded-lg flex items-center justify-center font-medium shadow-sm hover:shadow-md transition-all duration-200 bg-slate-700 hover:bg-slate-600"
+            className="text-gray-900 dark:text-white px-4 py-2 rounded-lg flex items-center justify-center font-medium shadow-sm hover:shadow-md transition-all duration-200 bg-gray-100 dark:bg-slate-700 hover:bg-gray-200 dark:hover:bg-slate-600"
           >
             <Plus className="w-4 h-4 mr-2" />
             Nuevo Producto
@@ -761,7 +761,7 @@ export default function ProductsPage() {
             value={searchTerm}
             onChange={(e) => setSearchTerm(e.target.value)}
             placeholder="Buscar productos..."
-            className="w-full pl-10 pr-3 py-2 border border-gray-600 bg-gray-800 text-white rounded-lg focus:ring-2 focus:ring-slate-500 focus:border-slate-500 transition-all placeholder-gray-400"
+            className="w-full pl-10 pr-3 py-2 border border-gray-300 dark:border-gray-600 bg-white dark:bg-gray-800 text-gray-900 dark:text-white rounded-lg focus:ring-2 focus:ring-slate-500 focus:border-slate-500 transition-all placeholder-gray-400"
           />
         </div>
 
@@ -779,7 +779,7 @@ export default function ProductsPage() {
 
       {/* Mobile Select All */}
       {filteredProducts.length > 0 && (
-        <div className="md:hidden bg-gray-800 border border-gray-700 rounded-lg p-3">
+        <div className="md:hidden bg-white dark:bg-gray-800 border border-gray-200 dark:border-gray-700 rounded-lg p-3">
           <label className="flex items-center space-x-3">
             <input
               type="checkbox"
@@ -787,7 +787,7 @@ export default function ProductsPage() {
                 selectedProducts.length === filteredProducts.length && filteredProducts.length > 0
               }
               onChange={toggleSelectAll}
-              className="w-4 h-4 rounded border-gray-600 bg-gray-700"
+              className="w-4 h-4 rounded border-gray-300 dark:border-gray-600 bg-gray-100 dark:bg-gray-700"
               style={
                 {
                   accentColor: primaryColor,
@@ -795,7 +795,7 @@ export default function ProductsPage() {
                 } as React.CSSProperties
               }
             />
-            <span className="text-sm text-white font-medium">
+            <span className="text-sm text-gray-900 dark:text-white font-medium">
               {selectedProducts.length === filteredProducts.length && filteredProducts.length > 0
                 ? 'Deseleccionar todos'
                 : 'Seleccionar todos'}
@@ -812,16 +812,16 @@ export default function ProductsPage() {
       {/* Products Table/Cards */}
       {displayedLoading ? (
         <div className="text-center py-12">
-          <div className="w-8 h-8 border-2 border-gray-600 border-t-slate-400 rounded-full animate-spin mx-auto mb-4" />
-          <p className="text-gray-400">Cargando productos...</p>
+          <div className="w-8 h-8 border-2 border-gray-300 dark:border-gray-600 border-t-slate-400 rounded-full animate-spin mx-auto mb-4" />
+          <SectionLoader text="Cargando productos..." />
         </div>
       ) : filteredProducts.length > 0 ? (
         <>
           {/* Desktop Table */}
-          <div className="hidden md:block bg-gray-800 border border-gray-700 rounded-xl overflow-hidden shadow-sm">
+          <div className="hidden md:block bg-white dark:bg-gray-800 border border-gray-200 dark:border-gray-700 rounded-xl overflow-hidden shadow-sm">
             <div className="overflow-x-auto">
-              <table className="min-w-full divide-y divide-gray-700">
-                <thead className="bg-gray-900">
+              <table className="min-w-full divide-y divide-gray-200 dark:divide-gray-700">
+                <thead className="bg-gray-50 dark:bg-gray-900">
                   <tr>
                     <th className="px-6 py-4 text-left">
                       <input
@@ -831,7 +831,7 @@ export default function ProductsPage() {
                           filteredProducts.length > 0
                         }
                         onChange={toggleSelectAll}
-                        className="w-4 h-4 rounded border-gray-600 text-slate-500 focus:ring-slate-500 bg-gray-700"
+                        className="w-4 h-4 rounded border-gray-300 dark:border-gray-600 text-slate-500 focus:ring-slate-500 bg-gray-100 dark:bg-gray-700"
                       />
                     </th>
                     <th className="px-6 py-4 text-left text-xs font-semibold text-gray-300 uppercase tracking-wider">
@@ -851,19 +851,27 @@ export default function ProductsPage() {
                     </th>
                   </tr>
                 </thead>
-                <tbody className="bg-gray-800 divide-y divide-gray-700">
+                <tbody className="bg-white dark:bg-gray-800 divide-y divide-gray-200 dark:divide-gray-700">
                   {filteredProducts.map((product: Product) => (
-                    <tr key={product.id} className="hover:bg-gray-700 transition-colors">
+                    <tr
+                      key={product.id}
+                      className="hover:bg-gray-100 dark:bg-gray-700 transition-colors"
+                    >
                       <td className="px-6 py-4">
                         <input
                           type="checkbox"
                           checked={selectedProducts.includes(product.id)}
                           onChange={() => toggleProductSelection(product.id)}
-                          className="w-4 h-4 rounded border-gray-600 text-slate-500 focus:ring-slate-500 bg-gray-700"
+                          className="w-4 h-4 rounded border-gray-300 dark:border-gray-600 text-slate-500 focus:ring-slate-500 bg-gray-100 dark:bg-gray-700"
                         />
                       </td>
                       <td className="px-6 py-4">
-                        <div className="flex items-center">
+                        <button
+                          type="button"
+                          onClick={() => handleEditProduct(product)}
+                          className="flex items-center gap-0 text-left group"
+                          title="Editar producto"
+                        >
                           <div className="flex-shrink-0 w-12 h-12">
                             {product.images && product.images.length > 0 ? (
                               <Image
@@ -871,32 +879,36 @@ export default function ProductsPage() {
                                 alt={product.name}
                                 width={32}
                                 height={32}
-                                className="w-12 h-12 rounded-xl object-cover shadow-sm"
+                                className="w-12 h-12 rounded-xl object-cover shadow-sm group-hover:ring-2 group-hover:ring-slate-400 transition-all"
                                 style={{
                                   border: `2px solid ${primaryColor}40`,
                                 }}
                               />
                             ) : (
-                              <div className="w-12 h-12 rounded-xl bg-gray-700 border-2 border-gray-600 flex items-center justify-center">
-                                <Package className="w-6 h-6 text-slate-400" />
+                              <div className="w-12 h-12 rounded-xl bg-gray-100 dark:bg-gray-700 border-2 border-gray-300 dark:border-gray-600 flex items-center justify-center group-hover:border-slate-400 transition-colors">
+                                <Package className="w-6 h-6 text-gray-500 dark:text-slate-400" />
                               </div>
                             )}
                           </div>
                           <div className="ml-4">
-                            <div className="text-sm font-semibold text-white">{product.name}</div>
+                            <div className="text-sm font-semibold text-gray-900 dark:text-white group-hover:text-slate-600 dark:group-hover:text-slate-300 transition-colors">
+                              {product.name}
+                            </div>
                             <div className="text-sm text-gray-400 truncate max-w-xs">
                               {product.title}
                             </div>
                           </div>
-                        </div>
+                        </button>
                       </td>
                       <td className="px-6 py-4">
-                        <div className="text-sm font-medium text-white">
+                        <div className="text-sm font-medium text-gray-900 dark:text-white">
                           ${product.price.toLocaleString()} {product.currency}
                         </div>
                       </td>
                       <td className="px-6 py-4">
-                        <div className="text-sm font-medium text-white">{product.stock}</div>
+                        <div className="text-sm font-medium text-gray-900 dark:text-white">
+                          {product.stock}
+                        </div>
                       </td>
                       <td className="px-6 py-4">
                         <div className="flex flex-col space-y-1">
@@ -910,7 +922,7 @@ export default function ProductsPage() {
                             {product.available ? 'Disponible' : 'No disponible'}
                           </span>
                           <span
-                            className={`inline-flex px-2 py-1 text-xs font-semibold bg-fourth-base text-white rounded-full w-fit`}
+                            className={`inline-flex px-2 py-1 text-xs font-semibold bg-fourth-base text-gray-900 dark:text-white rounded-full w-fit`}
                           >
                             {product.inStock ? 'En stock' : 'Sin stock'}
                           </span>
@@ -920,7 +932,7 @@ export default function ProductsPage() {
                         <div className="flex items-center justify-end space-x-2">
                           <button
                             onClick={() => handleEditProduct(product)}
-                            className="p-2 text-slate-400 hover:bg-gray-700 hover:text-white rounded-lg transition-colors"
+                            className="p-2 text-gray-500 dark:text-slate-400 hover:bg-gray-100 dark:bg-gray-700 hover:text-gray-900 dark:text-white rounded-lg transition-colors"
                           >
                             <Edit className="w-4 h-4" />
                           </button>
@@ -931,7 +943,7 @@ export default function ProductsPage() {
                                 : () => handleGenerateLanding(product)
                             }
                             disabled={generatingLanding.has(product.id)}
-                            className="p-2 text-slate-400 hover:bg-gray-700 hover:text-white rounded-lg transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
+                            className="p-2 text-gray-500 dark:text-slate-400 hover:bg-gray-100 dark:bg-gray-700 hover:text-gray-900 dark:text-white rounded-lg transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
                             title={product.landing ? 'Ver landing' : 'Generar landing'}
                           >
                             {product.landing ? (
@@ -945,7 +957,7 @@ export default function ProductsPage() {
                           <button
                             onClick={() => handleDuplicateProduct(product.id)}
                             disabled={duplicating}
-                            className="p-2 text-slate-400 hover:bg-gray-700 hover:text-white rounded-lg transition-colors"
+                            className="p-2 text-gray-500 dark:text-slate-400 hover:bg-gray-100 dark:bg-gray-700 hover:text-gray-900 dark:text-white rounded-lg transition-colors"
                             title="Duplicar producto"
                           >
                             <Copy className="w-4 h-4" />
@@ -972,7 +984,7 @@ export default function ProductsPage() {
             {filteredProducts.map((product) => (
               <div
                 key={product.id}
-                className="bg-gray-800 border border-gray-700 rounded-xl p-4 shadow-sm"
+                className="bg-white dark:bg-gray-800 border border-gray-200 dark:border-gray-700 rounded-xl p-4 shadow-sm"
                 style={{
                   borderColor: selectedProducts.includes(product.id) ? primaryColor : '#374151',
                 }}
@@ -984,7 +996,7 @@ export default function ProductsPage() {
                       type="checkbox"
                       checked={selectedProducts.includes(product.id)}
                       onChange={() => toggleProductSelection(product.id)}
-                      className="w-4 h-4 rounded border-gray-600 bg-gray-700 flex-shrink-0"
+                      className="w-4 h-4 rounded border-gray-300 dark:border-gray-600 bg-gray-100 dark:bg-gray-700 flex-shrink-0"
                       style={
                         {
                           accentColor: primaryColor,
@@ -993,20 +1005,25 @@ export default function ProductsPage() {
                       }
                     />
 
-                    {/* Image */}
-                    <div className="flex-shrink-0">
+                    {/* Image — click to edit */}
+                    <button
+                      type="button"
+                      onClick={() => handleEditProduct(product)}
+                      className="flex-shrink-0 focus:outline-none"
+                      title="Editar producto"
+                    >
                       {product.images && product.images.length > 0 ? (
                         <Image
                           src={`https://emprendyup-images.s3.us-east-1.amazonaws.com/${product.images[0].url}`}
                           alt={product.name}
                           width={64}
                           height={64}
-                          className="w-16 h-16 rounded-lg object-cover shadow-sm"
+                          className="w-16 h-16 rounded-lg object-cover shadow-sm hover:ring-2 hover:ring-slate-400 transition-all"
                           style={{ border: `2px solid ${primaryColor}40` }}
                         />
                       ) : (
                         <div
-                          className="w-16 h-16 rounded-lg flex items-center justify-center"
+                          className="w-16 h-16 rounded-lg flex items-center justify-center hover:ring-2 hover:ring-slate-400 transition-all"
                           style={{
                             backgroundColor: `${primaryColor}20`,
                             border: `2px solid ${primaryColor}40`,
@@ -1015,14 +1032,23 @@ export default function ProductsPage() {
                           <Package className="w-8 h-8" style={{ color: primaryColor }} />
                         </div>
                       )}
-                    </div>
+                    </button>
 
-                    {/* Product Info */}
+                    {/* Product Info — title click to edit */}
                     <div className="flex-1 min-w-0">
-                      <h4 className="text-sm font-semibold text-white truncate">{product.name}</h4>
-                      <p className="text-xs text-gray-400 truncate">{product.title}</p>
+                      <button
+                        type="button"
+                        onClick={() => handleEditProduct(product)}
+                        className="text-left w-full"
+                        title="Editar producto"
+                      >
+                        <h4 className="text-sm font-semibold text-gray-900 dark:text-white truncate hover:text-slate-600 dark:hover:text-slate-300 transition-colors">
+                          {product.name}
+                        </h4>
+                        <p className="text-xs text-gray-400 truncate">{product.title}</p>
+                      </button>
                       <div className="flex items-center space-x-2 mt-1">
-                        <span className="text-sm font-medium text-white">
+                        <span className="text-sm font-medium text-gray-900 dark:text-white">
                           ${product.price.toLocaleString()} {product.currency}
                         </span>
                         <span className="text-xs text-gray-400">• Stock: {product.stock}</span>
@@ -1037,7 +1063,7 @@ export default function ProductsPage() {
                         >
                           {product.available ? 'Disponible' : 'No disponible'}
                         </span>
-                        <span className="inline-flex px-2 py-0.5 text-xs font-medium bg-fourth-base text-white rounded-full">
+                        <span className="inline-flex px-2 py-0.5 text-xs font-medium bg-fourth-base text-gray-900 dark:text-white rounded-full">
                           {product.inStock ? 'En stock' : 'Sin stock'}
                         </span>
                       </div>
@@ -1050,17 +1076,17 @@ export default function ProductsPage() {
                       onClick={() =>
                         setOpenDropdown(openDropdown === product.id ? null : product.id)
                       }
-                      className="p-2 rounded-lg hover:bg-gray-700 transition-colors"
+                      className="p-2 rounded-lg hover:bg-gray-100 dark:bg-gray-700 transition-colors"
                     >
                       <MoreVertical className="w-4 h-4 text-gray-400" />
                     </button>
 
                     {openDropdown === product.id && (
-                      <div className="absolute right-0 mt-1 w-48 bg-gray-800 rounded-lg shadow-lg border border-gray-700 z-10">
+                      <div className="absolute right-0 mt-1 w-48 bg-white dark:bg-gray-800 rounded-lg shadow-lg border border-gray-200 dark:border-gray-700 z-10">
                         <div className="py-1">
                           <button
                             onClick={() => handleEditProduct(product)}
-                            className="flex items-center w-full px-4 py-2 text-sm text-gray-300 hover:bg-gray-700"
+                            className="flex items-center w-full px-4 py-2 text-sm text-gray-300 hover:bg-gray-100 dark:bg-gray-700"
                           >
                             <Edit className="w-4 h-4 mr-2" style={{ color: primaryColor }} />
                             Editar
@@ -1068,7 +1094,7 @@ export default function ProductsPage() {
                           <button
                             onClick={() => handleGenerateLanding(product)}
                             disabled={generatingLanding.has(product.id)}
-                            className="flex items-center w-full px-4 py-2 text-sm text-gray-300 hover:bg-gray-700 disabled:opacity-50 disabled:cursor-not-allowed"
+                            className="flex items-center w-full px-4 py-2 text-sm text-gray-300 hover:bg-gray-100 dark:bg-gray-700 disabled:opacity-50 disabled:cursor-not-allowed"
                           >
                             {generatingLanding.has(product.id) ? (
                               <div className="w-4 h-4 mr-2 border-2 border-gray-300 border-t-transparent rounded-full animate-spin" />
@@ -1080,7 +1106,7 @@ export default function ProductsPage() {
                           <button
                             onClick={() => handleDuplicateProduct(product.id)}
                             disabled={duplicating}
-                            className="flex items-center w-full px-4 py-2 text-sm text-gray-300 hover:bg-gray-700"
+                            className="flex items-center w-full px-4 py-2 text-sm text-gray-300 hover:bg-gray-100 dark:bg-gray-700"
                           >
                             <Copy className="w-4 h-4 mr-2" />
                             Duplicar
@@ -1110,7 +1136,7 @@ export default function ProductsPage() {
           >
             <Package className="w-8 h-8" style={{ color: primaryColor }} />
           </div>
-          <p className="text-white text-lg font-medium mb-2">
+          <p className="text-gray-900 dark:text-white text-lg font-medium mb-2">
             {searchTerm ? 'No se encontraron productos' : 'No tienes productos todavía'}
           </p>
           <p className="text-gray-400 text-sm mb-6 max-w-md mx-auto">
@@ -1121,7 +1147,7 @@ export default function ProductsPage() {
           {!searchTerm && (
             <button
               onClick={handleCreateProduct}
-              className="text-white px-6 py-3 rounded-lg hover:shadow-md flex items-center mx-auto font-medium transition-all duration-200"
+              className="text-gray-900 dark:text-white px-6 py-3 rounded-lg hover:shadow-md flex items-center mx-auto font-medium transition-all duration-200"
               style={{ backgroundColor: primaryColor }}
             >
               <Plus className="w-4 h-4 mr-2" />
@@ -1133,12 +1159,12 @@ export default function ProductsPage() {
 
       {/* Pagination */}
       {!displayedLoading && displayedTotal > 0 && (
-        <div className="bg-gray-800 border border-gray-700 rounded-xl px-4 py-3 sm:px-6 shadow-sm">
+        <div className="bg-white dark:bg-gray-800 border border-gray-200 dark:border-gray-700 rounded-xl px-4 py-3 sm:px-6 shadow-sm">
           <div className="flex flex-1 justify-between sm:hidden">
             <button
               onClick={() => handlePageChange(currentPage - 1)}
               disabled={currentPage === 1}
-              className="relative inline-flex items-center rounded-lg border border-gray-600 bg-gray-800 px-4 py-2 text-sm font-medium text-gray-300 hover:bg-gray-700 disabled:opacity-50 disabled:cursor-not-allowed"
+              className="relative inline-flex items-center rounded-lg border border-gray-300 dark:border-gray-600 bg-white dark:bg-gray-800 px-4 py-2 text-sm font-medium text-gray-300 hover:bg-gray-100 dark:bg-gray-700 disabled:opacity-50 disabled:cursor-not-allowed"
             >
               Anterior
             </button>
@@ -1148,7 +1174,7 @@ export default function ProductsPage() {
             <button
               onClick={() => handlePageChange(currentPage + 1)}
               disabled={currentPage === displayedTotalPages}
-              className="relative inline-flex items-center rounded-lg border border-gray-600 bg-gray-800 px-4 py-2 text-sm font-medium text-gray-300 hover:bg-gray-700 disabled:opacity-50 disabled:cursor-not-allowed"
+              className="relative inline-flex items-center rounded-lg border border-gray-300 dark:border-gray-600 bg-white dark:bg-gray-800 px-4 py-2 text-sm font-medium text-gray-300 hover:bg-gray-100 dark:bg-gray-700 disabled:opacity-50 disabled:cursor-not-allowed"
             >
               Siguiente
             </button>
@@ -1173,7 +1199,7 @@ export default function ProductsPage() {
                 <button
                   onClick={() => handlePageChange(currentPage - 1)}
                   disabled={currentPage === 1}
-                  className="relative inline-flex items-center rounded-l-lg px-2 py-2 text-gray-500 ring-1 ring-inset ring-gray-600 hover:bg-gray-700 focus:z-20 focus:outline-offset-0 disabled:opacity-50 disabled:cursor-not-allowed"
+                  className="relative inline-flex items-center rounded-l-lg px-2 py-2 text-gray-500 ring-1 ring-inset ring-gray-600 hover:bg-gray-100 dark:bg-gray-700 focus:z-20 focus:outline-offset-0 disabled:opacity-50 disabled:cursor-not-allowed"
                 >
                   <ChevronLeft className="h-5 w-5" />
                 </button>
@@ -1208,8 +1234,8 @@ export default function ProductsPage() {
                         onClick={() => handlePageChange(i)}
                         className={`relative inline-flex items-center px-4 py-2 text-sm font-semibold transition-colors ${
                           currentPage === i
-                            ? 'z-10 text-white focus:z-20'
-                            : 'text-gray-300 ring-1 ring-inset ring-gray-600 hover:bg-gray-700 focus:z-20 focus:outline-offset-0'
+                            ? 'z-10 text-gray-900 dark:text-white focus:z-20'
+                            : 'text-gray-300 ring-1 ring-inset ring-gray-600 hover:bg-gray-100 dark:bg-gray-700 focus:z-20 focus:outline-offset-0'
                         }`}
                         style={currentPage === i ? { backgroundColor: primaryColor } : {}}
                       >
@@ -1224,7 +1250,7 @@ export default function ProductsPage() {
                 <button
                   onClick={() => handlePageChange(currentPage + 1)}
                   disabled={currentPage === displayedTotalPages}
-                  className="relative inline-flex items-center rounded-r-lg px-2 py-2 text-gray-500 ring-1 ring-inset ring-gray-600 hover:bg-gray-700 focus:z-20 focus:outline-offset-0 disabled:opacity-50 disabled:cursor-not-allowed"
+                  className="relative inline-flex items-center rounded-r-lg px-2 py-2 text-gray-500 ring-1 ring-inset ring-gray-600 hover:bg-gray-100 dark:bg-gray-700 focus:z-20 focus:outline-offset-0 disabled:opacity-50 disabled:cursor-not-allowed"
                 >
                   <ChevronRight className="h-5 w-5" />
                 </button>

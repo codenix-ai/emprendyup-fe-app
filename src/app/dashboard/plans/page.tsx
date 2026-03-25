@@ -21,6 +21,7 @@ type PendingCandidateView = PendingCommissionCandidate & {
   referredUserName?: string;
   referredUserEmail?: string;
 };
+import { SectionLoader } from '@/app/components/Loader';
 
 interface PlanConfig {
   planId: string;
@@ -310,7 +311,7 @@ export default function PlansPage() {
     const plans = sourceProducts.map((product: any) => {
       const metadata = parseMetadata(product.metadata);
       const planType = (
-        metadata.planType || product.name.toLowerCase().split('-')[0]
+        (metadata.planType as string | undefined) || product.name.toLowerCase().split('-')[0]
       ).toLowerCase();
       const billingCycle = normalizeCycle(product, metadata);
       const displayName = metadata.displayName || product.title || product.name;
@@ -333,7 +334,7 @@ export default function PlansPage() {
     // Sort plans by price (ascending order)
     const sortedPlans = plans.sort((a: Plan, b: Plan) => parseFloat(a.price) - parseFloat(b.price));
 
-    return sortedPlans;
+    return sortedPlans.length > 0 ? sortedPlans : null; // null = fall back to PricingPlans defaults
   }, [productsData, selectedCycle]);
 
   useEffect(() => {

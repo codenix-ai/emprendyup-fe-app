@@ -7,6 +7,7 @@ import { Save, ArrowLeft, User, Mail, Building2, Shield } from 'lucide-react';
 import toast from 'react-hot-toast';
 import { GET_ALL_STORES_FOR_ADMIN, GET_USER, UPDATE_USER } from '@/lib/graphql/queries';
 import { USER_ROLE_OPTIONS } from '@/lib/constants/user-roles';
+import { SectionLoader } from '@/app/components/Loader';
 
 interface Store {
   id: string;
@@ -131,7 +132,7 @@ const EditUserPage = () => {
       <div className="min-h-screen bg-gray-50 dark:bg-gray-900 p-4 sm:p-6 flex items-center justify-center">
         <div className="text-center">
           <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-blue-600 mx-auto mb-4"></div>
-          <p className="text-gray-600 dark:text-gray-400">Cargando datos del usuario...</p>
+          <SectionLoader text="Cargando usuario..." />
         </div>
       </div>
     );

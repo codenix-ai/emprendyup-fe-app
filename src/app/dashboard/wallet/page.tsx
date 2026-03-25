@@ -3,6 +3,7 @@
 import { useState, useMemo } from 'react';
 import { gql, useQuery } from '@apollo/client';
 import { Wallet, ArrowUpCircle, ArrowDownCircle, Calendar, Search } from 'lucide-react';
+import { PageLoader } from '@/app/components/Loader';
 
 // 🧩 1️⃣ Query para obtener la billetera actual
 const GET_MY_WALLET = gql`
@@ -91,7 +92,7 @@ export default function WalletPage() {
   if (walletLoading || txLoading) {
     return (
       <div className="flex justify-center items-center min-h-64">
-        <div className="text-lg">Cargando...</div>
+        <PageLoader />
       </div>
     );
   }

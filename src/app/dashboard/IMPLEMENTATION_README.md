@@ -1,6 +1,6 @@
-# EmprendyUp Dashboard Module
+# Emprendy.ai Dashboard Module
 
-A comprehensive dashboard module for the EmprendyUp platform, built with Next.js 15, TypeScript, and Tailwind CSS.
+A comprehensive dashboard module for the Emprendy.ai platform, built with Next.js 15, TypeScript, and Tailwind CSS.
 
 ## 🚀 Features
 

@@ -4,7 +4,7 @@ import { useEffect, useMemo, useState } from 'react';
 import Link from 'next/link';
 import { useRouter, useSearchParams } from 'next/navigation';
 import toast from 'react-hot-toast';
-import { Calendar, History, Plus, RefreshCcw } from 'lucide-react';
+import { Calendar, History, Plus, RefreshCcw, ShoppingCart } from 'lucide-react';
 import { Fair, fairsApi } from '@/lib/api/fairs';
 
 type TabKey = 'active' | 'history';
@@ -232,16 +232,18 @@ export default function FairsPage() {
                 <div className="flex gap-2 flex-shrink-0">
                   <Link
                     href={`/dashboard/fairs/${fair.id}`}
-                    className="inline-flex items-center justify-center rounded-2xl px-4 py-3 text-sm font-semibold bg-gray-100 dark:bg-gray-700 text-gray-900 dark:text-white"
+                    className="inline-flex items-center justify-center rounded-xl px-3 py-2.5 text-sm font-semibold bg-gray-100 dark:bg-gray-700 text-gray-900 dark:text-white"
                   >
-                    Detalle
+                    <span className="hidden sm:inline">Detalle</span>
+                    <span className="sm:hidden">Ver</span>
                   </Link>
                   {tab === 'active' && (
                     <Link
                       href={`/dashboard/fairs/${fair.id}/sell`}
-                      className="inline-flex items-center justify-center rounded-2xl px-4 py-3 text-sm font-semibold bg-fourth-base text-black"
+                      className="inline-flex items-center gap-1.5 justify-center rounded-xl px-3 py-2.5 text-sm font-semibold bg-fourth-base text-black"
                     >
-                      Vender
+                      <ShoppingCart className="h-4 w-4" />
+                      <span className="hidden sm:inline">Vender</span>
                     </Link>
                   )}
                 </div>

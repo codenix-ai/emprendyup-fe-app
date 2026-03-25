@@ -37,7 +37,7 @@ export default function SignupSuccessfull() {
                 </div>
 
                 <div className="text-center p-6 border-t border-gray-100 dark:border-gray-700">
-                  <p className="mb-0 text-slate-400">© {new Date().getFullYear()} EmprendyUp.</p>
+                  <p className="mb-0 text-slate-400">© {new Date().getFullYear()} Emprendy.ai.</p>
                 </div>
               </div>
             </div>

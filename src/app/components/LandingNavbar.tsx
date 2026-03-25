@@ -46,15 +46,15 @@ export default function LandingNavbar() {
         aria-label="Navegación principal"
       >
         {/* Logo */}
-        <Link href="/" className="flex items-center gap-2 shrink-0" aria-label="Inicio EmprendyUp">
+        <Link href="/" className="flex items-center gap-2 shrink-0" aria-label="Inicio Emprendy.ai">
           <Image
             src="/images/logo.svg"
             width={36}
             height={36}
-            alt="EmprendyUp logo"
+            alt="Emprendy.ai logo"
             className="h-9 w-auto"
           />
-          <span className="text-white font-bold text-lg hidden xs:inline">EmprendyUp</span>
+          <span className="text-white font-bold text-lg hidden xs:inline">Emprendy.ai</span>
         </Link>
 
         {/* Desktop nav links */}

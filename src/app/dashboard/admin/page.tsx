@@ -21,7 +21,7 @@ const mockUsers: UserProfile[] = [
     email: 'juan@emprendyup.com',
     role: 'ADMIN',
     avatar: '/api/placeholder/40/40',
-    company: 'EmprendyUp',
+    company: 'Emprendy.ai',
   },
   {
     id: '2',
