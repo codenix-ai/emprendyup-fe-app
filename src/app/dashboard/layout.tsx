@@ -289,6 +289,23 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
 
   const navigationGroups =
     user.role === 'ADMIN' ? adminNavigationGroups : getStoreAdminNavigationGroups(user);
+
+  // Build external edit URL for store owners from the fetched domain data
+  const editWebUrl =
+    isStoreType && storeData?.store
+      ? (() => {
+          const s = storeData.store;
+          const base = s.customDomain
+            ? `https://${s.customDomain}`
+            : `https://${s.storeId}.emprendyup.com`;
+          return `${base}/dashboard/store/${s.storeId}/edit`;
+        })()
+      : null;
+
+  // Patch the href of "Editar página web" with the computed external URL
+  const patchedNavigationGroups = navigationGroups.map((g) =>
+    g.name === 'Editar página web' && editWebUrl ? { ...g, href: editWebUrl, external: true } : g
+  );
   const displayName = user.name || user.email || 'Usuario';
   const initialsSource = displayName.trim();
   const initialsWords = initialsSource.split(' ').filter(Boolean);
@@ -349,31 +366,41 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
 
           {/* Navegación */}
           <div className="flex-1 px-4 py-4 space-y-1 overflow-y-auto">
-            {navigationGroups.map((group) => {
+            {patchedNavigationGroups.map((group) => {
               const g = group as {
                 name: string;
                 icon: React.ElementType;
                 href: string;
                 isSingle: boolean;
+                external?: boolean;
               };
-              const isActive = pathname === g.href || pathname.startsWith(g.href + '/');
+              const isActive =
+                !g.external && (pathname === g.href || pathname.startsWith(g.href + '/'));
+              const linkClass = `group flex items-center w-full px-2 py-2 text-sm font-medium rounded-md transition-colors ${
+                isActive
+                  ? 'bg-fourth-base/10 text-black dark:text-white'
+                  : 'text-gray-700 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-gray-700'
+              }`;
+              const iconClass = `mr-0 pl-3 md:mr-3 h-8 w-8 flex-shrink-0 ${
+                isActive ? 'text-black dark:text-white' : 'text-gray-400 group-hover:text-gray-500'
+              }`;
+              if (g.external) {
+                return (
+                  <a
+                    key={g.name}
+                    href={g.href}
+                    target="_blank"
+                    rel="noopener noreferrer"
+                    className={linkClass}
+                  >
+                    <g.icon className={iconClass} />
+                    {!collapsed && <span className="truncate flex-1 text-left">{g.name}</span>}
+                  </a>
+                );
+              }
               return (
-                <Link
-                  key={g.name}
-                  href={g.href}
-                  className={`group flex items-center w-full px-2 py-2 text-sm font-medium rounded-md transition-colors ${
-                    isActive
-                      ? 'bg-fourth-base/10 text-black dark:text-white'
-                      : 'text-gray-700 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-gray-700'
-                  }`}
-                >
-                  <g.icon
-                    className={`mr-0 pl-3 md:mr-3 h-8 w-8 flex-shrink-0 ${
-                      isActive
-                        ? 'text-black dark:text-white'
-                        : 'text-gray-400 group-hover:text-gray-500'
-                    }`}
-                  />
+                <Link key={g.name} href={g.href} className={linkClass}>
+                  <g.icon className={iconClass} />
                   {!collapsed && <span className="truncate flex-1 text-left">{g.name}</span>}
                 </Link>
               );
@@ -497,27 +524,48 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
             </div>
 
             <div className="flex-1 px-4 py-4 space-y-1 overflow-y-auto max-h-[calc(100vh-8rem)]">
-              {navigationGroups.map((group) => {
-                const g = group as { name: string; icon: React.ElementType; href: string };
-                const isActive = pathname === g.href || pathname.startsWith(g.href + '/');
+              {patchedNavigationGroups.map((group) => {
+                const g = group as {
+                  name: string;
+                  icon: React.ElementType;
+                  href: string;
+                  external?: boolean;
+                };
+                const isActive =
+                  !g.external && (pathname === g.href || pathname.startsWith(g.href + '/'));
+                const linkClass = `group flex items-center w-full px-2 py-2 text-sm font-medium rounded-md transition-colors ${
+                  isActive
+                    ? 'bg-fourth-base text-black'
+                    : 'text-gray-700 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-gray-700'
+                }`;
+                const iconClass = `mr-3 h-5 w-5 flex-shrink-0 ${
+                  isActive
+                    ? 'text-black dark:text-white'
+                    : 'text-gray-400 group-hover:text-gray-500'
+                }`;
+                if (g.external) {
+                  return (
+                    <a
+                      key={g.name}
+                      href={g.href}
+                      target="_blank"
+                      rel="noopener noreferrer"
+                      onClick={() => setMobileMenuOpen(false)}
+                      className={linkClass}
+                    >
+                      <g.icon className={iconClass} />
+                      <span className="truncate flex-1 text-left">{g.name}</span>
+                    </a>
+                  );
+                }
                 return (
                   <Link
                     key={g.name}
                     href={g.href}
                     onClick={() => setMobileMenuOpen(false)}
-                    className={`group flex items-center w-full px-2 py-2 text-sm font-medium rounded-md transition-colors ${
-                      isActive
-                        ? 'bg-fourth-base text-black'
-                        : 'text-gray-700 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-gray-700'
-                    }`}
+                    className={linkClass}
                   >
-                    <g.icon
-                      className={`mr-3 h-5 w-5 flex-shrink-0 ${
-                        isActive
-                          ? 'text-black dark:text-white'
-                          : 'text-gray-400 group-hover:text-gray-500'
-                      }`}
-                    />
+                    <g.icon className={iconClass} />
                     <span className="truncate flex-1 text-left">{g.name}</span>
                   </Link>
                 );
