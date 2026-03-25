@@ -1,6 +1,9 @@
 /** @type {import('next').NextConfig} */
 const nextConfig = {
   reactStrictMode: false,
+  sassOptions: {
+    silenceDeprecations: ['legacy-js-api'],
+  },
   images: {
     // allow images from Unsplash domains and from the S3 bucket used for uploads
     remotePatterns: [

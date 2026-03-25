@@ -1,6 +1,6 @@
 'use client';
 
-import { Suspense, useEffect, useState } from 'react';
+import { Suspense, useEffect, useRef, useState } from 'react';
 import { useSearchParams } from 'next/navigation';
 import { CheckCircle, XCircle, Clock, ArrowLeft } from 'lucide-react';
 import Link from 'next/link';
@@ -9,6 +9,18 @@ import { LoaderIcon } from 'react-hot-toast';
 import { useApolloClient, gql } from '@apollo/client';
 import { getUserFromLocalStorage } from '@/lib/utils/localAuth';
 import { useSessionStore } from '@/lib/store/dashboard';
+import { registerAffiliateConversion, validateAffiliateLinkByCode } from '@/lib/referrals/api';
+import {
+  acquireConversionLock,
+  clearCheckoutContext,
+  clearReferralAttribution,
+  hasCompletedConversion,
+  markConversionCompleted,
+  readCheckoutContext,
+  readReferralAttribution,
+  registerConversionWithRetry,
+  releaseConversionLock,
+} from '@/lib/referrals/attribution';
 
 function PaymentResponsePage() {
   const searchParams = useSearchParams();
@@ -19,20 +31,107 @@ function PaymentResponsePage() {
   >('processing');
   const [paymentData, setPaymentData] = useState<any>(null);
   const [hasProcessed, setHasProcessed] = useState(false);
+  const [referralStatusMessage, setReferralStatusMessage] = useState('');
+  const processingRefPayco = useRef<string | null>(null);
+
+  const registerReferralConversion = async (params: {
+    transactionId: string;
+    amount: number;
+    currency: string;
+  }) => {
+    const attribution = readReferralAttribution();
+    if (!attribution || attribution.validationState !== 'valid' || !attribution.referralApplied) {
+      return;
+    }
+
+    const transactionId = params.transactionId;
+    if (!transactionId) return;
+
+    if (hasCompletedConversion(transactionId)) {
+      setReferralStatusMessage('Referido aplicado en esta transaccion.');
+      return;
+    }
+
+    if (!acquireConversionLock(transactionId)) {
+      return;
+    }
+
+    try {
+      const revalidation = await validateAffiliateLinkByCode(
+        apolloClient,
+        attribution.referralCode
+      );
+      if (!revalidation.valid) {
+        clearReferralAttribution();
+        setReferralStatusMessage('Codigo de referido invalido o expirado.');
+        return;
+      }
+
+      const localUser = getUserFromLocalStorage();
+      const userId = localUser?.id ? String(localUser.id) : '';
+
+      if (!userId) {
+        setReferralStatusMessage('No fue posible aplicar el referido: sesion no disponible.');
+        return;
+      }
+
+      const checkoutContext = readCheckoutContext();
+      const planType = checkoutContext?.planType || 'SUBSCRIPTION';
+      const planDurationMonths = checkoutContext?.planDurationMonths || 1;
+      const referralAmount = Number(checkoutContext?.amount || params.amount || 0);
+      const commissionPercentage = 20;
+      const commissionAmount = Number(((referralAmount * commissionPercentage) / 100).toFixed(2));
+
+      const result = await registerConversionWithRetry(
+        async (payload) => registerAffiliateConversion(apolloClient, payload),
+        {
+          referralCode: attribution.referralCode,
+          convertedUserId: userId,
+          transactionId,
+          planType,
+          planDurationMonths,
+          commissionAmount,
+          currency: params.currency || checkoutContext?.currency || 'COP',
+          conversionDate: new Date().toISOString(),
+          referralAmount,
+          commissionPercentage,
+          status: 'COMMISSION_PENDING',
+          commissionStatus: 'COMMISSION_PENDING',
+        },
+        3
+      );
+
+      if (!result.ok) {
+        setReferralStatusMessage('No pudimos registrar el referido. Reintentaremos.');
+        return;
+      }
+
+      markConversionCompleted(transactionId);
+      clearCheckoutContext();
+      setReferralStatusMessage('Codigo de referido aplicado correctamente.');
+    } finally {
+      releaseConversionLock(transactionId);
+    }
+  };
+
   useEffect(() => {
-    // Prevent multiple executions
     if (hasProcessed) return;
+
+    const refPayco = searchParams.get('ref_payco');
+    if (!refPayco) {
+      setPaymentStatus('error');
+      setHasProcessed(true);
+      return;
+    }
+
+    // Guard against duplicated executions (React strict mode, searchParams refreshes)
+    if (processingRefPayco.current === refPayco) {
+      return;
+    }
+    processingRefPayco.current = refPayco;
+
     const processPaymentResponse = async () => {
       try {
-        // Obtener ref_payco de los parámetros de la URL
-        const refPayco = searchParams.get('ref_payco');
-        if (!refPayco) {
-          console.error('No ref_payco found in URL');
-          setPaymentStatus('error');
-          setHasProcessed(true);
-          return;
-        }
-
         setHasProcessed(true);
 
         // Validar el pago con ePayco
@@ -76,6 +175,15 @@ function PaymentResponsePage() {
 
         if (state === 'Aceptada' || responseCode === '1') {
           setPaymentStatus('success');
+
+          const conversionTransactionId =
+            info.x_transaction_id || info.x_ref_payco || refPayco || String(Date.now());
+
+          await registerReferralConversion({
+            transactionId: conversionTransactionId,
+            amount: Number(info.x_amount || 0),
+            currency: info.x_currency_code || 'COP',
+          });
 
           // Actualizar el estado del pago en el backend
           try {
@@ -141,9 +249,7 @@ function PaymentResponsePage() {
                       email
                       role
                       membershipLevel
-                      plan
-                      planStatus
-                      planPeriod
+                      status
                     }
                   }
                 `;
@@ -236,11 +342,8 @@ function PaymentResponsePage() {
       }
     };
 
-    if (searchParams.get('ref_payco') && !hasProcessed) {
-      processPaymentResponse();
-    }
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [searchParams]);
+    processPaymentResponse();
+  }, [searchParams, hasProcessed]);
 
   const getStatusIcon = () => {
     switch (paymentStatus) {
@@ -345,6 +448,12 @@ function PaymentResponsePage() {
                 </div>
               )}
             </div>
+          </div>
+        )}
+
+        {referralStatusMessage && (
+          <div className="mb-6 rounded-lg border border-green-500/40 bg-green-500/10 p-3 text-sm text-green-300">
+            {referralStatusMessage}
           </div>
         )}
 

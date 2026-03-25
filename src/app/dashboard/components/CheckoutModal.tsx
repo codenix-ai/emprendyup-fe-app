@@ -4,6 +4,7 @@ import { useState, useEffect } from 'react';
 import { X, Loader2 } from 'lucide-react';
 import { useEPaycoPayment } from '@/lib/hooks/useEPaycoPayment';
 import { getUserFromLocalStorage } from '@/lib/utils/localAuth';
+import { persistCheckoutContext } from '@/lib/referrals/attribution';
 
 interface CheckoutModalProps {
   open: boolean;
@@ -25,6 +26,11 @@ export default function CheckoutModal({
   price,
   customerEmail,
 }: CheckoutModalProps) {
+  const normalizePhone = (value?: string) =>
+    String(value || '')
+      .replace(/\D/g, '')
+      .slice(0, 10);
+
   const [loading, setLoading] = useState(false);
   const [customerData, setCustomerData] = useState({
     name: '',
@@ -46,7 +52,7 @@ export default function CheckoutModal({
         ...prev,
         name: user.name || prev.name,
         email: user.email || customerEmail || prev.email,
-        phone: (user as any).phone || prev.phone,
+        phone: normalizePhone((user as any).phone || prev.phone),
         address: (user as any).address || prev.address,
         city: (user as any).city || prev.city,
         document: (user as any).document || prev.document,
@@ -59,7 +65,7 @@ export default function CheckoutModal({
   const missingFields = {
     name: !customerData.name?.trim(),
     email: !customerData.email?.trim(),
-    phone: !customerData.phone?.trim(),
+    phone: normalizePhone(customerData.phone).length !== 10,
   };
 
   const hasMissingFields = Object.values(missingFields).some(Boolean);
@@ -67,21 +73,34 @@ export default function CheckoutModal({
   if (!open) return null;
 
   const handleCheckout = async () => {
+    const sanitizedPhone = normalizePhone(customerData.phone);
+    if (sanitizedPhone.length !== 10) {
+      return;
+    }
+
     setLoading(true);
 
     try {
+      persistCheckoutContext({
+        orderId: `membership-${planId}-${Date.now()}`,
+        planType: planName || planId,
+        planDurationMonths: billingCycle === 'annual' ? 12 : 1,
+        amount: Number(price || 0),
+        currency: 'COP',
+      });
+
       await initiatePayment({
         planId,
         customerData: {
           name: customerData.name,
           email: customerData.email,
-          phone: customerData.phone,
+          phone: sanitizedPhone,
           address: customerData.address,
           city: customerData.city,
           document: customerData.document,
           documentType: customerData.documentType,
         },
-        successUrl: `${window.location.origin}/payment/success`,
+        successUrl: `${window.location.origin}/payment/response`,
         cancelUrl: `${window.location.origin}/payment/cancel`,
       });
     } catch (err) {
@@ -177,10 +196,15 @@ export default function CheckoutModal({
                     type="tel"
                     value={customerData.phone}
                     onChange={(e) =>
-                      setCustomerData((prev) => ({ ...prev, phone: e.target.value }))
+                      setCustomerData((prev) => ({
+                        ...prev,
+                        phone: normalizePhone(e.target.value),
+                      }))
                     }
                     className="w-full px-3 py-2 bg-gray-700 border border-gray-600 rounded-lg text-white placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-fourth-base focus:border-transparent"
                     placeholder="3001234567"
+                    maxLength={10}
+                    inputMode="numeric"
                     required
                   />
                 </div>

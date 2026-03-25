@@ -1,7 +1,7 @@
 'use client';
 
 import React, { useState, useEffect, Suspense } from 'react';
-import { gql, useMutation } from '@apollo/client';
+import { gql, useApolloClient, useMutation } from '@apollo/client';
 import Link from 'next/link';
 import Image from 'next/image';
 import { useRouter, useSearchParams } from 'next/navigation';
@@ -10,6 +10,14 @@ import { Eye, EyeOff, ArrowLeft, Loader2, AlertCircle, CheckCircle2, Check } fro
 import { GoogleLogin, CredentialResponse } from '@react-oauth/google';
 import GoogleOAuthProvider from '../components/GoogleOAuthProvider';
 import { handleGoogleSignup, parseGoogleCredential } from '@/lib/utils/googleAuth';
+import { validateAffiliateLinkByCode } from '@/lib/referrals/api';
+import {
+  clearReferralAttribution,
+  getReferralCodeFromUrl,
+  markReferralValidated,
+  persistReferralAttribution,
+  readReferralAttribution,
+} from '@/lib/referrals/attribution';
 
 const REGISTER_MUTATION = gql`
   mutation Register($input: RegisterInput!) {
@@ -54,6 +62,7 @@ function PasswordStrength({ password }: { password: string }) {
 function SignupForm() {
   const router = useRouter();
   const searchParams = useSearchParams();
+  const apolloClient = useApolloClient();
   const [name, setName] = useState('');
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
@@ -68,6 +77,8 @@ function SignupForm() {
   const [error, setError] = useState('');
   const [success, setSuccess] = useState('');
   const [showToast, setShowToast] = useState(false);
+  const [referralMessage, setReferralMessage] = useState('');
+  const [referralApplied, setReferralApplied] = useState(false);
   const [registerMutation] = useMutation(REGISTER_MUTATION);
   const [googleLoading, setGoogleLoading] = useState(false);
 
@@ -92,6 +103,63 @@ function SignupForm() {
       window.history.replaceState({}, '', newUrl.toString());
     }
   }, [searchParams]);
+
+  useEffect(() => {
+    let mounted = true;
+
+    const setupReferralAttribution = async () => {
+      const queryCode = getReferralCodeFromUrl(searchParams.get('referralCode'));
+      const existing = readReferralAttribution();
+      const candidateCode = queryCode || existing?.referralCode;
+
+      if (!candidateCode) {
+        if (mounted) {
+          setReferralApplied(false);
+          setReferralMessage('');
+        }
+        return;
+      }
+
+      persistReferralAttribution(candidateCode);
+
+      try {
+        const result = await validateAffiliateLinkByCode(apolloClient, candidateCode);
+
+        if (!mounted) return;
+
+        if (!result.valid) {
+          clearReferralAttribution();
+          setReferralApplied(false);
+          setReferralMessage('Codigo de referido invalido o expirado.');
+          return;
+        }
+
+        markReferralValidated({
+          valid: true,
+          affiliateLinkId: result.affiliateLinkId,
+          referralCode: candidateCode,
+        });
+        setReferralApplied(true);
+        setReferralMessage('Codigo de referido aplicado.');
+      } catch {
+        if (!mounted) return;
+        const current = readReferralAttribution();
+        if (current?.referralApplied && current.validationState === 'valid') {
+          setReferralApplied(true);
+          setReferralMessage('Codigo de referido aplicado.');
+        } else {
+          setReferralApplied(false);
+          setReferralMessage('No pudimos validar tu referido en este momento.');
+        }
+      }
+    };
+
+    setupReferralAttribution();
+
+    return () => {
+      mounted = false;
+    };
+  }, [apolloClient, searchParams]);
 
   const redirectAfterAuth = (user: {
     role?: string;
@@ -251,6 +319,27 @@ function SignupForm() {
 
             {/* Alerts */}
             <AnimatePresence mode="wait">
+              {referralMessage && (
+                <motion.div
+                  key="referral"
+                  initial={{ opacity: 0, scale: 0.97 }}
+                  animate={{ opacity: 1, scale: 1 }}
+                  exit={{ opacity: 0, scale: 0.97 }}
+                  className={`mb-5 flex items-start gap-2.5 rounded-xl border px-4 py-3 text-sm ${
+                    referralApplied
+                      ? 'border-green-500/30 bg-green-500/10 text-green-400'
+                      : 'border-yellow-500/30 bg-yellow-500/10 text-yellow-300'
+                  }`}
+                  role="status"
+                >
+                  {referralApplied ? (
+                    <CheckCircle2 size={16} className="mt-0.5 shrink-0" />
+                  ) : (
+                    <AlertCircle size={16} className="mt-0.5 shrink-0" />
+                  )}
+                  <span>{referralMessage}</span>
+                </motion.div>
+              )}
               {error && (
                 <motion.div
                   key="error"

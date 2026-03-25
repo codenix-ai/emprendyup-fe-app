@@ -33,11 +33,7 @@ export default function StoreSummary({ open, onClose, data, onConfirm }: StoreSu
   // Actualiza el formulario cuando cambian los datos iniciales
   useEffect(() => {
     if (data) {
-      // Move phone into whatsappNumber for the modal and clear phone field in the form
-      setFormData({
-        ...data,
-        whatsappNumber: data.whatsappNumber || data.phone || '',
-      });
+      setFormData(data);
     }
   }, [data]);
 
@@ -45,6 +41,7 @@ export default function StoreSummary({ open, onClose, data, onConfirm }: StoreSu
 
   const handleChange = (e: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement>) => {
     const { name, value } = e.target;
+
     // If the user changes the store name, try to auto-update storeId
     if (name === 'name') {
       setFormData((prev: any) => {
@@ -258,7 +255,15 @@ export default function StoreSummary({ open, onClose, data, onConfirm }: StoreSu
                 className={inputClassName}
                 disabled={isSubmitting}
               />
-              {/* Phone removed: phone value is migrated into whatsappNumber on load */}
+              <input
+                type="tel"
+                name="phone"
+                value={formData.phone || ''}
+                onChange={handleChange}
+                placeholder="Teléfono"
+                className={inputClassName}
+                disabled={isSubmitting}
+              />
             </div>
             <input
               type="text"
