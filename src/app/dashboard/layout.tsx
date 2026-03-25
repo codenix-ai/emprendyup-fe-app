@@ -109,6 +109,7 @@ const getStoreNavigationGroups = (storeId?: string) => {
     { name: 'Productos', icon: Package, href: '/dashboard/products', isSingle: true },
     { name: 'Categorías', icon: List, href: '/dashboard/categories', isSingle: true },
     { name: 'Cotizaciones', icon: ClipboardList, href: '/dashboard/quotes', isSingle: true },
+    { name: 'Blog', icon: FileText, href: '/dashboard/blog', isSingle: true },
     ...(storeId
       ? [
           {
@@ -166,6 +167,7 @@ const getRestaurantNavigationGroups = () => {
     },
     { name: 'Nómina', icon: Users, href: '/dashboard/restaurant-payroll', isSingle: true },
     { name: 'Imágenes del Menú', icon: Package, href: '/dashboard/menu-images', isSingle: true },
+    { name: 'Blog', icon: FileText, href: '/dashboard/blog', isSingle: true },
     { name: 'Usuarios', icon: Users, href: '/dashboard/user-by-restaurant', isSingle: true },
     { name: 'Bonos', icon: Gift, href: '/dashboard/bonuses', isSingle: true },
     { name: 'Ferias', icon: Calendar, href: '/dashboard/fairs', isSingle: true },
