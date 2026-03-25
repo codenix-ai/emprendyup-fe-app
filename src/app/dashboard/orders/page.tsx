@@ -35,7 +35,6 @@ const GET_ORDERS_BY_STORE = gql`
       shipping
       createdAt
       userName
-      userEmail
       items {
         id
         productName
@@ -51,8 +50,6 @@ const GET_ORDERS_BY_STORE = gql`
       address {
         name
         street
-        city
-        state
       }
       store {
         id
@@ -75,7 +72,6 @@ const PAGINATED_ORDERS = gql`
         shipping
         createdAt
         userName
-        userEmail
         items {
           id
           productName
@@ -91,8 +87,6 @@ const PAGINATED_ORDERS = gql`
         address {
           name
           street
-          city
-          state
         }
         store {
           id
@@ -220,8 +214,7 @@ export default function OrderPage() {
 
   useEffect(() => {
     const buildAddress = (o: any) => {
-      const parts = [o.address?.street, o.address?.city, o.address?.state].filter(Boolean);
-      return parts.join(', ');
+      return o.address?.street || '';
     };
 
     if (!isAdmin && data?.ordersByStore) {
@@ -233,7 +226,7 @@ export default function OrderPage() {
           storeId: o.store?.id || storeId,
           customerId: '',
           customerName: o.userName || (o.address?.name ?? 'Cliente'),
-          customerEmail: o.userEmail || '',
+          customerEmail: o.address?.name || '',
           items: (o.items || []).map((it: any) => ({
             id: it.id,
             name: it.productName || it.product?.name || '',
@@ -267,7 +260,7 @@ export default function OrderPage() {
           storeId: o.store?.id || storeId,
           customerId: '',
           customerName: o.userName || (o.address?.name ?? 'Cliente'),
-          customerEmail: o.userEmail || '',
+          customerEmail: o.address?.name || '',
           items: (o.items || []).map((it: any) => ({
             id: it.id,
             name: it.productName || it.product?.name || '',
