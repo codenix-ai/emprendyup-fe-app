@@ -180,6 +180,10 @@ export interface PaymentConfiguration {
   epaycoEnabled: boolean;
   epaycoPublicKey?: string;
   epaycoTestMode: boolean;
+  boldEnabled: boolean;
+  boldPublicKey?: string;
+  boldApiKey?: string;
+  boldDevMode: boolean;
   defaultCurrency: string;
   autoCapture: boolean;
   webhookUrl?: string;
@@ -205,6 +209,10 @@ export interface CreatePaymentConfigurationInput {
   epaycoEnabled?: boolean;
   epaycoApiKey?: string;
   epaycoPublicKey?: string;
+  boldEnabled?: boolean;
+  boldApiKey?: string;
+  boldPublicKey?: string;
+  boldDevMode?: boolean;
   epaycoTestMode?: boolean;
   defaultCurrency?: string;
   autoCapture?: boolean;
@@ -229,6 +237,10 @@ export interface UpdatePaymentConfigurationInput {
   epaycoEnabled?: boolean;
   epaycoApiKey?: string;
   epaycoPublicKey?: string;
+  boldEnabled?: boolean;
+  boldApiKey?: string;
+  boldPublicKey?: string;
+  boldDevMode?: boolean;
   epaycoTestMode?: boolean;
   defaultCurrency?: string;
   autoCapture?: boolean;

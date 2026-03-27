@@ -190,6 +190,29 @@ export const useStorePaymentConfiguration = (storeId?: string) => {
     }
   };
 
+  const setupBoldConfiguration = async (config: {
+    publicKey: string;
+    apiKey: string;
+    devMode: boolean;
+    cashEnabled?: boolean;
+  }) => {
+    const input: CreatePaymentConfigurationInput = {
+      cashEnabled: config.cashEnabled ?? currentConfiguration?.cashEnabled ?? false,
+      boldEnabled: true,
+      boldPublicKey: config.publicKey,
+      boldApiKey: config.apiKey,
+      boldDevMode: config.devMode,
+      defaultCurrency: 'COP',
+      autoCapture: true,
+    };
+
+    if (currentConfiguration) {
+      return updateConfiguration(currentConfiguration.id, input);
+    } else {
+      return createConfiguration(input);
+    }
+  };
+
   const setCashEnabled = async (enabled: boolean) => {
     const input: CreatePaymentConfigurationInput = {
       cashEnabled: enabled,
@@ -211,11 +234,13 @@ export const useStorePaymentConfiguration = (storeId?: string) => {
     setupWompiConfiguration,
     setupMercadoPagoConfiguration,
     setupEpaycoConfiguration,
+    setupBoldConfiguration,
 
     // Helper methods
     isWompiEnabled: currentConfiguration?.wompiEnabled || false,
     isMercadoPagoEnabled: currentConfiguration?.mercadoPagoEnabled || false,
     isEpaycoEnabled: currentConfiguration?.epaycoEnabled || false,
+    isBoldEnabled: currentConfiguration?.boldEnabled || false,
     isCashEnabled: currentConfiguration?.cashEnabled || false,
     getWompiPublicKey: () => currentConfiguration?.wompiPublicKey,
     getMercadoPagoPublicKey: () => currentConfiguration?.mercadoPagoPublicKey,

@@ -29,9 +29,11 @@ export default function PaymentConfiguration({ storeId }: PaymentConfigurationPr
     setupWompiConfiguration,
     setupMercadoPagoConfiguration,
     setupEpaycoConfiguration,
+    setupBoldConfiguration,
     isWompiEnabled,
     isMercadoPagoEnabled,
     isEpaycoEnabled,
+    isBoldEnabled,
     isCashEnabled,
   } = useStorePaymentConfiguration(fallbackStoreId);
 
@@ -62,6 +64,13 @@ export default function PaymentConfiguration({ storeId }: PaymentConfigurationPr
     publicKey: '',
     apiKey: '',
     testMode: true,
+  });
+
+  // Bold configuration state - inicializado vacío
+  const [boldConfig, setBoldConfig] = useState({
+    publicKey: '',
+    apiKey: '',
+    devMode: true,
   });
 
   // Actualizar los estados solo cuando hay datos guardados en la base de datos
@@ -96,6 +105,15 @@ export default function PaymentConfiguration({ storeId }: PaymentConfigurationPr
           publicKey: configuration.epaycoPublicKey || '',
           apiKey: '',
           testMode: configuration.epaycoTestMode ?? true,
+        });
+      }
+
+      // Solo actualizar Bold si hay datos guardados
+      if (configuration.boldPublicKey || configuration.boldEnabled) {
+        setBoldConfig({
+          publicKey: configuration.boldPublicKey || '',
+          apiKey: '',
+          devMode: configuration.boldDevMode ?? true,
         });
       }
     }
@@ -155,6 +173,26 @@ export default function PaymentConfiguration({ storeId }: PaymentConfigurationPr
       console.error('Error saving ePayco config:', error);
       const errorMessage =
         error instanceof Error ? error.message : 'Error al guardar la configuración de ePayco';
+      toast.error(errorMessage);
+    } finally {
+      setSaving(false);
+    }
+  };
+
+  const handleSaveBold = async () => {
+    if (!fallbackStoreId) {
+      toast.error('No se pudo identificar la tienda. Por favor, recarga la página.');
+      return;
+    }
+
+    setSaving(true);
+    try {
+      await setupBoldConfiguration({ ...boldConfig, cashEnabled });
+      toast.success('Configuración de Bold guardada exitosamente');
+    } catch (error) {
+      console.error('Error saving Bold config:', error);
+      const errorMessage =
+        error instanceof Error ? error.message : 'Error al guardar la configuración de Bold';
       toast.error(errorMessage);
     } finally {
       setSaving(false);
@@ -252,6 +290,28 @@ export default function PaymentConfiguration({ storeId }: PaymentConfigurationPr
 
           <div
             className={`p-4 rounded-lg border shadow-lg ${
+              isBoldEnabled
+                ? 'bg-orange-900/20 border-orange-700 shadow-orange-900/20'
+                : 'bg-gray-800 border-gray-700'
+            }`}
+          >
+            <div className="flex items-center justify-between">
+              <div>
+                <h3 className="font-medium text-white">Bold</h3>
+                <p className={`text-sm ${isBoldEnabled ? 'text-orange-400' : 'text-gray-500'}`}>
+                  {isBoldEnabled ? 'Configurado' : 'No configurado'}
+                </p>
+              </div>
+              {isBoldEnabled ? (
+                <CheckCircle className="w-6 h-6 text-orange-400" />
+              ) : (
+                <AlertCircle className="w-6 h-6 text-gray-500" />
+              )}
+            </div>
+          </div>
+
+          <div
+            className={`p-4 rounded-lg border shadow-lg ${
               isCashEnabled
                 ? 'bg-amber-900/20 border-amber-700 shadow-amber-900/20'
                 : 'bg-gray-800 border-gray-700'
@@ -335,6 +395,16 @@ export default function PaymentConfiguration({ storeId }: PaymentConfigurationPr
                 }`}
               >
                 ePayco
+              </button>
+              <button
+                onClick={() => setActiveTab('bold')}
+                className={`px-6 py-3 border-b-2 font-medium text-sm transition-colors ${
+                  activeTab === 'bold'
+                    ? 'border-orange-400 text-orange-400'
+                    : 'border-transparent text-gray-400 hover:text-gray-300 hover:border-gray-600'
+                }`}
+              >
+                Bold
               </button>
             </nav>
           </div>
@@ -593,6 +663,72 @@ export default function PaymentConfiguration({ storeId }: PaymentConfigurationPr
                     onClick={handleSaveEpayco}
                     disabled={saving}
                     className="px-6 py-3 bg-blue-600 text-white rounded-md hover:bg-blue-700 disabled:opacity-50 disabled:cursor-not-allowed flex items-center shadow-lg transition-colors"
+                  >
+                    <Save className="w-4 h-4 mr-2" />
+                    {saving ? 'Guardando...' : 'Guardar Configuración'}
+                  </button>
+                </div>
+              </div>
+            )}
+
+            {/* Bold Configuration */}
+            {activeTab === 'bold' && (
+              <div className="space-y-6">
+                <div>
+                  <h3 className="text-lg font-medium text-white mb-4">Configuración de Bold</h3>
+                  <p className="text-sm text-gray-400 mb-6">
+                    Configura tu integración con Bold para procesar pagos en Colombia.
+                  </p>
+                </div>
+
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+                  <div>
+                    <label className="block text-sm font-medium text-gray-300 mb-2">
+                      <Key className="w-4 h-4 inline mr-2" />
+                      Clave Pública (boldPublicKey)
+                    </label>
+                    <input
+                      type="text"
+                      value={boldConfig.publicKey}
+                      onChange={(e) => setBoldConfig({ ...boldConfig, publicKey: e.target.value })}
+                      placeholder="Bold public key"
+                      className="w-full p-3 bg-gray-700 border border-gray-600 text-white placeholder-gray-400 rounded-md focus:ring-2 focus:ring-orange-500 focus:border-orange-500"
+                    />
+                  </div>
+
+                  <div>
+                    <label className="block text-sm font-medium text-gray-300 mb-2">
+                      <Shield className="w-4 h-4 inline mr-2" />
+                      Clave API (boldApiKey)
+                    </label>
+                    <input
+                      type="password"
+                      value={boldConfig.apiKey}
+                      onChange={(e) => setBoldConfig({ ...boldConfig, apiKey: e.target.value })}
+                      placeholder="Bold API key"
+                      className="w-full p-3 bg-gray-700 border border-gray-600 text-white placeholder-gray-400 rounded-md focus:ring-2 focus:ring-orange-500 focus:border-orange-500"
+                    />
+                  </div>
+
+                  <div className="flex items-center">
+                    <input
+                      type="checkbox"
+                      id="bold-dev-mode"
+                      checked={boldConfig.devMode}
+                      onChange={(e) => setBoldConfig({ ...boldConfig, devMode: e.target.checked })}
+                      className="h-4 w-4 text-orange-600 bg-gray-700 border-gray-600 focus:ring-orange-500 focus:ring-2 rounded"
+                    />
+                    <label htmlFor="bold-dev-mode" className="ml-2 block text-sm text-gray-300">
+                      Modo desarrollo (boldDevMode)
+                    </label>
+                  </div>
+                </div>
+
+                <div className="flex justify-end">
+                  <button
+                    onClick={handleSaveBold}
+                    disabled={saving}
+                    className="px-6 py-3 bg-orange-600 text-white rounded-md hover:bg-orange-700 disabled:opacity-50 disabled:cursor-not-allowed flex items-center shadow-lg transition-colors"
                   >
                     <Save className="w-4 h-4 mr-2" />
                     {saving ? 'Guardando...' : 'Guardar Configuración'}

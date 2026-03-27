@@ -206,6 +206,9 @@ export const GET_PAYMENT_CONFIGURATIONS = gql`
       epaycoEnabled
       epaycoPublicKey
       epaycoTestMode
+      boldEnabled
+      boldPublicKey
+      boldDevMode
       defaultCurrency
       autoCapture
       webhookUrl
@@ -235,6 +238,9 @@ export const CREATE_PAYMENT_CONFIGURATION = gql`
       epaycoEnabled
       epaycoPublicKey
       epaycoTestMode
+      boldEnabled
+      boldPublicKey
+      boldDevMode
       defaultCurrency
       autoCapture
       webhookUrl
@@ -264,6 +270,9 @@ export const UPDATE_PAYMENT_CONFIGURATION = gql`
       epaycoEnabled
       epaycoPublicKey
       epaycoTestMode
+      boldEnabled
+      boldPublicKey
+      boldDevMode
       defaultCurrency
       autoCapture
       webhookUrl
