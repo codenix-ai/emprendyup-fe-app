@@ -120,6 +120,12 @@ const getStoreNavigationGroups = (storeId?: string) => {
           },
         ]
       : []),
+    {
+      name: 'Landing Page',
+      icon: LayoutList,
+      href: '/dashboard/landing-editor',
+      isSingle: true,
+    },
     { name: 'Usuarios', icon: Users, href: '/dashboard/user-by-store', isSingle: true },
     { name: 'Bonos', icon: Gift, href: '/dashboard/bonuses', isSingle: true },
     { name: 'Ferias', icon: Calendar, href: '/dashboard/fairs', isSingle: true },
@@ -190,8 +196,9 @@ const getStoreAdminNavigationGroups = (user: any) => {
 };
 
 export default function DashboardLayout({ children }: { children: React.ReactNode }) {
-  const { isAuthenticated, isLoading } = useAuth();
   const pathname = usePathname();
+  const isEditorPage = Boolean(pathname?.match(/\/dashboard\/stores\/[^/]+\/pages\/home\/editor/));
+  const { isAuthenticated, isLoading } = useAuth({ noRedirect: isEditorPage });
   const { user, setUser } = useSessionStore();
   const [mounted, setMounted] = useState(false);
   const [collapsed, setCollapsed] = useState(false);
@@ -262,6 +269,9 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
   };
 
   if (!user) {
+    if (isEditorPage) {
+      return <div className="min-h-screen bg-slate-50 dark:bg-slate-900">{children}</div>;
+    }
     return <PageLoader />;
   }
 
@@ -280,6 +290,9 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
   }
 
   if (!isAuthenticated) {
+    if (isEditorPage) {
+      return <div className="min-h-screen bg-slate-50 dark:bg-slate-900">{children}</div>;
+    }
     return null;
   }
 
@@ -290,7 +303,6 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
   const navigationGroups =
     user.role === 'ADMIN' ? adminNavigationGroups : getStoreAdminNavigationGroups(user);
 
-  // Build external edit URL for store owners from the fetched domain data
   const editWebUrl =
     isStoreType && storeData?.store
       ? (() => {
@@ -298,11 +310,10 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
           const base = s.customDomain
             ? `https://${s.customDomain}`
             : `https://${s.storeId}.emprendyup.com`;
-          return `${base}/dashboard/store/${s.storeId}/edit`;
+          return `${base}/dashboard/stores/${s.storeId}/pages/home/editor`;
         })()
       : null;
 
-  // Patch the href of "Editar página web" with the computed external URL
   const patchedNavigationGroups = navigationGroups.map((g) =>
     g.name === 'Editar página web' && editWebUrl ? { ...g, href: editWebUrl, external: true } : g
   );
