@@ -454,3 +454,56 @@ export const GET_SUBSCRIPTION_PRODUCTS = gql`
     }
   }
 `;
+
+// ─── Pages / Landing Page ─────────────────────────────────────────────────────
+
+const PAGE_CONFIG_FIELDS = `
+  id
+  status
+  publishedConfig
+  draftConfig
+  updatedAt
+  createdAt
+`;
+
+export const GET_PAGE_BY_STORE = gql`
+  query GetPageByStore($storeId: String, $restaurantId: String, $serviceProviderId: String) {
+    page(storeId: $storeId, restaurantId: $restaurantId, serviceProviderId: $serviceProviderId) {
+      ${PAGE_CONFIG_FIELDS}
+    }
+  }
+`;
+
+export const SAVE_PAGE_DRAFT = gql`
+  mutation SavePageDraft(
+    $storeId: String
+    $restaurantId: String
+    $serviceProviderId: String
+    $config: JSON!
+  ) {
+    saveDraft(
+      storeId: $storeId
+      restaurantId: $restaurantId
+      serviceProviderId: $serviceProviderId
+      config: $config
+    ) {
+      ${PAGE_CONFIG_FIELDS}
+    }
+  }
+`;
+
+export const PUBLISH_PAGE = gql`
+  mutation PublishPage(
+    $storeId: String
+    $restaurantId: String
+    $serviceProviderId: String
+  ) {
+    publishPage(
+      storeId: $storeId
+      restaurantId: $restaurantId
+      serviceProviderId: $serviceProviderId
+    ) {
+      ${PAGE_CONFIG_FIELDS}
+    }
+  }
+`;

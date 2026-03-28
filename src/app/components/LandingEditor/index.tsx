@@ -1,6 +1,7 @@
 'use client';
 import React, { useState, useCallback, useEffect, useMemo } from 'react';
 import { useQuery, useMutation, gql } from '@apollo/client';
+import { GET_PAGE_BY_STORE, SAVE_PAGE_DRAFT, PUBLISH_PAGE } from '@/lib/graphql/queries';
 import {
   Save,
   Globe,
@@ -28,15 +29,6 @@ import {
 import { getCurrentUser } from '@/lib/utils/rbac';
 
 // ─── GraphQL ──────────────────────────────────────────────────────────────────
-
-const PAGE_FIELDS = `
-  id
-  status
-  publishedConfig
-  draftConfig
-  updatedAt
-  createdAt
-`;
 
 const GET_STORE_BRANDING = gql`
   query GetStoreBranding($storeId: String!) {
@@ -76,30 +68,6 @@ const GET_SERVICE_PROVIDER_BRANDING = gql`
       id
       businessName
       coverImage
-    }
-  }
-`;
-
-const GET_LANDING_PAGE = gql`
-  query GetLandingPage($storeId: String, $restaurantId: String, $serviceProviderId: String) {
-    landingPage(storeId: $storeId, restaurantId: $restaurantId, serviceProviderId: $serviceProviderId) {
-      ${PAGE_FIELDS}
-    }
-  }
-`;
-
-const SAVE_DRAFT = gql`
-  mutation SaveLandingDraft($storeId: String, $restaurantId: String, $serviceProviderId: String, $config: JSON!) {
-    saveLandingDraft(storeId: $storeId, restaurantId: $restaurantId, serviceProviderId: $serviceProviderId, config: $config) {
-      ${PAGE_FIELDS}
-    }
-  }
-`;
-
-const PUBLISH_LANDING = gql`
-  mutation PublishLandingPage($storeId: String, $restaurantId: String, $serviceProviderId: String) {
-    publishLandingPage(storeId: $storeId, restaurantId: $restaurantId, serviceProviderId: $serviceProviderId) {
-      ${PAGE_FIELDS}
     }
   }
 `;
@@ -202,17 +170,17 @@ export default function LandingEditor() {
   });
 
   // ── Fetch landing page ────────────────────────────────────────────────────
-  const { data: pageData, loading: pageLoading } = useQuery(GET_LANDING_PAGE, {
+  const { data: pageData, loading: pageLoading } = useQuery(GET_PAGE_BY_STORE, {
     variables: { storeId, restaurantId, serviceProviderId },
     skip: !storeId && !restaurantId && !serviceProviderId,
     errorPolicy: 'ignore',
   });
 
   // ── Mutations ─────────────────────────────────────────────────────────────
-  const [saveDraftMutation, { loading: savingDraft }] = useMutation(SAVE_DRAFT, {
+  const [saveDraftMutation, { loading: savingDraft }] = useMutation(SAVE_PAGE_DRAFT, {
     errorPolicy: 'all',
   });
-  const [publishMutation, { loading: publishing }] = useMutation(PUBLISH_LANDING, {
+  const [publishMutation, { loading: publishing }] = useMutation(PUBLISH_PAGE, {
     errorPolicy: 'all',
   });
 
@@ -244,12 +212,17 @@ export default function LandingEditor() {
   }, [storeData, restaurantData, serviceData]);
 
   // ── Seed from page record ─────────────────────────────────────────────────
+  // Sections are loaded from publishedConfig as the source of truth.
+  // If a draftConfig exists it is used as the working state instead,
+  // preserving any unpublished edits.
   useEffect(() => {
-    const page = pageData?.landingPage as PageRecord | undefined;
+    const page = pageData?.page as PageRecord | undefined;
     if (!page) return;
     setPageRecord(page);
-    const src = page.draftConfig || page.publishedConfig;
-    if (src) setConfig(src);
+    const workingConfig = page.draftConfig ?? page.publishedConfig;
+    if (workingConfig) {
+      setConfig(workingConfig);
+    }
   }, [pageData]);
 
   // ── Helpers ───────────────────────────────────────────────────────────────
@@ -317,7 +290,7 @@ export default function LandingEditor() {
         variables: { storeId, restaurantId, serviceProviderId, config },
       });
       if (errors?.length) throw new Error(errors[0].message);
-      if (data?.saveLandingDraft) setPageRecord(data.saveLandingDraft);
+      if (data?.saveDraft) setPageRecord(data.saveDraft as PageRecord);
       setHasUnsavedChanges(false);
       toast.success('Borrador guardado');
     } catch (err) {
@@ -336,7 +309,7 @@ export default function LandingEditor() {
         variables: { storeId, restaurantId, serviceProviderId },
       });
       if (errors?.length) throw new Error(errors[0].message);
-      if (data?.publishLandingPage) setPageRecord(data.publishLandingPage);
+      if (data?.publishPage) setPageRecord(data.publishPage as PageRecord);
       setHasUnsavedChanges(false);
       toast.success('¡Landing page publicada!');
     } catch (err) {
