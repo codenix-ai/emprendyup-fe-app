@@ -3,7 +3,11 @@
 import { useEffect, useState } from 'react';
 import { useRouter } from 'next/navigation';
 
-export function useAuth() {
+interface UseAuthOptions {
+  noRedirect?: boolean;
+}
+
+export function useAuth(options: UseAuthOptions = {}) {
   const router = useRouter();
   const [isAuthenticated, setIsAuthenticated] = useState<boolean | null>(null);
   const [isLoading, setIsLoading] = useState(true);
@@ -13,27 +17,28 @@ export function useAuth() {
       try {
         const user = JSON.parse(localStorage.getItem('user') || '{}');
 
-        // Check if user has a valid session
         if (!user || !user.email || !user.name) {
-          // No valid session, redirect to index
           setIsAuthenticated(false);
           setIsLoading(false);
-          router.push('/');
+          if (!options.noRedirect) {
+            router.push('/');
+          }
           return;
         }
 
         setIsAuthenticated(true);
         setIsLoading(false);
-      } catch (error) {
-        // Invalid JSON in localStorage, redirect to index
+      } catch {
         setIsAuthenticated(false);
         setIsLoading(false);
-        router.push('/');
+        if (!options.noRedirect) {
+          router.push('/');
+        }
       }
     };
 
     checkAuth();
-  }, [router]);
+  }, [router, options.noRedirect]);
 
   return { isAuthenticated, isLoading };
 }

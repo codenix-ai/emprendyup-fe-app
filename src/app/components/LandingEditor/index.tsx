@@ -1,7 +1,7 @@
 'use client';
 import React, { useState, useCallback, useEffect, useMemo } from 'react';
-import { useQuery, useMutation, gql } from '@apollo/client';
-import { GET_PAGE_BY_STORE, SAVE_PAGE_DRAFT, PUBLISH_PAGE } from '@/lib/graphql/queries';
+import { useQuery, useMutation } from '@apollo/client';
+import { GET_STORE_BY_CUSTOM_DOMAIN, SAVE_PAGE_DRAFT, PUBLISH_PAGE } from '@/lib/graphql/queries';
 import {
   Save,
   Globe,
@@ -26,51 +26,8 @@ import {
   DEFAULT_FEATURES_DATA,
   DEFAULT_CTA_DATA,
 } from './types';
+import { useSessionStore } from '@/lib/store/dashboard';
 import { getCurrentUser } from '@/lib/utils/rbac';
-
-// ─── GraphQL ──────────────────────────────────────────────────────────────────
-
-const GET_STORE_BRANDING = gql`
-  query GetStoreBranding($storeId: String!) {
-    store(storeId: $storeId) {
-      storeId
-      name
-      primaryColor
-      secondaryColor
-      accentColor
-      backgroundColor
-      buttonColor
-      textColor
-      logoUrl
-    }
-  }
-`;
-
-const GET_RESTAURANT_BRANDING = gql`
-  query GetRestaurantBranding($id: ID!) {
-    restaurant(id: $id) {
-      id
-      name
-      primaryColor
-      secondaryColor
-      accentColor
-      backgroundColor
-      buttonColor
-      textColor
-      logoUrl
-    }
-  }
-`;
-
-const GET_SERVICE_PROVIDER_BRANDING = gql`
-  query GetServiceProviderBranding($id: String!) {
-    serviceProvider(id: $id) {
-      id
-      businessName
-      coverImage
-    }
-  }
-`;
 
 // ─── Section add menu ────────────────────────────────────────────────────────
 
@@ -141,6 +98,10 @@ export default function LandingEditor() {
   const storeId = user?.storeId;
   const restaurantId = user?.restaurantId;
   const serviceProviderId = user?.serviceProviderId;
+  const { currentStore } = useSessionStore();
+  const customDomain = currentStore?.subdomain
+    ? `${currentStore.subdomain}.emprendyup.com`
+    : undefined;
 
   const [config, setConfig] = useState<LandingPageConfig>(createDefaultConfig());
   const [expandedSections, setExpandedSections] = useState<Set<string>>(new Set(['hero-1']));
@@ -150,31 +111,13 @@ export default function LandingEditor() {
   const [hasUnsavedChanges, setHasUnsavedChanges] = useState(false);
   const [showAddMenu, setShowAddMenu] = useState(false);
 
-  // ── Fetch branding ────────────────────────────────────────────────────────
-  const { data: storeData } = useQuery(GET_STORE_BRANDING, {
-    variables: { storeId },
-    skip: !storeId,
+  // ── Fetch store + pages by custom domain ──────────────────────────────────
+  const { data: storeByDomainData, loading: pageLoading } = useQuery(GET_STORE_BY_CUSTOM_DOMAIN, {
+    variables: { customDomain: customDomain! },
+    skip: !customDomain,
     errorPolicy: 'ignore',
   });
-
-  const { data: restaurantData } = useQuery(GET_RESTAURANT_BRANDING, {
-    variables: { id: restaurantId },
-    skip: !restaurantId,
-    errorPolicy: 'ignore',
-  });
-
-  const { data: serviceData } = useQuery(GET_SERVICE_PROVIDER_BRANDING, {
-    variables: { id: serviceProviderId },
-    skip: !serviceProviderId,
-    errorPolicy: 'ignore',
-  });
-
-  // ── Fetch landing page ────────────────────────────────────────────────────
-  const { data: pageData, loading: pageLoading } = useQuery(GET_PAGE_BY_STORE, {
-    variables: { storeId, restaurantId, serviceProviderId },
-    skip: !storeId && !restaurantId && !serviceProviderId,
-    errorPolicy: 'ignore',
-  });
+  console.log('🚀 ~ LandingEditor ~ storeByDomainData:', storeByDomainData);
 
   // ── Mutations ─────────────────────────────────────────────────────────────
   const [saveDraftMutation, { loading: savingDraft }] = useMutation(SAVE_PAGE_DRAFT, {
@@ -184,46 +127,37 @@ export default function LandingEditor() {
     errorPolicy: 'all',
   });
 
-  // ── Seed from branding ────────────────────────────────────────────────────
+  // ── Seed from store-by-domain page data ───────────────────────────────────
   useEffect(() => {
-    const entity = storeData?.store || restaurantData?.restaurant || serviceData?.serviceProvider;
-    if (!entity) return;
+    const store = storeByDomainData?.storeByCustomDomain;
+    if (!store?.pages?.length) return;
 
-    const brandColors: Partial<BrandColors> = {};
-    if ('primaryColor' in entity && entity.primaryColor)
-      brandColors.primaryColor = entity.primaryColor;
-    if ('secondaryColor' in entity && entity.secondaryColor)
-      brandColors.secondaryColor = entity.secondaryColor;
-    if ('accentColor' in entity && entity.accentColor) brandColors.accentColor = entity.accentColor;
-    if ('backgroundColor' in entity && entity.backgroundColor)
-      brandColors.backgroundColor = entity.backgroundColor;
-    if ('buttonColor' in entity && entity.buttonColor) brandColors.buttonColor = entity.buttonColor;
-    if ('textColor' in entity && entity.textColor) brandColors.textColor = entity.textColor;
+    // Find the first page (or the one matching the current entity type)
+    const page = store.pages[0];
+    const workingConfig: LandingPageConfig | null =
+      page.draftConfig ?? page.publishedConfig ?? null;
 
-    const name = entity.name || entity.businessName || '';
-    const logoUrl = ('logoUrl' in entity ? entity.logoUrl : entity.coverImage) || '';
-
-    setConfig((prev) => ({
-      ...prev,
-      businessName: prev.businessName || name,
-      logoUrl: prev.logoUrl || logoUrl,
-      colors: { ...prev.colors, ...brandColors },
-    }));
-  }, [storeData, restaurantData, serviceData]);
-
-  // ── Seed from page record ─────────────────────────────────────────────────
-  // Sections are loaded from publishedConfig as the source of truth.
-  // If a draftConfig exists it is used as the working state instead,
-  // preserving any unpublished edits.
-  useEffect(() => {
-    const page = pageData?.page as PageRecord | undefined;
-    if (!page) return;
-    setPageRecord(page);
-    const workingConfig = page.draftConfig ?? page.publishedConfig;
     if (workingConfig) {
       setConfig(workingConfig);
+
+      // Auto-expand the first section in the side nav
+      if (workingConfig.sections?.length) {
+        setExpandedSections(new Set([workingConfig.sections[0].id]));
+      }
     }
-  }, [pageData]);
+
+    // Build a lightweight page record for status tracking
+    const hasDraft = !!page.draftConfig;
+    const hasPublished = !!page.publishedConfig;
+    setPageRecord({
+      id: store.id,
+      status: hasPublished && !hasDraft ? 'published' : 'draft',
+      publishedConfig: page.publishedConfig ?? null,
+      draftConfig: page.draftConfig ?? null,
+      updatedAt: new Date().toISOString(),
+      createdAt: new Date().toISOString(),
+    });
+  }, [storeByDomainData]);
 
   // ── Helpers ───────────────────────────────────────────────────────────────
   const markDirty = () => setHasUnsavedChanges(true);

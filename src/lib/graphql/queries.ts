@@ -507,3 +507,16 @@ export const PUBLISH_PAGE = gql`
     }
   }
 `;
+
+export const GET_STORE_BY_CUSTOM_DOMAIN = gql`
+  query GetStoreByCustomDomain($customDomain: String!) {
+    storeByCustomDomain(customDomain: $customDomain) {
+      id
+      pages {
+        entityType
+        draftConfig
+        publishedConfig
+      }
+    }
+  }
+`;
