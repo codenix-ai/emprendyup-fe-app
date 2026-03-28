@@ -12,6 +12,7 @@ import {
   ChevronRight,
   MoreVertical,
   Copy,
+  Download,
   Upload,
   Layout,
   Loader,
@@ -283,6 +284,7 @@ export default function ProductsPage() {
   const [selectedProducts, setSelectedProducts] = useState<string[]>([]);
   const [openDropdown, setOpenDropdown] = useState<string | null>(null);
   const [generatingLanding, setGeneratingLanding] = useState<Set<string>>(new Set());
+  const [exporting, setExporting] = useState(false);
   const userData = JSON.parse(localStorage.getItem('user') || '{}');
   // Pagination state
   const [currentPage, setCurrentPage] = useState(1);
@@ -706,6 +708,73 @@ export default function ProductsPage() {
     );
   };
 
+  const handleExportProducts = () => {
+    if (!filteredProducts || filteredProducts.length === 0) {
+      toast.error('No hay productos para exportar');
+      return;
+    }
+
+    try {
+      setExporting(true);
+
+      const headers = [
+        'id',
+        'name',
+        'title',
+        'price',
+        'currency',
+        'stock',
+        'available',
+        'inStock',
+        'externalSKU',
+        'categories',
+      ];
+
+      const rows = (filteredProducts as Product[]).map((p) => {
+        const categories = (p as any).categories || [];
+        const categoryNames = categories
+          .map((c: any) => c?.category?.name || c?.name || '')
+          .filter(Boolean)
+          .join('|');
+
+        return [
+          p.id || '',
+          p.name || '',
+          p.title || '',
+          p.price ?? '',
+          p.currency || '',
+          p.stock ?? '',
+          p.available ? 'true' : 'false',
+          p.inStock ? 'true' : 'false',
+          (p as any).externalSKU || '',
+          categoryNames,
+        ];
+      });
+
+      const csvContent = [
+        headers.join(','),
+        ...rows.map((r) => r.map((v) => `"${String(v).replace(/"/g, '""')}"`).join(',')),
+      ].join('\n');
+
+      const blob = new Blob([csvContent], { type: 'text/csv;charset=utf-8;' });
+      const url = URL.createObjectURL(blob);
+      const a = document.createElement('a');
+      a.href = url;
+      a.download = `productos_${new Date().toISOString().slice(0, 10)}.csv`;
+      document.body.appendChild(a);
+      a.click();
+      a.remove();
+      URL.revokeObjectURL(url);
+
+      toast.success('Exportación iniciada');
+    } catch (err: any) {
+      console.error('Error exporting products:', err);
+      toast.error(err?.message || 'Error al exportar productos');
+    } finally {
+      setExporting(false);
+    }
+  };
+
   if (showForm) {
     return (
       <ProductFormWizard
@@ -741,6 +810,14 @@ export default function ProductsPage() {
           >
             <Upload className="w-4 h-4 mr-2" />
             Importar CSV
+          </button>
+          <button
+            onClick={handleExportProducts}
+            disabled={exporting}
+            className="text-white px-4 py-2 rounded-lg flex items-center justify-center font-medium shadow-sm hover:shadow-md transition-all duration-200 bg-green-600 hover:bg-green-500 disabled:opacity-50 disabled:cursor-not-allowed"
+          >
+            <Download className="w-4 h-4 mr-2" />
+            {exporting ? 'Exportando...' : 'Exportar CSV'}
           </button>
           <button
             onClick={handleCreateProduct}
