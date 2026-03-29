@@ -1,89 +1,182 @@
 // ─── Landing Page Editor Types ────────────────────────────────────────────────
+// Types map 1-to-1 with the flat draftConfig returned by the `pages` query.
 
-export type SectionType = 'hero' | 'features' | 'gallery' | 'testimonials' | 'cta' | 'contact';
+// ── Shared primitives ─────────────────────────────────────────────────────────
 
-export interface HeroSectionData {
-  title: string;
-  subtitle: string;
-  backgroundImage: string;
-  overlayOpacity: number;
-  ctaText: string;
-  ctaLink: string;
-  ctaSecondaryText: string;
-  ctaSecondaryLink: string;
-  alignment: 'left' | 'center' | 'right';
+export interface TextStyle {
+  color?: string;
+  fontSize?: string;
+  fontWeight?: string;
+  fontFamily?: string;
+  fontStyle?: string;
+  textAlign?: string;
+  letterSpacing?: string;
+  lineHeight?: string;
+  [key: string]: unknown;
 }
 
-export interface FeatureItem {
-  id: string;
-  icon: string;
-  title: string;
-  description: string;
+export interface ButtonConfig {
+  text?: string;
+  link?: string;
+  href?: string;
+  variant?: string;
+  style?: Record<string, string>;
+  backgroundColor?: string;
+  textColor?: string;
+  fontSize?: string;
+  fontWeight?: string;
+  borderRadius?: string;
+  padding?: string;
+  [key: string]: unknown;
 }
 
-export interface FeaturesSectionData {
-  title: string;
-  subtitle: string;
-  items: FeatureItem[];
+export interface ImageRef {
+  id?: string;
+  url?: string;
+  alt?: string;
+  [key: string]: unknown;
 }
 
-export interface GalleryImage {
-  id: string;
-  url: string;
-  caption: string;
+// ── Section-specific configs ──────────────────────────────────────────────────
+
+export interface DraftSeoConfig {
+  title?: string;
+  description?: string;
+  ogImage?: string;
+  keywords?: string[];
+  [key: string]: unknown;
 }
 
-export interface GallerySectionData {
-  title: string;
-  images: GalleryImage[];
-  columns: 2 | 3 | 4;
+export interface DraftHeroConfig {
+  title?: string;
+  subtitle?: string;
+  description?: string;
+  backgroundImage?: ImageRef | string;
+  backgroundColor?: string;
+  buttons?: ButtonConfig[];
+  titleStyle?: TextStyle;
+  subtitleStyle?: TextStyle;
+  descriptionStyle?: TextStyle;
+  overlayOpacity?: number;
+  alignment?: 'left' | 'center' | 'right';
+  contentPosition?: 'left' | 'center' | 'right';
+  contentVertical?: 'top' | 'center' | 'bottom';
+  enabled?: boolean;
+  [key: string]: unknown;
 }
 
-export interface Testimonial {
-  id: string;
-  name: string;
-  role: string;
-  avatar: string;
-  text: string;
-  rating: number;
+export interface DraftMenuConfig {
+  title?: string;
+  items?: Array<Record<string, unknown>>;
+  buttons?: ButtonConfig[];
+  style?: Record<string, string>;
+  [key: string]: unknown;
 }
 
-export interface TestimonialsSectionData {
-  title: string;
-  items: Testimonial[];
+export interface DraftAboutConfig {
+  title?: string;
+  description?: string;
+  paragraphs?: string[];
+  stats?: Array<{ label: string; value: string }>;
+  images?: ImageRef[];
+  style?: Record<string, string>;
+  [key: string]: unknown;
 }
 
-export interface CtaSectionData {
-  title: string;
-  subtitle: string;
-  buttonText: string;
-  buttonLink: string;
-  backgroundStyle: 'primary' | 'dark' | 'light';
+export interface DraftThemeConfig {
+  fonts?: Record<string, string>;
+  colors?: Record<string, string>;
+  [key: string]: unknown;
 }
 
-export interface ContactSectionData {
-  title: string;
-  subtitle: string;
-  email: string;
-  phone: string;
-  address: string;
-  showMap: boolean;
+export interface DraftFooterConfig {
+  text?: string;
+  links?: Array<{ label: string; url: string }>;
+  social?: Record<string, string>;
+  [key: string]: unknown;
 }
 
-export type SectionData =
-  | HeroSectionData
-  | FeaturesSectionData
-  | GallerySectionData
-  | TestimonialsSectionData
-  | CtaSectionData
-  | ContactSectionData;
-
-export interface PageSection {
-  id: string;
-  type: SectionType;
-  enabled: boolean;
-  data: SectionData;
+export interface DraftContactConfig {
+  title?: string;
+  email?: string;
+  phone?: string;
+  address?: string;
+  hours?: Record<string, string>;
+  social?: Record<string, string>;
+  buttons?: ButtonConfig[];
+  [key: string]: unknown;
 }
+
+export interface DraftGalleryConfig {
+  title?: string;
+  images?: ImageRef[];
+  columns?: number;
+  [key: string]: unknown;
+}
+
+export interface DraftBrandingConfig {
+  logo?: string | ImageRef;
+  name?: string;
+  tagline?: string;
+  [key: string]: unknown;
+}
+
+export interface DraftNavigationConfig {
+  items?: Array<{ label: string; link: string }>;
+  style?: Record<string, string>;
+  [key: string]: unknown;
+}
+
+export interface DraftTestimonialsConfig {
+  title?: string;
+  items?: Array<{ name: string; text: string; rating?: number; avatar?: string }>;
+  [key: string]: unknown;
+}
+
+export interface DraftReservationFormConfig {
+  title?: string;
+  fields?: Array<{ name: string; type: string; required?: boolean }>;
+  [key: string]: unknown;
+}
+
+// ── Aggregate DraftConfig ─────────────────────────────────────────────────────
+
+export interface DraftConfig {
+  seo?: DraftSeoConfig;
+  hero?: DraftHeroConfig;
+  menu?: DraftMenuConfig;
+  about?: DraftAboutConfig;
+  theme?: DraftThemeConfig;
+  footer?: DraftFooterConfig;
+  contact?: DraftContactConfig;
+  gallery?: DraftGalleryConfig;
+  branding?: DraftBrandingConfig;
+  navigation?: DraftNavigationConfig;
+  testimonials?: DraftTestimonialsConfig;
+  reservationForm?: DraftReservationFormConfig;
+  [key: string]: unknown;
+}
+
+export type DraftSectionKey = keyof DraftConfig & string;
+
+// ── Section metadata (labels + icons for the side nav) ────────────────────────
+
+export const DRAFT_SECTION_META: Record<string, { label: string; icon: string }> = {
+  seo: { label: 'SEO', icon: '🔍' },
+  hero: { label: 'Hero Banner', icon: '🖼️' },
+  menu: { label: 'Productos', icon: '📦' },
+  about: { label: 'Sobre Nosotros', icon: '📖' },
+  theme: { label: 'Tema', icon: '🎨' },
+  footer: { label: 'Footer', icon: '📋' },
+  contact: { label: 'Contacto', icon: '📬' },
+  gallery: { label: 'Galería', icon: '📷' },
+  branding: { label: 'Marca', icon: '🏷️' },
+  navigation: { label: 'Navegación', icon: '🧭' },
+  testimonials: { label: 'Testimonios', icon: '💬' },
+  reservationForm: { label: 'Formulario de Reserva', icon: '📝' },
+};
+
+// ── BrandColors (derived from theme.colors for the color picker) ──────────────
 
 export interface BrandColors {
   primaryColor: string;
@@ -94,12 +187,28 @@ export interface BrandColors {
   textColor: string;
 }
 
-export interface LandingPageConfig {
-  colors: BrandColors;
-  logoUrl: string;
-  businessName: string;
-  sections: PageSection[];
+export const DEFAULT_BRAND_COLORS: BrandColors = {
+  primaryColor: '#BFA26A',
+  secondaryColor: '#1A1512',
+  accentColor: '#D4AF6A',
+  backgroundColor: '#FAF9F6',
+  buttonColor: '#BFA26A',
+  textColor: '#1A1512',
+};
+
+export function extractColors(config: DraftConfig): BrandColors {
+  const c = (config.theme?.colors ?? {}) as Record<string, string>;
+  return {
+    primaryColor: c.primaryColor ?? DEFAULT_BRAND_COLORS.primaryColor,
+    secondaryColor: c.secondaryColor ?? DEFAULT_BRAND_COLORS.secondaryColor,
+    accentColor: c.accentColor ?? DEFAULT_BRAND_COLORS.accentColor,
+    backgroundColor: c.backgroundColor ?? DEFAULT_BRAND_COLORS.backgroundColor,
+    buttonColor: c.buttonColor ?? DEFAULT_BRAND_COLORS.buttonColor,
+    textColor: c.textColor ?? DEFAULT_BRAND_COLORS.textColor,
+  };
 }
+
+// ── PageRecord (from the pages query) ─────────────────────────────────────────
 
 export interface PageRecord {
   id: string;
@@ -107,59 +216,32 @@ export interface PageRecord {
   restaurantId?: string;
   serviceProviderId?: string;
   status: 'draft' | 'published';
-  publishedConfig: LandingPageConfig | null;
-  draftConfig: LandingPageConfig | null;
+  publishedConfig: DraftConfig | null;
+  draftConfig: DraftConfig | null;
   updatedAt: string;
   createdAt: string;
 }
 
-export const DEFAULT_HERO_DATA: HeroSectionData = {
-  title: 'Bienvenido a nuestra tienda',
-  subtitle: 'Descubre productos únicos con la mejor calidad',
-  backgroundImage: '',
-  overlayOpacity: 0.4,
-  ctaText: 'Ver productos',
-  ctaLink: '/productos',
-  ctaSecondaryText: 'Contáctanos',
-  ctaSecondaryLink: '/contacto',
-  alignment: 'center',
-};
+// ── Default empty config ──────────────────────────────────────────────────────
 
-export const DEFAULT_FEATURES_DATA: FeaturesSectionData = {
-  title: 'Por qué elegirnos',
-  subtitle: 'Razones para confiar en nosotros',
-  items: [
-    { id: '1', icon: '🚀', title: 'Envío rápido', description: 'Entregas en 24-48 horas' },
-    { id: '2', icon: '✨', title: 'Calidad garantizada', description: 'Productos verificados' },
-    { id: '3', icon: '💬', title: 'Soporte 24/7', description: 'Siempre disponibles para ti' },
-  ],
-};
-
-export const DEFAULT_CTA_DATA: CtaSectionData = {
-  title: '¿Listo para empezar?',
-  subtitle: 'Únete a miles de clientes satisfechos',
-  buttonText: 'Comenzar ahora',
-  buttonLink: '/productos',
-  backgroundStyle: 'primary',
-};
-
-export function createDefaultConfig(partial: Partial<LandingPageConfig> = {}): LandingPageConfig {
+export function createDefaultDraftConfig(): DraftConfig {
   return {
-    colors: {
-      primaryColor: '#BFA26A',
-      secondaryColor: '#1A1512',
-      accentColor: '#D4AF6A',
-      backgroundColor: '#FAF9F6',
-      buttonColor: '#BFA26A',
-      textColor: '#1A1512',
+    seo: { title: '', description: '' },
+    hero: {
+      title: 'Bienvenido a nuestra tienda',
+      subtitle: 'Descubre productos únicos con la mejor calidad',
+      buttons: [{ text: 'Ver productos', link: '/productos' }],
+      alignment: 'center',
     },
-    logoUrl: '',
-    businessName: '',
-    sections: [
-      { id: 'hero-1', type: 'hero', enabled: true, data: { ...DEFAULT_HERO_DATA } },
-      { id: 'features-1', type: 'features', enabled: true, data: { ...DEFAULT_FEATURES_DATA } },
-      { id: 'cta-1', type: 'cta', enabled: true, data: { ...DEFAULT_CTA_DATA } },
-    ],
-    ...partial,
+    menu: { title: 'Productos', items: [] },
+    about: { title: 'Sobre nosotros', description: '' },
+    theme: { colors: { ...DEFAULT_BRAND_COLORS } },
+    footer: { text: '' },
+    contact: { title: 'Contacto', email: '', phone: '' },
+    gallery: { title: 'Galería', images: [] },
+    branding: { name: '', logo: '' },
+    navigation: { items: [] },
+    testimonials: { title: 'Testimonios', items: [] },
+    reservationForm: { title: 'Reservar', fields: [] },
   };
 }

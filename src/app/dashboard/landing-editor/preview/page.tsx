@@ -2,19 +2,19 @@
 import React, { useMemo } from 'react';
 import { useSearchParams } from 'next/navigation';
 import { LandingPreview } from '@/app/components/LandingEditor/LandingPreview';
-import type { LandingPageConfig } from '@/app/components/LandingEditor/types';
-import { createDefaultConfig } from '@/app/components/LandingEditor/types';
+import type { DraftConfig } from '@/app/components/LandingEditor/types';
+import { createDefaultDraftConfig } from '@/app/components/LandingEditor/types';
 
 export default function LandingPreviewPage() {
   const params = useSearchParams();
 
-  const config = useMemo<LandingPageConfig>(() => {
+  const config = useMemo<DraftConfig>(() => {
     const raw = params.get('config');
-    if (!raw) return createDefaultConfig();
+    if (!raw) return createDefaultDraftConfig();
     try {
-      return JSON.parse(decodeURIComponent(raw)) as LandingPageConfig;
+      return JSON.parse(decodeURIComponent(raw)) as DraftConfig;
     } catch {
-      return createDefaultConfig();
+      return createDefaultDraftConfig();
     }
   }, [params]);
 

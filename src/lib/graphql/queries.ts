@@ -474,49 +474,29 @@ export const GET_PAGE_BY_STORE = gql`
   }
 `;
 
-export const SAVE_PAGE_DRAFT = gql`
-  mutation SavePageDraft(
-    $storeId: String
-    $restaurantId: String
-    $serviceProviderId: String
-    $config: JSON!
-  ) {
-    saveDraft(
-      storeId: $storeId
-      restaurantId: $restaurantId
-      serviceProviderId: $serviceProviderId
-      config: $config
-    ) {
-      ${PAGE_CONFIG_FIELDS}
-    }
-  }
-`;
-
-export const PUBLISH_PAGE = gql`
-  mutation PublishPage(
-    $storeId: String
-    $restaurantId: String
-    $serviceProviderId: String
-  ) {
-    publishPage(
-      storeId: $storeId
-      restaurantId: $restaurantId
-      serviceProviderId: $serviceProviderId
-    ) {
-      ${PAGE_CONFIG_FIELDS}
-    }
-  }
-`;
-
-export const GET_STORE_BY_CUSTOM_DOMAIN = gql`
-  query GetStoreByCustomDomain($customDomain: String!) {
-    storeByCustomDomain(customDomain: $customDomain) {
+export const SAVE_PAGE = gql`
+  mutation SavePage($input: SavePageInput!) {
+    savePage(input: $input) {
       id
-      pages {
-        entityType
-        draftConfig
-        publishedConfig
-      }
+      slug
+      entityType
+      draftConfig
+      publishedConfig
+      updatedAt
+    }
+  }
+`;
+
+export const GET_PAGES = gql`
+  query GetPages($storeId: String, $restaurantId: String, $serviceProviderId: String) {
+    pages(storeId: $storeId, restaurantId: $restaurantId, serviceProviderId: $serviceProviderId) {
+      id
+      slug
+      entityType
+      draftConfig
+      publishedConfig
+      createdAt
+      updatedAt
     }
   }
 `;

@@ -1,12 +1,40 @@
 'use client';
 import React, { useState, useCallback, useEffect, useMemo } from 'react';
-import { useQuery, useMutation } from '@apollo/client';
-import { GET_STORE_BY_CUSTOM_DOMAIN, SAVE_PAGE_DRAFT, PUBLISH_PAGE } from '@/lib/graphql/queries';
+import { useQuery, useMutation, gql } from '@apollo/client';
+import { GET_PAGES, SAVE_PAGE } from '@/lib/graphql/queries';
+
+const GET_STORE_DOMAIN = gql`
+  query GetStoreDomainLE($storeId: String!) {
+    store(storeId: $storeId) {
+      storeId
+      customDomain
+    }
+  }
+`;
+
+const GET_RESTAURANT_DOMAIN = gql`
+  query GetRestaurantDomainLE($id: ID!) {
+    restaurant(id: $id) {
+      id
+      customDomain
+      slug
+    }
+  }
+`;
+
+const GET_SERVICE_DOMAIN = gql`
+  query GetServiceDomainLE($id: String!) {
+    serviceProvider(id: $id) {
+      id
+      customDomain
+      slug
+    }
+  }
+`;
 import {
   Save,
   Globe,
   Eye,
-  Plus,
   Palette,
   Layers,
   AlertCircle,
@@ -14,47 +42,15 @@ import {
   Smartphone,
   RefreshCw,
   CheckCircle,
-  X,
+  ArrowLeft,
 } from 'lucide-react';
+import { useRouter } from 'next/navigation';
 import toast from 'react-hot-toast';
 import { LandingPreview } from './LandingPreview';
-import { SectionPanel } from './SectionPanel';
-import type { LandingPageConfig, PageSection, BrandColors, SectionType, PageRecord } from './types';
-import {
-  createDefaultConfig,
-  DEFAULT_HERO_DATA,
-  DEFAULT_FEATURES_DATA,
-  DEFAULT_CTA_DATA,
-} from './types';
-import { useSessionStore } from '@/lib/store/dashboard';
+import { DraftSectionPanel } from './DraftSectionPanel';
+import type { DraftConfig, BrandColors, PageRecord } from './types';
+import { createDefaultDraftConfig, extractColors, DRAFT_SECTION_META } from './types';
 import { getCurrentUser } from '@/lib/utils/rbac';
-
-// ─── Section add menu ────────────────────────────────────────────────────────
-
-const AVAILABLE_SECTIONS: { type: SectionType; label: string; icon: string }[] = [
-  { type: 'hero', label: 'Hero Banner', icon: '🖼️' },
-  { type: 'features', label: 'Características', icon: '⭐' },
-  { type: 'cta', label: 'Llamada a la acción', icon: '🎯' },
-  { type: 'gallery', label: 'Galería', icon: '📷' },
-  { type: 'testimonials', label: 'Testimonios', icon: '💬' },
-  { type: 'contact', label: 'Contacto', icon: '📬' },
-];
-
-const DEFAULT_SECTION_DATA: Record<SectionType, PageSection['data']> = {
-  hero: { ...DEFAULT_HERO_DATA },
-  features: { ...DEFAULT_FEATURES_DATA },
-  cta: { ...DEFAULT_CTA_DATA },
-  gallery: { title: 'Galería', images: [], columns: 3 },
-  testimonials: { title: 'Lo que dicen nuestros clientes', items: [] },
-  contact: {
-    title: 'Contáctanos',
-    subtitle: '',
-    email: '',
-    phone: '',
-    address: '',
-    showMap: false,
-  },
-};
 
 // ─── Color Picker Row ─────────────────────────────────────────────────────────
 
@@ -94,156 +90,208 @@ type LeftTab = 'sections' | 'colors' | 'settings';
 type PreviewMode = 'desktop' | 'mobile';
 
 export default function LandingEditor() {
+  const router = useRouter();
   const user = useMemo(() => getCurrentUser(), []);
   const storeId = user?.storeId;
   const restaurantId = user?.restaurantId;
   const serviceProviderId = user?.serviceProviderId;
-  const { currentStore } = useSessionStore();
-  const customDomain = currentStore?.subdomain
-    ? `${currentStore.subdomain}.emprendyup.com`
-    : undefined;
 
-  const [config, setConfig] = useState<LandingPageConfig>(createDefaultConfig());
-  const [expandedSections, setExpandedSections] = useState<Set<string>>(new Set(['hero-1']));
+  const [draftConfig, setDraftConfig] = useState<DraftConfig>(createDefaultDraftConfig());
+  const [expandedSections, setExpandedSections] = useState<Set<string>>(new Set(['hero']));
   const [leftTab, setLeftTab] = useState<LeftTab>('sections');
   const [previewMode, setPreviewMode] = useState<PreviewMode>('desktop');
   const [pageRecord, setPageRecord] = useState<PageRecord | null>(null);
   const [hasUnsavedChanges, setHasUnsavedChanges] = useState(false);
-  const [showAddMenu, setShowAddMenu] = useState(false);
 
-  // ── Fetch store + pages by custom domain ──────────────────────────────────
-  const { data: storeByDomainData, loading: pageLoading } = useQuery(GET_STORE_BY_CUSTOM_DOMAIN, {
-    variables: { customDomain: customDomain! },
-    skip: !customDomain,
+  // Section ordering state (user can reorder sections)
+  const [sectionOrder, setSectionOrder] = useState<string[]>(() => {
+    const knownOrder = Object.keys(DRAFT_SECTION_META);
+    const configKeys = Object.keys(createDefaultDraftConfig());
+    const ordered = knownOrder.filter((k) => configKeys.includes(k));
+    const extra = configKeys.filter((k) => !knownOrder.includes(k));
+    return [...ordered, ...extra];
+  });
+
+  // Derived: brand colors for the color picker and preview
+  const colors = useMemo(() => extractColors(draftConfig), [draftConfig]);
+
+  // ── Fetch custom domain by entity type ───────────────────────────────────
+  const { data: storeData } = useQuery(GET_STORE_DOMAIN, {
+    variables: { storeId },
+    skip: !storeId,
     errorPolicy: 'ignore',
   });
-  console.log('🚀 ~ LandingEditor ~ storeByDomainData:', storeByDomainData);
+  const { data: restaurantData } = useQuery(GET_RESTAURANT_DOMAIN, {
+    variables: { id: restaurantId },
+    skip: !restaurantId,
+    errorPolicy: 'ignore',
+  });
+  const { data: serviceData } = useQuery(GET_SERVICE_DOMAIN, {
+    variables: { id: serviceProviderId },
+    skip: !serviceProviderId,
+    errorPolicy: 'ignore',
+  });
+
+  const customDomain = useMemo(() => {
+    if (storeData?.store) {
+      const s = storeData.store;
+      return s.customDomain ? `https://${s.customDomain}` : `https://${s.storeId}.emprendyup.com`;
+    }
+    if (restaurantData?.restaurant) {
+      const r = restaurantData.restaurant;
+      return r.customDomain
+        ? `https://${r.customDomain}`
+        : r.slug
+          ? `https://${r.slug}.emprendyup.com`
+          : null;
+    }
+    if (serviceData?.serviceProvider) {
+      const sp = serviceData.serviceProvider;
+      return sp.customDomain
+        ? `https://${sp.customDomain}`
+        : sp.slug
+          ? `https://${sp.slug}.emprendyup.com`
+          : null;
+    }
+    return null;
+  }, [storeData, restaurantData, serviceData]);
+
+  // ── Fetch pages by entity type ────────────────────────────────────────────
+  const { data: pagesData, loading: pageLoading } = useQuery(GET_PAGES, {
+    variables: {
+      ...(storeId && { storeId }),
+      ...(restaurantId && { restaurantId }),
+      ...(serviceProviderId && { serviceProviderId }),
+    },
+    skip: !storeId && !restaurantId && !serviceProviderId,
+    errorPolicy: 'ignore',
+  });
 
   // ── Mutations ─────────────────────────────────────────────────────────────
-  const [saveDraftMutation, { loading: savingDraft }] = useMutation(SAVE_PAGE_DRAFT, {
+  const [savePageMutation, { loading: savingDraft }] = useMutation(SAVE_PAGE, {
     errorPolicy: 'all',
   });
-  const [publishMutation, { loading: publishing }] = useMutation(PUBLISH_PAGE, {
-    errorPolicy: 'all',
-  });
+  const publishing = savingDraft;
 
-  // ── Seed from store-by-domain page data ───────────────────────────────────
+  // ── Seed from pages query data ────────────────────────────────────────────
   useEffect(() => {
-    const store = storeByDomainData?.storeByCustomDomain;
-    if (!store?.pages?.length) return;
+    const pages = pagesData?.pages;
+    if (!pages?.length) return;
 
-    // Find the first page (or the one matching the current entity type)
-    const page = store.pages[0];
-    const workingConfig: LandingPageConfig | null =
-      page.draftConfig ?? page.publishedConfig ?? null;
+    const page = pages[0];
+    const rawConfig = page.draftConfig ?? page.publishedConfig ?? null;
 
-    if (workingConfig) {
-      setConfig(workingConfig);
-
-      // Auto-expand the first section in the side nav
-      if (workingConfig.sections?.length) {
-        setExpandedSections(new Set([workingConfig.sections[0].id]));
+    if (rawConfig && typeof rawConfig === 'object') {
+      // Merge with defaults so sections absent from the API response (e.g. `about`)
+      // still appear in the editor and preview.
+      const merged: DraftConfig = { ...createDefaultDraftConfig() };
+      for (const [k, v] of Object.entries(rawConfig as DraftConfig)) {
+        if (v !== null && v !== undefined) merged[k] = v;
       }
+      setDraftConfig(merged);
+      // Initialize section order from the loaded config
+      const knownOrder = Object.keys(DRAFT_SECTION_META);
+      const configKeys = Object.keys(merged);
+      const ordered = knownOrder.filter((k) => configKeys.includes(k));
+      const extra = configKeys.filter((k) => !knownOrder.includes(k));
+      setSectionOrder([...ordered, ...extra]);
+      // Auto-expand the first section
+      const firstKey = Object.keys(rawConfig)[0];
+      if (firstKey) setExpandedSections(new Set([firstKey]));
     }
 
-    // Build a lightweight page record for status tracking
     const hasDraft = !!page.draftConfig;
     const hasPublished = !!page.publishedConfig;
     setPageRecord({
-      id: store.id,
+      id: page.id,
       status: hasPublished && !hasDraft ? 'published' : 'draft',
       publishedConfig: page.publishedConfig ?? null,
       draftConfig: page.draftConfig ?? null,
-      updatedAt: new Date().toISOString(),
-      createdAt: new Date().toISOString(),
+      updatedAt: page.updatedAt ?? new Date().toISOString(),
+      createdAt: page.createdAt ?? new Date().toISOString(),
     });
-  }, [storeByDomainData]);
+  }, [pagesData]);
 
   // ── Helpers ───────────────────────────────────────────────────────────────
   const markDirty = () => setHasUnsavedChanges(true);
 
-  const updateConfig = useCallback((patch: Partial<LandingPageConfig>) => {
-    setConfig((prev) => ({ ...prev, ...patch }));
+  const updateSection = useCallback((key: string, data: Record<string, unknown>) => {
+    setDraftConfig((prev) => ({ ...prev, [key]: data }));
     markDirty();
   }, []);
 
-  const updateColors = useCallback((patch: Partial<BrandColors>) => {
-    setConfig((prev) => ({ ...prev, colors: { ...prev.colors, ...patch } }));
-    markDirty();
-  }, []);
-
-  const updateSection = useCallback((id: string, data: PageSection['data']) => {
-    setConfig((prev) => ({
+  const updateThemeColor = useCallback((colorKey: string, value: string) => {
+    setDraftConfig((prev) => ({
       ...prev,
-      sections: prev.sections.map((s) => (s.id === id ? { ...s, data } : s)),
+      theme: {
+        ...((prev.theme ?? {}) as Record<string, unknown>),
+        colors: {
+          ...((prev.theme?.colors ?? {}) as Record<string, string>),
+          [colorKey]: value,
+        },
+      },
     }));
     markDirty();
   }, []);
 
-  const toggleSectionEnabled = useCallback((id: string) => {
-    setConfig((prev) => ({
+  const updateBranding = useCallback((patch: Record<string, unknown>) => {
+    setDraftConfig((prev) => ({
       ...prev,
-      sections: prev.sections.map((s) => (s.id === id ? { ...s, enabled: !s.enabled } : s)),
+      branding: { ...((prev.branding ?? {}) as Record<string, unknown>), ...patch },
     }));
     markDirty();
   }, []);
 
-  const removeSection = useCallback((id: string) => {
-    setConfig((prev) => ({ ...prev, sections: prev.sections.filter((s) => s.id !== id) }));
-    markDirty();
-  }, []);
-
-  const moveSection = useCallback((id: string, dir: 'up' | 'down') => {
-    setConfig((prev) => {
-      const arr = [...prev.sections];
-      const idx = arr.findIndex((s) => s.id === id);
-      if (dir === 'up' && idx > 0) [arr[idx - 1], arr[idx]] = [arr[idx], arr[idx - 1]];
-      if (dir === 'down' && idx < arr.length - 1)
-        [arr[idx], arr[idx + 1]] = [arr[idx + 1], arr[idx]];
-      return { ...prev, sections: arr };
-    });
-    markDirty();
-  }, []);
-
-  const addSection = useCallback((type: SectionType) => {
-    const newSection: PageSection = {
-      id: `${type}-${Date.now()}`,
-      type,
-      enabled: true,
-      data: { ...DEFAULT_SECTION_DATA[type] },
-    };
-    setConfig((prev) => ({ ...prev, sections: [...prev.sections, newSection] }));
-    setExpandedSections((prev) => new Set(prev).add(newSection.id));
-    setShowAddMenu(false);
+  const updateSeo = useCallback((patch: Record<string, unknown>) => {
+    setDraftConfig((prev) => ({
+      ...prev,
+      seo: { ...((prev.seo ?? {}) as Record<string, unknown>), ...patch },
+    }));
     markDirty();
   }, []);
 
   const handleSaveDraft = async () => {
     try {
-      const { data, errors } = await saveDraftMutation({
-        variables: { storeId, restaurantId, serviceProviderId, config },
+      const { data, errors } = await savePageMutation({
+        variables: {
+          input: {
+            slug: 'home',
+            ...(storeId && { storeId }),
+            ...(restaurantId && { restaurantId }),
+            ...(serviceProviderId && { serviceProviderId }),
+            draftConfig,
+          },
+        },
       });
       if (errors?.length) throw new Error(errors[0].message);
-      if (data?.saveDraft) setPageRecord(data.saveDraft as PageRecord);
+      if (data?.savePage) setPageRecord(data.savePage as PageRecord);
       setHasUnsavedChanges(false);
       toast.success('Borrador guardado');
     } catch (err) {
       const msg = err instanceof Error ? err.message : 'Error al guardar borrador';
-      // If endpoint doesn't exist yet, save to localStorage as fallback
-      localStorage.setItem('landing_draft', JSON.stringify(config));
+      localStorage.setItem('landing_draft', JSON.stringify(draftConfig));
       setHasUnsavedChanges(false);
       toast.success('Borrador guardado localmente');
-      console.warn('Landing draft API not available, saved to localStorage:', msg);
+      console.warn('Landing savePage not available, saved to localStorage:', msg);
     }
   };
 
   const handlePublish = async () => {
     try {
-      const { data, errors } = await publishMutation({
-        variables: { storeId, restaurantId, serviceProviderId },
+      const { data, errors } = await savePageMutation({
+        variables: {
+          input: {
+            slug: 'home',
+            ...(storeId && { storeId }),
+            ...(restaurantId && { restaurantId }),
+            ...(serviceProviderId && { serviceProviderId }),
+            draftConfig,
+            publishedConfig: draftConfig,
+          },
+        },
       });
       if (errors?.length) throw new Error(errors[0].message);
-      if (data?.publishPage) setPageRecord(data.publishPage as PageRecord);
+      if (data?.savePage) setPageRecord(data.savePage as PageRecord);
       setHasUnsavedChanges(false);
       toast.success('¡Landing page publicada!');
     } catch (err) {
@@ -253,18 +301,37 @@ export default function LandingEditor() {
   };
 
   const handlePreview = () => {
-    const encoded = encodeURIComponent(JSON.stringify(config));
-    window.open(`/dashboard/landing-editor/preview?config=${encoded}`, '_blank');
+    if (customDomain) {
+      window.open(customDomain, '_blank');
+    } else {
+      const encoded = encodeURIComponent(JSON.stringify(draftConfig));
+      window.open(`/dashboard/landing-editor/preview?config=${encoded}`, '_blank');
+    }
   };
 
-  const toggleSection = (id: string) =>
+  const toggleSection = (key: string) =>
     setExpandedSections((prev) => {
       const next = new Set(prev);
-      next.has(id) ? next.delete(id) : next.add(id);
+      next.has(key) ? next.delete(key) : next.add(key);
       return next;
     });
 
+  const moveSection = useCallback((key: string, dir: 'up' | 'down') => {
+    setSectionOrder((prev) => {
+      const idx = prev.indexOf(key);
+      if (idx === -1) return prev;
+      const next = [...prev];
+      const swap = dir === 'up' ? idx - 1 : idx + 1;
+      if (swap < 0 || swap >= next.length) return prev;
+      [next[idx], next[swap]] = [next[swap], next[idx]];
+      return next;
+    });
+    markDirty();
+  }, []);
+
   const isPublished = pageRecord?.status === 'published';
+  const businessName =
+    ((draftConfig.branding as Record<string, unknown> | undefined)?.name as string) ?? '';
 
   // ─── Render ───────────────────────────────────────────────────────────────
   return (
@@ -272,13 +339,21 @@ export default function LandingEditor() {
       {/* ── HEADER ── */}
       <header className="flex-shrink-0 flex items-center justify-between px-6 py-3 bg-gray-900 border-b border-gray-800 z-10">
         <div className="flex items-center gap-3">
+          <button
+            onClick={() => router.push('/dashboard')}
+            className="flex items-center gap-1.5 px-2.5 py-1.5 text-gray-400 hover:text-white hover:bg-gray-800 rounded-lg transition-colors text-xs"
+            title="Volver al dashboard"
+          >
+            <ArrowLeft size={15} />
+            <span className="hidden sm:inline">Volver</span>
+          </button>
           <Layers size={18} className="text-blue-400" />
           <div>
             <h1 className="text-sm font-semibold text-white leading-tight">
               Editor de Landing Page
             </h1>
             <p className="text-xs text-gray-500 leading-tight">
-              {config.businessName || 'Mi negocio'} ·{' '}
+              {businessName || 'Mi negocio'} ·{' '}
               {isPublished ? (
                 <span className="text-green-400">Publicada</span>
               ) : (
@@ -361,56 +436,28 @@ export default function LandingEditor() {
             {/* ── SECTIONS TAB ── */}
             {leftTab === 'sections' && (
               <div className="space-y-2">
-                {config.sections.map((section, idx) => (
-                  <SectionPanel
-                    key={section.id}
-                    section={section}
-                    isExpanded={expandedSections.has(section.id)}
-                    colors={config.colors}
-                    onToggleExpand={() => toggleSection(section.id)}
-                    onToggleEnabled={() => toggleSectionEnabled(section.id)}
-                    onUpdate={(data) => updateSection(section.id, data)}
-                    onMoveUp={() => moveSection(section.id, 'up')}
-                    onMoveDown={() => moveSection(section.id, 'down')}
-                    onRemove={() => removeSection(section.id)}
-                    isFirst={idx === 0}
-                    isLast={idx === config.sections.length - 1}
-                  />
-                ))}
-
-                {/* Add section */}
-                <div className="relative">
-                  <button
-                    onClick={() => setShowAddMenu((v) => !v)}
-                    className="w-full flex items-center justify-center gap-2 py-2.5 rounded-lg border border-dashed border-gray-700 text-xs text-gray-500 hover:text-gray-300 hover:border-gray-600 transition-colors mt-2"
-                  >
-                    <Plus size={13} /> Agregar sección
-                  </button>
-                  {showAddMenu && (
-                    <div className="absolute bottom-full left-0 right-0 mb-2 bg-gray-800 border border-gray-700 rounded-lg shadow-xl z-20 overflow-hidden">
-                      <div className="flex items-center justify-between px-3 py-2 border-b border-gray-700">
-                        <span className="text-xs font-medium text-gray-300">
-                          Selecciona una sección
-                        </span>
-                        <button
-                          onClick={() => setShowAddMenu(false)}
-                          className="text-gray-500 hover:text-gray-300"
-                        >
-                          <X size={13} />
-                        </button>
-                      </div>
-                      {AVAILABLE_SECTIONS.map((s) => (
-                        <button
-                          key={s.type}
-                          onClick={() => addSection(s.type)}
-                          className="w-full flex items-center gap-2.5 px-3 py-2.5 text-sm text-gray-300 hover:bg-gray-700 transition-colors text-left"
-                        >
-                          <span className="text-base">{s.icon}</span> {s.label}
-                        </button>
-                      ))}
-                    </div>
-                  )}
-                </div>
+                {sectionOrder.map((key, idx) => {
+                  const sectionData = draftConfig[key];
+                  if (sectionData === null || sectionData === undefined) return null;
+                  const data =
+                    typeof sectionData === 'object' && !Array.isArray(sectionData)
+                      ? (sectionData as Record<string, unknown>)
+                      : { value: sectionData };
+                  return (
+                    <DraftSectionPanel
+                      key={key}
+                      sectionKey={key}
+                      data={data}
+                      isExpanded={expandedSections.has(key)}
+                      onToggleExpand={() => toggleSection(key)}
+                      onUpdate={(next) => updateSection(key, next)}
+                      canMoveUp={idx > 0}
+                      canMoveDown={idx < sectionOrder.length - 1}
+                      onMoveUp={() => moveSection(key, 'up')}
+                      onMoveDown={() => moveSection(key, 'down')}
+                    />
+                  );
+                })}
               </div>
             )}
 
@@ -423,39 +470,39 @@ export default function LandingEditor() {
                 </p>
                 <ColorRow
                   label="Color primario"
-                  value={config.colors.primaryColor}
-                  onChange={(v) => updateColors({ primaryColor: v })}
+                  value={colors.primaryColor}
+                  onChange={(v) => updateThemeColor('primaryColor', v)}
                 />
                 <ColorRow
                   label="Color secundario"
-                  value={config.colors.secondaryColor}
-                  onChange={(v) => updateColors({ secondaryColor: v })}
+                  value={colors.secondaryColor}
+                  onChange={(v) => updateThemeColor('secondaryColor', v)}
                 />
                 <ColorRow
                   label="Color acento"
-                  value={config.colors.accentColor}
-                  onChange={(v) => updateColors({ accentColor: v })}
+                  value={colors.accentColor}
+                  onChange={(v) => updateThemeColor('accentColor', v)}
                 />
                 <ColorRow
                   label="Fondo"
-                  value={config.colors.backgroundColor}
-                  onChange={(v) => updateColors({ backgroundColor: v })}
+                  value={colors.backgroundColor}
+                  onChange={(v) => updateThemeColor('backgroundColor', v)}
                 />
                 <ColorRow
                   label="Botones"
-                  value={config.colors.buttonColor}
-                  onChange={(v) => updateColors({ buttonColor: v })}
+                  value={colors.buttonColor}
+                  onChange={(v) => updateThemeColor('buttonColor', v)}
                 />
                 <ColorRow
                   label="Texto"
-                  value={config.colors.textColor}
-                  onChange={(v) => updateColors({ textColor: v })}
+                  value={colors.textColor}
+                  onChange={(v) => updateThemeColor('textColor', v)}
                 />
 
                 <div className="mt-4 p-3 rounded-lg bg-gray-800 border border-gray-700">
                   <p className="text-xs text-gray-400 mb-2">Vista previa de paleta</p>
                   <div className="flex gap-2">
-                    {Object.values(config.colors).map((c, i) => (
+                    {Object.values(colors).map((c, i) => (
                       <div
                         key={i}
                         className="flex-1 h-8 rounded"
@@ -477,29 +524,47 @@ export default function LandingEditor() {
                   </label>
                   <input
                     className="w-full bg-gray-900 border border-gray-700 text-white text-sm rounded px-3 py-2 focus:outline-none focus:border-blue-500"
-                    value={config.businessName}
-                    onChange={(e) => updateConfig({ businessName: e.target.value })}
+                    value={businessName}
+                    onChange={(e) => updateBranding({ name: e.target.value })}
                     placeholder="Mi tienda"
                   />
                 </div>
                 <div>
+                  <label className="block text-xs font-medium text-gray-400 mb-1">Logo</label>
+                  <input
+                    className="w-full bg-gray-900 border border-gray-700 text-white text-sm rounded px-3 py-2 focus:outline-none focus:border-blue-500"
+                    value={
+                      typeof draftConfig.branding?.logo === 'string'
+                        ? draftConfig.branding.logo
+                        : (((draftConfig.branding?.logo as Record<string, unknown> | undefined)
+                            ?.url as string) ?? '')
+                    }
+                    onChange={(e) => updateBranding({ logo: e.target.value })}
+                    placeholder="https://..."
+                  />
+                </div>
+                <div>
                   <label className="block text-xs font-medium text-gray-400 mb-1">
-                    URL del logo
+                    SEO — Título
                   </label>
                   <input
                     className="w-full bg-gray-900 border border-gray-700 text-white text-sm rounded px-3 py-2 focus:outline-none focus:border-blue-500"
-                    value={config.logoUrl}
-                    onChange={(e) => updateConfig({ logoUrl: e.target.value })}
-                    placeholder="https://..."
+                    value={(draftConfig.seo?.title as string) ?? ''}
+                    onChange={(e) => updateSeo({ title: e.target.value })}
+                    placeholder="Título para buscadores"
                   />
-                  {config.logoUrl && (
-                    // eslint-disable-next-line @next/next/no-img-element
-                    <img
-                      src={config.logoUrl}
-                      alt="logo"
-                      className="mt-2 h-10 object-contain rounded border border-gray-700 p-1"
-                    />
-                  )}
+                </div>
+                <div>
+                  <label className="block text-xs font-medium text-gray-400 mb-1">
+                    SEO — Descripción
+                  </label>
+                  <textarea
+                    className="w-full bg-gray-900 border border-gray-700 text-white text-sm rounded px-3 py-2 focus:outline-none focus:border-blue-500 resize-none"
+                    rows={3}
+                    value={(draftConfig.seo?.description as string) ?? ''}
+                    onChange={(e) => updateSeo({ description: e.target.value })}
+                    placeholder="Descripción para buscadores"
+                  />
                 </div>
 
                 {pageRecord && (
@@ -546,7 +611,7 @@ export default function LandingEditor() {
                 borderRadius: previewMode === 'mobile' ? '24px' : '8px',
               }}
             >
-              <LandingPreview config={config} />
+              <LandingPreview config={draftConfig} sectionOrder={sectionOrder} />
             </div>
           )}
         </main>

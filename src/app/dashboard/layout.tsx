@@ -110,16 +110,6 @@ const getStoreNavigationGroups = (storeId?: string) => {
     { name: 'Categorías', icon: List, href: '/dashboard/categories', isSingle: true },
     { name: 'Cotizaciones', icon: ClipboardList, href: '/dashboard/quotes', isSingle: true },
     { name: 'Blog', icon: FileText, href: '/dashboard/blog', isSingle: true },
-    ...(storeId
-      ? [
-          {
-            name: 'Editar página web',
-            icon: Globe,
-            href: `/dashboard/stores/${storeId}/pages/home/editor`,
-            isSingle: true,
-          },
-        ]
-      : []),
     {
       name: 'Landing Page',
       icon: LayoutList,
