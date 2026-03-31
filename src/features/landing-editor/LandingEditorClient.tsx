@@ -36,6 +36,7 @@ const GET_MY_STORE = gql`
       facebookUrl
       instagramUrl
       whatsappNumber
+      customDomain
     }
   }
 `;
@@ -55,6 +56,7 @@ interface StoreQueryData {
     facebookUrl: string | null;
     instagramUrl: string | null;
     whatsappNumber: string | null;
+    customDomain: string | null;
   } | null;
 }
 
@@ -204,6 +206,7 @@ export function LandingEditorClient() {
     facebookUrl: store.facebookUrl ?? undefined,
     instagramUrl: store.instagramUrl ?? undefined,
     whatsappNumber: store.whatsappNumber ?? undefined,
+    customDomain: store.customDomain ?? undefined,
   };
 
   return <EditorRoot tenant={tenant} initialJSON={loadedJSON ?? undefined} />;

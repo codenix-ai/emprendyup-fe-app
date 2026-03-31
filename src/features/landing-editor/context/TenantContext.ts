@@ -45,6 +45,8 @@ export interface TenantContext {
   facebookUrl?: string;
   instagramUrl?: string;
   whatsappNumber?: string;
+  /** Custom domain configured for this tenant, e.g. "mitienda.com" */
+  customDomain?: string;
 }
 
 // ─── Helpers ──────────────────────────────────────────────────────────────────
@@ -80,7 +82,8 @@ export function buildSavePageInput(
   return {
     slug: 'home',
     ...tenantIdField(tenant),
-    ...(status === 'draft' ? { draftConfig: pageJson } : { publishedConfig: pageJson }),
+    draftConfig: pageJson,
+    ...(status === 'published' ? { publishedConfig: pageJson } : {}),
   };
 }
 
