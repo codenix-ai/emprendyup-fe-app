@@ -2,6 +2,7 @@
 import React, { useMemo } from 'react';
 import { useSearchParams } from 'next/navigation';
 import { LandingPreview } from '@/app/components/LandingEditor/LandingPreview';
+import { MobileEditDisclaimer } from '@/app/components/LandingEditor/MobileEditDisclaimer';
 import type { DraftConfig } from '@/app/components/LandingEditor/types';
 import { createDefaultDraftConfig } from '@/app/components/LandingEditor/types';
 
@@ -39,6 +40,7 @@ export default function LandingPreviewPage() {
         Vista previa · <span style={{ color: '#60a5fa' }}>No publicada</span>
       </div>
       <LandingPreview config={config} />
+      <MobileEditDisclaimer />
     </div>
   );
 }
