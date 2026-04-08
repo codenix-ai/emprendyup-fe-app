@@ -372,14 +372,7 @@ export default function ServiceCatalog() {
             <table className="min-w-full divide-y divide-gray-200 dark:divide-gray-700">
               <thead className="bg-gray-50 dark:bg-gray-900">
                 <tr>
-                  {[
-                    'Servicio',
-                    'Duración',
-                    'Precio',
-                    'Pago Online',
-                    'Estado',
-                    '',
-                  ].map((h) => (
+                  {['Servicio', 'Duración', 'Precio', 'Pago Online', 'Estado', ''].map((h) => (
                     <th
                       key={h}
                       className={`px-6 py-3 text-xs font-semibold text-gray-600 dark:text-gray-300 uppercase tracking-wider ${

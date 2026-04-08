@@ -636,7 +636,7 @@ export default function StoreSettingsPage() {
                                     className="w-full h-16 mx-auto rounded object-cover"
                                     unoptimized={Boolean(
                                       formData.logoUrl?.startsWith('blob:') ||
-                                      formData.logoUrl?.startsWith('data:')
+                                        formData.logoUrl?.startsWith('data:')
                                     )}
                                   />
                                   <button
@@ -683,7 +683,7 @@ export default function StoreSettingsPage() {
                                     className="w-full h-16 mx-auto rounded object-cover"
                                     unoptimized={Boolean(
                                       formData.faviconUrl?.startsWith('blob:') ||
-                                      formData.faviconUrl?.startsWith('data:')
+                                        formData.faviconUrl?.startsWith('data:')
                                     )}
                                   />
                                   <button
@@ -730,7 +730,7 @@ export default function StoreSettingsPage() {
                                     className="w-full h-16 mx-auto rounded object-cover"
                                     unoptimized={Boolean(
                                       formData.bannerUrl?.startsWith('blob:') ||
-                                      formData.bannerUrl?.startsWith('data:')
+                                        formData.bannerUrl?.startsWith('data:')
                                     )}
                                   />
                                   <button
